@@ -238,6 +238,7 @@ async function boot() {
     S.configLoaded = true;
     S.config = snap.exists ? normConfig(snap.data()) : null;
     syncSubs();
+    if (first && String(location.hash || "") === "#quote" && S.config && S.config.cats.length) { S.fromApp = true; S.quote = { step: "pick", sel: new Set(), min: null, days: "", wish: false, awaitApp: true }; S.stack = [{ name: "home" }]; S.view = { name: "quote" }; render(); return; }
     if (first && String(location.hash || "") === "#review" && S.config && S.config.cats.length) { S.fromApp = true; S.rai = { mode: "flagged", catId: "", web: false, sel: new Set(), step: "pick", results: [], awaitApp: true }; S.stack = [{ name: "home" }]; S.view = { name: "reviewAi" }; render(); return; }
     if (first && String(location.hash || "") === "#scan" && S.config && S.config.cats.length) { S.fromApp = true; S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; S.stack = [{ name: "home" }]; S.view = { name: "scan" }; render(); return; }
     softRender();
@@ -479,12 +480,13 @@ function render() {
       case "reviewItem": html = vReviewItem(); break;
       case "reviewList": html = vReviewList(); break;
       case "reviewAi": html = vReviewAi(); break;
+      case "prices": html = vPrices(); break;
       default: html = vHome();
     }
   } catch (e) { console.error(e); html = '<div class="wrap"><div class="empty">Errore di visualizzazione: ' + esc(e.message) + '</div></div>'; }
   const navTabs = ["home", "history", "wish", "backup"];
   const activeTab = navTabs.includes(v.name) ? v.name : (S.stack[0] && navTabs.includes(S.stack[0].name) ? S.stack[0].name : "home");
-  const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail", "review", "reviewItem", "reviewList", "reviewAi"].includes(v.name);
+  const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail", "review", "reviewItem", "reviewList", "reviewAi", "prices"].includes(v.name);
   app.innerHTML = html + (showNav ? navHtml(activeTab) : "");
   afterRender();
 }
@@ -515,7 +517,7 @@ function vHome() {
   if (S.env === "pwa") {
     h += '<div class="grid2"><button type="button" class="btn pri" data-act="goArtifactScan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn' + (S.awaitReturn ? " acc" : "") + '" data-act="receive">' + ic("download") + 'Ricevi da Claude</button></div>';
     if (S.awaitReturn) h += '<div class="xs" style="color:var(--acc);text-align:right;margin-top:-6px">Se nell\'artifact hai premuto "Copia per l\'app", tocca Ricevi da Claude.</div>';
-    if (catalogCats().length) h += '<button type="button" class="btn" data-act="cardPrices">' + ic("refresh") + 'Aggiorna prezzi carte</button>';
+    if (cfg && cfg.cats.length) h += '<button type="button" class="btn" data-act="pricesMenu">' + ic("refresh") + 'Aggiorna prezzi</button>';
   } else {
     h += '<div class="grid2"><button type="button" class="btn pri" data-act="scan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn" data-act="quoteStart">' + ic("refresh") + 'Aggiorna prezzi</button></div>';
   }
@@ -1483,6 +1485,12 @@ function vQuote() {
   const q = S.quote;
   let h = '<div class="wrap stack">' + topBar("Aggiorna prezzi");
   if (!S.sample) h += '<div class="notice warn">Claude non è disponibile in questa vista.</div>';
+  if (q.awaitApp) h += '<div class="card pad stack" style="border-color:var(--acc)"><h2 style="font-size:16px">Pezzi dall\'app</h2><div class="small muted">L\'app ha copiato i pezzi da aggiornare. Tocca qui sotto per riceverli.</div><button type="button" class="btn acc" data-act="qReceive">' + ic("download", 18) + 'Ricevi dall\'app</button><div class="xs muted" id="qMsg"></div></div>';
+  if (q.step === "sent") {
+    h += '<div class="card pad stack"><h2 style="font-size:16px">Riporta nell\'app</h2><div class="small muted">Quotazioni salvate. Copiale e nell\'app tocca "Ricevi da Claude".</div><div class="grid2"><button type="button" class="btn pri" data-act="sendCopy">' + ic("copy", 18) + 'Copia per l\'app</button><a class="btn" href="' + APP_URL + '" target="_blank" rel="noopener">Apri l\'app</a></div><div id="sendMsg" class="xs muted"></div></div>';
+    return h + '</div>';
+  }
+  if (q.step === "pick" && q.ids) h += '<div class="notice">' + q.ids.size + ' pezzi arrivati dall\'app. <button type="button" class="btn sm" style="margin-left:6px" data-act="qClearIds">Usa tutta la collezione</button></div>';
   if (q.step === "pick") {
     const sel = q.sel;
     h += '<div class="stack" style="gap:8px"><span class="small muted" style="font-weight:500">Cosa aggiornare</span><div class="chips">' + S.config.cats.map(c => '<button type="button" class="chip ' + (sel.has(c.id) ? "on" : "") + '" data-act="qCat" data-id="' + esc(c.id) + '" aria-pressed="' + sel.has(c.id) + '">' + esc(c.name) + '</button>').join("") + '</div></div>';
@@ -1548,7 +1556,7 @@ function quoteCandidates() {
   const min = q.min;
   const days = parseInt(q.days, 10);
   const cutoff = isNaN(days) || days <= 0 ? null : new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
-  return [...S.items.values()].filter(i => !i.deleted && q.sel.has(i.catId) && (i.status === "in" || (q.wish && i.status === "wish")) && (min == null || (Number(i.value) || 0) >= min) && (!cutoff || !i.valueDate || i.valueDate < cutoff));
+  return [...S.items.values()].filter(i => !i.deleted && (!q.ids || q.ids.has(i.id)) && q.sel.has(i.catId) && (i.status === "in" || (q.wish && i.status === "wish")) && (min == null || (Number(i.value) || 0) >= min) && (!cutoff || !i.valueDate || i.valueDate < cutoff));
 }
 function readQuoteForm() { const q = S.quote; if ($("q_min")) q.min = parseNum(val("q_min")); if ($("q_days")) q.days = val("q_days"); if ($("q_wish")) q.wish = $("q_wish").checked; }
 async function quoteRun() {
@@ -1572,8 +1580,98 @@ async function quoteRun() {
 async function quoteApply() {
   const rows = S.quote.rows.filter(r => r.apply && r.n);
   if (!rows.length) { back(); return; }
-  try { await saveItems(rows.map(r => r.n)); toast(rows.length + " quotazioni aggiornate"); S.quote = null; tab("home"); }
+  try { await saveItems(rows.map(r => r.n)); toast(rows.length + " quotazioni aggiornate"); if (S.quote.fromApp) { S.quote.step = "sent"; render(); window.scrollTo(0, 0); prepareSend(true); } else { S.quote = null; tab("home"); } }
   catch (e) { toast(dbErr(e), 5000); }
+}
+
+/* ================= Aggiorna prezzi: menu dell'app ================= */
+function pmCutoff(days) { const d = parseInt(days, 10); return isNaN(d) || d <= 0 ? null : new Date(Date.now() - d * 864e5).toISOString().slice(0, 10); }
+function pmItems(catId) {
+  const p = S.pm; const cut = pmCutoff(p.days);
+  return catItems(catId).filter(i => (i.status === "in" || (p.wish && i.status === "wish")) && (!catalogOf(catId) || i.ref) && (!cut || !i.valueDate || i.valueDate < cut));
+}
+function pmCounts() {
+  const p = S.pm; let cards = 0, ai = 0;
+  [...p.sel].forEach(id => { if (!cat(id)) return; const n = pmItems(id).length; if (catalogOf(id)) cards += n; else ai += n; });
+  return { cards, ai };
+}
+function pmPack() {
+  const p = S.pm;
+  const cats = [...p.sel].filter(id => cat(id) && !catalogOf(id));
+  const list = cats.flatMap(id => pmItems(id)).slice(0, 150);
+  const items = list.map(i => { const o = cleanItem(i); o.id = i.id; o.catId = i.catId; o.photos = []; return o; });
+  return { n: items.length, text: JSON.stringify({ app: "collezioni", schema: 1, source: "pwa", kind: "delta", quote: true, ids: list.map(i => i.id), cats, wish: !!p.wish, exportedAt: nowIso(), config: S.config, items }) };
+}
+function vPrices() {
+  const p = S.pm || (S.pm = { sel: new Set(), days: "7", wish: false });
+  let h = '<div class="wrap stack">' + topBar("Aggiorna prezzi", "Scegli cosa aggiornare");
+  const row = c => { const n = pmItems(c.id).length; return '<label class="li" style="cursor:pointer"><input type="checkbox" data-change="pmSel" data-id="' + esc(c.id) + '"' + (p.sel.has(c.id) ? " checked" : "") + ' style="width:20px;height:20px;accent-color:var(--acc)"><span class="ico sm">' + iconHtml(c.icon, 18) + '</span><span class="grow"><span class="b" style="display:block;font-weight:500">' + esc(c.name) + '</span></span><span class="small muted">' + n + ' pezzi</span></label>'; };
+  const cardC = S.config.cats.filter(c => catalogOf(c.id));
+  const aiC = S.config.cats.filter(c => !catalogOf(c.id)).sort((a, b) => { const ga = group(a.group), gb = group(b.group); return ((ga ? ga.order : a.order) || 0) - ((gb ? gb.order : b.order) || 0) || (a.order || 0) - (b.order || 0); });
+  if (cardC.length) {
+    h += '<div class="between" style="margin-top:-6px"><span class="sect" style="margin:0">Dai cataloghi · gratis</span></div><div class="card list">' + cardC.map(row).join("") + '</div>';
+    h += '<div class="xs muted" style="margin-top:-6px">Prezzi di Cardmarket per le carte collegate al catalogo. Subito, qui nell\'app.</div>';
+  }
+  h += '<div class="between"><span class="sect" style="margin:0">Con Claude · nell\'artifact</span><button type="button" class="btn sm" style="border:none;background:none;color:var(--acc)" data-act="pmAll">' + (aiC.every(c => p.sel.has(c.id)) ? "Nessuna" : "Tutte") + '</button></div><div class="card list">' + aiC.map(row).join("") + '</div>';
+  h += '<div class="xs muted" style="margin-top:-6px">Claude cerca le quotazioni sul web. L\'app copia i pezzi e apre l\'artifact: lì tocchi "Ricevi dall\'app" e poi "Avvia".</div>';
+  h += '<div class="grid2"><label class="f"><span>Non aggiornati da (giorni)</span><input class="in" id="pm_days" inputmode="numeric" value="' + esc(p.days) + '" placeholder="tutti" data-change="pmDays"></label><label class="row" style="min-height:46px;cursor:pointer;align-self:end"><input type="checkbox" data-change="pmWish"' + (p.wish ? " checked" : "") + ' style="width:22px;height:22px;accent-color:var(--acc)"><span class="small">Anche lista desideri</span></label></div>';
+  const k = pmCounts();
+  const parts = [];
+  if (k.cards) parts.push(k.cards + " carte dai cataloghi");
+  if (k.ai) parts.push(k.ai + " pezzi con Claude" + (k.ai > 150 ? " (i primi 150)" : ""));
+  h += '<div class="notice">' + (parts.length ? esc(parts.join(" · ")) : "Niente da aggiornare con questa scelta.") + '</div>';
+  h += '<button type="button" class="btn pri full" data-act="pmGo"' + (parts.length ? "" : " disabled") + '>' + ic("refresh", 18) + (k.ai ? (k.cards ? "Aggiorna e apri l'artifact" : "Copia e apri l'artifact") : "Aggiorna") + '</button>';
+  h += '<div class="xs muted" id="pmMsg"></div></div>';
+  return h;
+}
+async function pmGo(btn) {
+  const p = S.pm; const k = pmCounts();
+  const cardCats = [...p.sel].filter(id => cat(id) && catalogOf(id));
+  let opened = false;
+  if (k.ai) {
+    const pack = pmPack();
+    try { await navigator.clipboard.writeText(pack.text); }
+    catch (e) { const m = $("pmMsg"); if (m) m.textContent = "Non riesco a copiare: tocca di nuovo il tasto."; return; }
+    S.awaitReturn = true; lsSet("col.await", true);
+    const url = ARTIFACT_URL + "#quote"; const w = window.open(url, "_blank", "noopener"); if (!w) location.href = url;
+    opened = true;
+  }
+  if (cardCats.length) await cardPricesMulti(cardCats, p.days, p.wish);
+  if (!opened) tab("home"); else render();
+}
+async function cardPricesMulti(cats, days, wish) {
+  const cut = pmCutoff(days);
+  const items = [...S.items.values()].filter(i => !i.deleted && i.ref && cats.includes(i.catId) && (i.status === "in" || (wish && i.status === "wish")) && (!cut || !i.valueDate || i.valueDate < cut));
+  if (!items.length) return;
+  if (!navigator.onLine) { toast("Serve la connessione a internet."); return; }
+  const updated = [];
+  for (const catId of cats) {
+    const src = catalogOf(catId); const its = items.filter(i => i.catId === catId); if (!its.length) continue;
+    const refs = []; const seen = new Set();
+    its.forEach(i => { if (!seen.has(i.ref.card)) { seen.add(i.ref.card); refs.push(i.ref); } });
+    let prices = {};
+    try { prices = await fetchPrices(src, refs, (d, n) => toast("Prezzi " + cat(catId).name + ": " + d + " di " + n, 60000)); } catch (e) { toast("Errore di rete sui prezzi di " + cat(catId).name, 4000); }
+    its.forEach(i => { const v = priceFor(i, prices[i.ref.card]); if (v != null) { const n = quoteFromCatalog(i, v, src); if (n) updated.push(n); } });
+  }
+  if (updated.length) { try { await saveItems(updated); } catch (e) { toast(dbErr(e), 5000); return; } }
+  toast(updated.length + " prezzi di carte aggiornati" + (items.length - updated.length ? ", " + (items.length - updated.length) + " senza prezzo" : ""), 5000);
+}
+/* artifact: riceve dall'app i pezzi da quotare */
+async function qReceive() {
+  const msg = $("qMsg");
+  let text = "";
+  try { text = await navigator.clipboard.readText(); } catch (e) { if (msg) msg.textContent = "Non riesco a leggere gli appunti: consenti l'accesso quando il browser lo chiede."; return; }
+  let data = null; try { data = JSON.parse(text); } catch (e) { }
+  if (!data || data.app !== "collezioni" || !data.quote) { if (msg) msg.textContent = "Negli appunti non ci sono pezzi da aggiornare. Nell'app tocca di nuovo \"Copia e apri l'artifact\"."; return; }
+  analyzeImport(text, "dall'app");
+  if (S.imp && (S.imp.toWrite.length || S.imp.cfgNewer)) await importApply(); else S.imp = null;
+  const q = S.quote;
+  q.ids = new Set(data.ids || []);
+  q.sel = new Set((data.cats || []).filter(id => cat(id)));
+  q.wish = !!data.wish; q.days = ""; q.min = null; q.awaitApp = false; q.fromApp = true; q.step = "pick";
+  S.view = { name: "quote" };
+  toast(q.ids.size + " pezzi ricevuti dall'app");
+  render();
 }
 
 /* ================= Backup ================= */
@@ -1767,9 +1865,10 @@ function analyzeImport(text, name) {
 async function importPhotos(imp) {
   const map = {};
   const ph = imp.data.photos;
-  if (!ph || !S.assets) return map;
+  if (!S.assets) return map;
   let local = new Set();
-  try { const l = await S.assets.list(); (l.assets || []).forEach(a => local.add(a.id)); } catch (e) { }
+  try { const l = await S.assets.list(); (l.assets || []).forEach(a => local.add(a.id)); imp._local = local; } catch (e) { }
+  if (!ph) return map;
   const need = new Set();
   imp.toWrite.forEach(it => (it.photos || []).forEach(p => need.add(p)));
   [...imp.impCfg.cats, ...imp.impCfg.groups].forEach(x => { if (x.icon && String(x.icon).startsWith("asset:")) need.add(String(x.icon).slice(6)); });
@@ -1787,7 +1886,12 @@ async function importApply() {
     const photoMap = await importPhotos(imp);
     const remapIcon = x => { if (x.icon && String(x.icon).startsWith("asset:")) { const id = String(x.icon).slice(6); if (photoMap[id]) x.icon = "asset:" + photoMap[id]; } };
     imp.impCfg.cats.forEach(remapIcon); imp.impCfg.groups.forEach(remapIcon);
-    imp.toWrite.forEach(it => { it.photos = (it.photos || []).map(p => photoMap[p] || p); });
+    const newIds = new Set(Object.values(photoMap));
+    imp.toWrite.forEach(it => {
+      it.photos = (it.photos || []).map(p => photoMap[p] || p).filter(p => !imp._local || imp._local.has(p) || newIds.has(p));
+      const loc = S.items.get(it.id);
+      if (!it.photos.length && loc && (loc.photos || []).length) it.photos = loc.photos;
+    });
     const cfg = S.config ? JSON.parse(JSON.stringify(S.config)) : { groups: [], cats: [] };
     const newer = (imp.impCfg.updatedAt || "") > (cfg.updatedAt || "");
     const mergeList = (loc, inc) => {
@@ -2318,7 +2422,7 @@ async function raiReceive() {
   analyzeImport(text, "dall'app");
   if (S.imp && S.imp.toWrite.length) await importApply(); else S.imp = null;
   const r = S.rai;
-  r.appIds = (data.ids || []).filter(id => S.items.get(id));
+  r.appIds = data.ids || [];
   r.mode = "app"; r.awaitApp = false; r.fromApp = true; r.step = "pick";
   S.view = { name: "reviewAi" };
   toast(r.appIds.length + " pezzi ricevuti dall'app");
@@ -2597,6 +2701,10 @@ document.addEventListener("click", async ev => {
     case "setAddWish": openSetAdd("wish"); break;
     case "setAddGo": await setAddGo(el); break;
     case "cardPrices": await cardPrices(id || null); break;
+    case "pricesMenu": if (!S.pm) S.pm = { sel: new Set(S.config.cats.map(c => c.id)), days: "7", wish: false }; go({ name: "prices" }); break;
+    case "pmAll": { const ai = S.config.cats.filter(c => !catalogOf(c.id)); const all = ai.every(c => S.pm.sel.has(c.id)); ai.forEach(c => { if (all) S.pm.sel.delete(c.id); else S.pm.sel.add(c.id); }); render(); break; }
+    case "pmGo": await pmGo(el); break;
+    case "qReceive": await qReceive(); break;
     case "linkNow": { toast("Collego le carte al catalogo…", 30000); try { const r = await linkCatalog(id, (i, n) => toast("Collego: " + (i + 1) + " di " + n, 30000)); toast(r.linked + " carte collegate" + (r.failed.length ? "; non trovate: " + r.failed.slice(0, 3).join(", ") + (r.failed.length > 3 ? "…" : "") : ""), 7000); } catch (e) { toast("Non riesco a raggiungere il catalogo."); } render(); break; }
     case "cardPriceOne": await cardPriceOne(id); break;
     case "review": S.review = Object.assign(S.review || {}, { f: "all", cat_f: "", lim: {} }); reviewRefresh(); go({ name: "review" }); break;
@@ -2694,6 +2802,7 @@ document.addEventListener("click", async ev => {
     case "quoteStart": if (!S.config || !S.config.cats.length) { toast("Crea prima almeno una categoria."); break; } S.quote = { step: "pick", sel: new Set(S.config.cats.filter(c => !/pok|magic|carte/i.test(c.name)).map(c => c.id)), min: null, days: "7", wish: false }; go({ name: "quote" }); break;
     case "qCat": readQuoteForm(); if (S.quote.sel.has(id)) S.quote.sel.delete(id); else S.quote.sel.add(id); render(); break;
     case "qRun": await quoteRun(); break;
+    case "qClearIds": S.quote.ids = null; render(); break;
     case "qStop": if (S.quote && S.quote.ctl) S.quote.ctl.abort(); break;
     case "qApply": await quoteApply(); break;
     // backup
@@ -2726,6 +2835,9 @@ document.addEventListener("change", async ev => {
   switch (a) {
     case "catSort": S.catState[el.dataset.id].sort = el.value; render(); break;
     case "revCat": S.review.cat_f = el.value; render(); break;
+    case "pmSel": if (el.checked) S.pm.sel.add(el.dataset.id); else S.pm.sel.delete(el.dataset.id); render(); break;
+    case "pmDays": S.pm.days = el.value; render(); break;
+    case "pmWish": S.pm.wish = el.checked; render(); break;
     case "raiCat": S.rai.catId = el.value; if (S.rai.mode === "manual") S.rai.sel = new Set(); render(); break;
     case "raiSel": if (el.checked) S.rai.sel.add(el.dataset.id); else S.rai.sel.delete(el.dataset.id); { const sc = el.closest(".card"); const top = sc ? sc.scrollTop : 0; render(); const nc = document.querySelector('[data-change="raiSel"]'); if (nc) nc.closest(".card").scrollTop = top; } break;
     case "raiWeb": S.rai.web = el.checked; render(); break;
