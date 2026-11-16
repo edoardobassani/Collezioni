@@ -62,6 +62,7 @@ textarea.in{height:auto;min-height:80px;padding:12px 14px;resize:vertical}
 .kv>span:last-child{text-align:right}
 .badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;background:var(--accbg);color:var(--up);white-space:nowrap}
 .badge.warn{background:var(--warnbg);color:var(--down)}
+.badge.amber{background:#FFF4D6;color:#7A5A00}
 .badge.grey{background:#F0F0EC;color:var(--muted)}
 .photo{height:220px;border-radius:14px;background:#E9ECE9;display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted)}
 .photo img{width:100%;height:100%;object-fit:contain;background:#E9ECE9}
@@ -237,6 +238,7 @@ async function boot() {
     S.configLoaded = true;
     S.config = snap.exists ? normConfig(snap.data()) : null;
     syncSubs();
+    if (first && String(location.hash || "") === "#review" && S.config && S.config.cats.length) { S.fromApp = true; S.rai = { mode: "flagged", catId: "", web: false, sel: new Set(), step: "pick", results: [], awaitApp: true }; S.stack = [{ name: "home" }]; S.view = { name: "reviewAi" }; render(); return; }
     if (first && String(location.hash || "") === "#scan" && S.config && S.config.cats.length) { S.fromApp = true; S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; S.stack = [{ name: "home" }]; S.view = { name: "scan" }; render(); return; }
     softRender();
   }, err => { clearTimeout(slowT); S.loadErr = "Non riesco a leggere l'archivio (" + err.code + ")."; render(); });
@@ -473,12 +475,16 @@ function render() {
       case "quote": html = vQuote(); break;
       case "sets": html = vSets(); break;
       case "setDetail": html = vSetDetail(); break;
+      case "review": html = vReview(); break;
+      case "reviewItem": html = vReviewItem(); break;
+      case "reviewList": html = vReviewList(); break;
+      case "reviewAi": html = vReviewAi(); break;
       default: html = vHome();
     }
   } catch (e) { console.error(e); html = '<div class="wrap"><div class="empty">Errore di visualizzazione: ' + esc(e.message) + '</div></div>'; }
   const navTabs = ["home", "history", "wish", "backup"];
   const activeTab = navTabs.includes(v.name) ? v.name : (S.stack[0] && navTabs.includes(S.stack[0].name) ? S.stack[0].name : "home");
-  const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail"].includes(v.name);
+  const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail", "review", "reviewItem", "reviewList", "reviewAi"].includes(v.name);
   app.innerHTML = html + (showNav ? navHtml(activeTab) : "");
   afterRender();
 }
@@ -508,6 +514,10 @@ function vHome() {
     if (catalogCats().length) h += '<button type="button" class="btn" data-act="cardPrices">' + ic("refresh") + 'Aggiorna prezzi carte</button>';
   } else {
     h += '<div class="grid2"><button type="button" class="btn pri" data-act="scan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn" data-act="quoteStart">' + ic("refresh") + 'Aggiorna prezzi</button></div>';
+  }
+  if (cfg && cfg.cats.length && S.items.size) {
+    let rk = null; try { reviewRefresh(true); rk = reviewCounts(); } catch (e) { }
+    if (rk) h += '<button type="button" class="card li" data-act="review"><span class="ico">' + ic("check", 20, 2) + '</span><span class="grow"><span class="b" style="display:block">Revisione dati</span><span class="small muted">' + (rk.err + rk.warn ? [rk.err ? rk.err + (rk.err === 1 ? " errore" : " errori") : "", rk.warn ? rk.warn + " da controllare" : ""].filter(Boolean).join(" · ") : "Nessun problema trovato") + '</span></span>' + (rk.err ? '<span class="badge warn">' + rk.err + '</span>' : rk.warn ? '<span class="badge amber">' + rk.warn + '</span>' : '') + '<span class="muted">' + ic("right", 16, 2) + '</span></button>';
   }
   if (!cfg || !cfg.cats.length) {
     h += S.env === "pwa" ? '<div class="card pad stack" style="text-align:center"><div class="b">Benvenuto in Collezioni</div><div class="small muted">Per iniziare importa il backup esportato dall\'artifact su Claude: arriveranno categorie, pezzi e foto.</div><button type="button" class="btn acc" data-act="tab" data-v="backup">' + ic("upload", 18) + 'Importa il backup</button><button type="button" class="btn sm" data-act="newCat">Oppure crea una categoria</button></div></div>' : '<div class="card pad empty">Nessuna categoria. <br><br><button type="button" class="btn acc" data-act="newCat">Crea la prima categoria</button></div></div>';
@@ -1827,6 +1837,533 @@ async function importApply() {
   } catch (e) { toast(dbErr(e), 5000); }
 }
 
+/* ================= Revisione dati ================= */
+const REV_SEV = { err: { label: "Errore", cls: "warn", sect: "Errori" }, warn: { label: "Controlla", cls: "amber", sect: "Da controllare" }, tip: { label: "Suggerimento", cls: "", sect: "Suggerimenti" } };
+const REV_ORDER = { err: 0, warn: 1, tip: 2 };
+const RAI_MAX = 60;
+function revYear() { return new Date().getFullYear(); }
+function fv(it, k) { return it.fields ? it.fields[k] : undefined; }
+function numF(it, k) { const v = fv(it, k); if (v === "" || v == null) return null; const n = typeof v === "number" ? v : parseNum(String(v)); return n == null || isNaN(n) ? null : n; }
+function revIgnored(it, key) { return !!(it && (it.reviewIgnore || []).includes(key)); }
+
+/* --- livello 1: coerenza, senza rete --- */
+function reviewLocal() {
+  const out = [];
+  const Y = revYear();
+  const add = (it, key, sev, text, extra) => {
+    if (revIgnored(it, key)) return;
+    out.push(Object.assign({ key, sev, text, itemId: it.id, catId: it.catId, uid: it.id + "|" + key }, extra || {}));
+  };
+  const items = [...S.items.values()].filter(i => !i.deleted && cat(i.catId));
+  for (const it of items) {
+    const c = cat(it.catId);
+    const live = it.status !== "out";
+    if (!String(it.name || "").trim()) add(it, "noname", "err", "Manca il nome.");
+    c.fields.forEach(f => {
+      if (f.type === "number" && /^(anno|annata)$/.test(f.k)) {
+        const y = numF(it, f.k);
+        if (y != null && y > Y) add(it, "future:" + f.k, "err", f.label + " " + y + ": è nel futuro.", { fix: null });
+        else if (y != null && y < 1000 && it.catId !== "monete-antiche") add(it, "short:" + f.k, "warn", f.label + " " + y + ": sembra mancare una cifra.");
+      }
+      if (f.type === "select" && f.options.length) {
+        const v = fv(it, f.k);
+        if (v != null && v !== "" && !f.options.includes(String(v))) add(it, "opt:" + f.k, "tip", f.label + ": \"" + v + "\" non è tra le voci previste.");
+      }
+    });
+    if (it.cond && c.cond.length && !c.cond.includes(it.cond)) add(it, "cond", "tip", "Stato \"" + it.cond + "\" non è tra quelli previsti per " + c.name + ".");
+    const anno = numF(it, "anno");
+    if (it.catId === "francobolli-antichi" && anno != null && anno > 1862) add(it, "rule:antichi", "err", "Anno " + anno + " per un francobollo degli Antichi Stati (fino al 1861).");
+    if (it.catId === "francobolli" && anno != null) {
+      const p = String(fv(it, "periodo") || "");
+      if (/^Regno/.test(p) && anno > 1946) add(it, "rule:regno", "err", "Anno " + anno + " ma periodo Regno d'Italia (fino al 1946).");
+      if (/^Repubblica/.test(p) && anno < 1946) add(it, "rule:rep", "err", "Anno " + anno + " ma periodo Repubblica (dal 1946).");
+      if (/^RSI/.test(p) && (anno < 1943 || anno > 1946)) add(it, "rule:rsi", "warn", "Anno " + anno + " fuori dal periodo RSI / Luogotenenza (1943–1946).");
+    }
+    if (it.catId === "monete-storiche" && anno != null && anno > 1960) add(it, "rule:storica", "warn", "Anno " + anno + ": sembra una moneta moderna, non storica.");
+    if (it.catId === "monete" && anno != null && anno < 1900) add(it, "rule:moderna", "warn", "Anno " + anno + ": sembra una moneta storica, non moderna.");
+    if (it.catId === "vini") {
+      const an = numF(it, "annata"), da = numF(it, "bere_da"), en = numF(it, "bere_entro");
+      if (da != null && en != null && en < da) add(it, "rule:bere", "err", "Da bere entro il " + en + ", prima di \"da bere dal\" " + da + ".");
+      if (an != null && da != null && da < an) add(it, "rule:bereann", "err", "Da bere dal " + da + ", prima dell'annata " + an + ".");
+      if (live && en != null && en < Y) add(it, "rule:scaduto", "tip", "Da bere entro il " + en + ": la finestra è già passata.");
+    }
+    if (live && Number(it.qty) <= 0) add(it, "qty0", "err", "Quantità 0 ma risulta in collezione.");
+    if (it.remainingMl != null && it.capacityMl != null && it.remainingMl > it.capacityMl) add(it, "ml", "err", "Restano " + fmtCl(it.remainingMl) + " su una bottiglia da " + fmtCl(it.capacityMl) + ".");
+    if (c.consumable && it.cond === "Sigillata" && fv(it, "livello") && fv(it, "livello") !== "Piena") add(it, "sealed", "warn", "Bottiglia sigillata ma livello \"" + fv(it, "livello") + "\".");
+    (it.movements || []).forEach((m, j) => { if (m.type === "venduto" && m.price == null) add(it, "soldnoprice:" + j, "warn", "Venduto il " + fmtDate(m.date) + " senza prezzo di vendita."); });
+    if (live && it.buyPrice > 0 && it.value > 0 && it.buyKind !== "stimato") {
+      const r = it.buyPrice / it.value;
+      const cmp = [["Prezzo d'acquisto", eur(it.buyPrice) + " (reale)", ""], ["Quotazione", eur(it.value) + (it.valueDate ? " · " + fmtDate(it.valueDate) : ""), ""]];
+      if (r > 2.5) add(it, "buyhigh", "warn", "Pagato " + eur(it.buyPrice) + ", quotazione " + eur(it.value) + ": oltre il doppio.", { info: cmp, note: "Può essere giusto (edizione particolare, acquisto in negozio) oppure un errore di battitura." });
+      else if (r < 0.25) add(it, "buylow", "warn", "Pagato " + eur(it.buyPrice) + ", quotazione " + eur(it.value) + ": molto meno della quotazione.", { info: cmp, note: "Controlla prezzo e quotazione: uno dei due potrebbe essere sbagliato." });
+    }
+  }
+  // doppioni
+  const byKey = {};
+  items.filter(i => i.status !== "out").forEach(i => {
+    const f = i.fields || {};
+    const k = [i.catId, normTxt(i.name), i.cond || "", i.status, JSON.stringify(Object.keys(f).sort().map(x => [x, f[x]]))].join("|");
+    (byKey[k] = byKey[k] || []).push(i);
+  });
+  Object.values(byKey).forEach(g => {
+    if (g.length < 2) return;
+    const first = g[0];
+    if (g.some(x => revIgnored(x, "dup"))) return;
+    const q = g.reduce((a, x) => a + (Number(x.qty) || 0), 0);
+    add(first, "dup", "warn", "Possibile doppione: " + g.length + " schede uguali.", { fix: { type: "merge", ids: g.map(x => x.id), label: "Unisci (qtà " + q + ")" }, ignoreLabel: "Sono diverse", dupIds: g.map(x => x.id) });
+  });
+  return out;
+}
+/* segnalazioni riassuntive (non legate a un singolo pezzo) */
+function reviewAgg() {
+  const out = [];
+  const live = activeItems();
+  const noPhoto = live.filter(i => !(i.photos || []).length && !i.imageUrl);
+  if (noPhoto.length) out.push({ agg: true, sev: "tip", uid: "agg|nophoto", title: noPhoto.length + " pezzi senza foto", text: "Con la foto la verifica con Claude è molto più precisa.", ids: noPhoto.map(i => i.id), act: "reviewList", actLabel: "Vedi" });
+  const limit = new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 10);
+  const old = live.filter(i => !i.value || !i.valueDate || i.valueDate < limit);
+  if (old.length) out.push({ agg: true, sev: "tip", uid: "agg|oldq", title: old.length + " pezzi senza quotazione recente", text: "Nessuna quotazione o più vecchia di 6 mesi.", ids: old.map(i => i.id), act: S.env === "artifact" ? "quoteStart" : "reviewList", actLabel: S.env === "artifact" ? "Aggiorna" : "Vedi" });
+  if (S.env === "pwa") {
+    const unl = catalogCats().flatMap(c => unlinked(c.id));
+    if (unl.length) out.push({ agg: true, sev: "tip", uid: "agg|unlinked", title: unl.length + " carte non collegate al catalogo", text: "Senza collegamento non contano nel completamento e non hanno prezzi automatici.", ids: unl.map(i => i.id), act: "reviewLink", actLabel: "Collega" });
+  }
+  return out;
+}
+function reviewAll() {
+  const R = S.review || (S.review = {});
+  if (!R.local) reviewRefresh(true);
+  const catIss = ((R.cat && R.cat.issues) || []).filter(x => { const it = S.items.get(x.itemId); return it && !it.deleted && !revIgnored(it, x.key); });
+  return [...R.local, ...catIss, ...R.agg].sort((a, b) => REV_ORDER[a.sev] - REV_ORDER[b.sev]);
+}
+function reviewRefresh(silent) {
+  const R = S.review || (S.review = {});
+  R.local = reviewLocal(); R.agg = reviewAgg(); R.at = nowIso();
+  if (S.env === "pwa" && !silent) setTimeout(reviewPrepPack, 0);
+}
+function reviewFiltered() {
+  const R = S.review;
+  return reviewAll().filter(x => (!R.f || R.f === "all" || x.sev === R.f) && (!R.cat_f || x.catId === R.cat_f || (x.agg && !R.cat_f)));
+}
+function reviewCounts() { const all = reviewAll(); const n = s => all.filter(x => x.sev === s).length; return { err: n("err"), warn: n("warn"), tip: n("tip"), all: all.length }; }
+
+/* --- livello 2: cataloghi online (solo app) --- */
+async function reviewCatalog() {
+  const R = S.review;
+  if (S.env !== "pwa") return;
+  if (!navigator.onLine) { toast("Serve la connessione per confrontare con i cataloghi."); return; }
+  R.catBusy = true; R.catMsg = "Avvio…"; render();
+  const out = []; let nCards = 0, nBooks = 0;
+  const add = (it, key, sev, text, extra) => { if (!revIgnored(it, key)) out.push(Object.assign({ key, sev, text, itemId: it.id, catId: it.catId, uid: it.id + "|" + key, src: "cat" }, extra || {})); };
+  const say = t => { R.catMsg = t; const el = $("revCatMsg"); if (el) el.textContent = t; };
+  try {
+    for (const c of catalogCats()) {
+      const src = catalogOf(c.id);
+      const list = catItems(c.id).filter(i => i.ref && i.ref.card);
+      if (!list.length) continue;
+      nCards += list.length;
+      let prices = {};
+      try { prices = await fetchPrices(src, list.map(i => i.ref), (i, n) => say(c.name + ": " + i + " di " + n)); } catch (e) { }
+      const sets = {};
+      for (const it of list) {
+        const r = it.ref, f = it.fields || {};
+        const srcName = src === "tcgdex" ? "TCGdex" : "Scryfall";
+        if (f.numero && r.num && normNum(f.numero) !== normNum(r.num)) add(it, "cat:num", "err", "Il numero nella scheda (" + f.numero + ") non corrisponde alla carta collegata (" + r.num + ").", { cmp: [["Numero", f.numero, r.num]], fix: { type: "fields", set: { numero: String(r.num) }, label: "Applica \"" + r.num + "\"" }, srcName });
+        const p = prices[r.card];
+        const lab = p && rarityLabel(src, p.rarity);
+        if (lab && f.rarita && lab !== f.rarita) add(it, "cat:rar", src === "scryfall" ? "err" : "warn", "Nel catalogo la rarità è \"" + lab + "\", nella scheda c'è \"" + f.rarita + "\".", { cmp: [["Rarità", f.rarita, lab]], fix: { type: "fields", set: { rarita: lab }, label: "Applica \"" + lab + "\"" }, srcName });
+        if (!/ital/i.test(String(f.lingua || ""))) {
+          if (!(r.set in sets)) { try { sets[r.set] = await loadSetCards(src, r.set, "en"); } catch (e) { sets[r.set] = null; } }
+          const card = sets[r.set] && sets[r.set].cards.find(x => x.id === r.card);
+          const cn = card && (card.nameEn || card.name);
+          const nm = normTxt(it.name);
+          if (cn && nm && normTxt(cn) !== nm && !nm.includes(normTxt(cn)) && !normTxt(cn).includes(nm)) add(it, "cat:name", "warn", "Nel catalogo questa carta si chiama \"" + cn + "\".", { cmp: [["Nome", it.name, cn], ["Set", f.set || "—", sets[r.set].name], ["Numero", f.numero || "—", r.num]], fix: { type: "name", v: cn, label: "Usa \"" + cn + "\"" }, srcName });
+        }
+      }
+    }
+    const books = [...S.items.values()].filter(i => !i.deleted && i.fields && i.fields.isbn);
+    nBooks = books.length;
+    let done = 0;
+    await pool(books.slice(0, 200), 4, async it => {
+      const code = cleanCode(it.fields.isbn);
+      say("Libri: " + (++done) + " di " + Math.min(200, books.length));
+      if (!isIsbn(code)) { add(it, "isbn:bad", "warn", "ISBN \"" + it.fields.isbn + "\" non valido (lunghezza o cifre)."); return; }
+      let b = cacheGet("isbn." + code, 30 * 864e5);
+      if (!b) { b = await lookupBook(code); if (b) cacheSet("isbn." + code, b); }
+      if (!b) { add(it, "isbn:none", "tip", "ISBN non trovato in Google Books né in Open Library."); return; }
+      const t1 = normTxt(it.name), t2 = normTxt(b.title);
+      const cmp = [["Titolo", it.name, b.title], ["Autore", it.fields.autore || "—", b.authors || "—"], ["Anno", it.fields.anno || "—", b.year || "—"]];
+      if (t1 && t2 && !t1.includes(t2.split(" ").slice(0, 2).join(" ")) && !t2.includes(t1.split(" ").slice(0, 2).join(" "))) add(it, "isbn:title", "warn", "L'ISBN corrisponde a \"" + b.title + "\".", { cmp, fix: { type: "name", v: b.title, label: "Usa il titolo del catalogo" }, srcName: "Google Books" });
+      else if (it.fields.autore && b.authors) {
+        const a1 = normTxt(it.fields.autore).split(" "), a2 = normTxt(b.authors).split(" ");
+        if (!a1.some(w => w.length > 2 && a2.includes(w))) add(it, "isbn:author", "warn", "Per questo ISBN l'autore risulta " + b.authors + ".", { cmp, fix: { type: "fields", set: { autore: b.authors }, label: "Applica l'autore" }, srcName: "Google Books" });
+      }
+    });
+    R.cat = { at: nowIso(), issues: out, nCards, nBooks };
+    lsSet("col.revCat", { at: R.cat.at, nCards, nBooks });
+    toast(out.length ? out.length + " segnalazioni dai cataloghi" : "Nessuna differenza con i cataloghi", 4000);
+  } catch (e) { toast("Confronto interrotto: " + (e.message || "errore di rete"), 5000); }
+  R.catBusy = false; R.catMsg = "";
+  reviewPrepPack();
+  render();
+}
+
+/* --- correzioni --- */
+async function reviewApply(uid) {
+  const x = reviewAll().find(y => y.uid === uid);
+  if (!x || !x.fix) return;
+  try {
+    if (x.fix.type === "merge") {
+      const list = x.fix.ids.map(id => S.items.get(id)).filter(Boolean);
+      const keep = Object.assign({}, list[0]);
+      keep.qty = list.reduce((a, i) => a + (Number(i.qty) || 0), 0);
+      keep.photos = [...new Set(list.flatMap(i => i.photos || []))];
+      keep.movements = list.flatMap(i => i.movements || []);
+      const notes = list.map(i => i.notes).filter(Boolean); if (notes.length) keep.notes = [...new Set(notes)].join("\n");
+      const rest = list.slice(1).map(i => Object.assign({}, i, { deleted: true }));
+      await saveItems([keep, ...rest]);
+      toast("Schede unite");
+    } else {
+      const it = Object.assign({}, S.items.get(x.itemId));
+      if (x.fix.type === "name") it.name = x.fix.v;
+      else it.fields = Object.assign({}, it.fields || {}, x.fix.set);
+      await saveItem(it);
+      toast("Corretto");
+    }
+    reviewDropCat(uid);
+    reviewRefresh(); reviewAfterAct(uid);
+  } catch (e) { toast(dbErr(e), 4500); }
+}
+async function reviewIgnore(uid) {
+  const x = reviewAll().find(y => y.uid === uid);
+  if (!x || x.agg) return;
+  try {
+    const ids = x.dupIds || [x.itemId];
+    const list = ids.map(id => { const it = Object.assign({}, S.items.get(id)); it.reviewIgnore = [...new Set([...(it.reviewIgnore || []), x.key])]; return it; });
+    await saveItems(list);
+    reviewDropCat(uid);
+    reviewRefresh(); reviewAfterAct(uid);
+  } catch (e) { toast(dbErr(e), 4500); }
+}
+function reviewDropCat(uid) { const R = S.review; if (R.cat) R.cat.issues = R.cat.issues.filter(y => y.uid !== uid); }
+function reviewAfterAct(uid) {
+  if (S.view.name === "reviewItem") {
+    const list = S.view.list || [];
+    const i = list.indexOf(uid);
+    const live = new Set(reviewAll().map(y => y.uid));
+    const next = list.slice(i + 1).find(u => live.has(u)) || list.slice(0, i).reverse().find(u => live.has(u));
+    if (next) { S.view.uid = next; render(); window.scrollTo(0, 0); } else back();
+    return;
+  }
+  render();
+}
+
+/* --- viste --- */
+function revBadge(sev) { const s = REV_SEV[sev]; return '<span class="badge ' + s.cls + '">' + s.label + '</span>'; }
+function revRow(x, first) {
+  const it = x.itemId ? S.items.get(x.itemId) : null;
+  const c = x.catId ? cat(x.catId) : null;
+  let h = '<div class="row" style="align-items:flex-start;padding:12px 14px' + (first ? "" : ";border-top:1px solid var(--line2)") + '">';
+  if (x.agg) {
+    h += '<div class="grow"><div class="b">' + esc(x.title) + '</div><div class="small muted">' + esc(x.text) + '</div></div><button type="button" class="btn sm" data-act="' + x.act + '" data-v="' + esc(x.uid) + '">' + esc(x.actLabel) + '</button></div>';
+    return h;
+  }
+  h += '<span class="ico sm">' + iconHtml(c ? c.icon : "box", 18) + '</span><div class="grow"><div class="between" style="align-items:flex-start"><span class="b" style="min-width:0">' + esc(it ? it.name || "Senza nome" : "") + (c ? ' <span class="xs muted" style="font-weight:400">· ' + esc(c.name) + '</span>' : "") + '</span>' + revBadge(x.sev) + '</div>';
+  h += '<div class="small muted" style="margin-top:2px">' + esc(x.text) + '</div><div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">';
+  if (x.fix) h += '<button type="button" class="btn sm acc" data-act="revApply" data-v="' + esc(x.uid) + '">' + esc(x.fix.label || "Applica correzione") + '</button>';
+  h += '<button type="button" class="btn sm" data-act="revOpen" data-v="' + esc(x.uid) + '">Apri</button>';
+  h += '<button type="button" class="btn sm" style="border-color:transparent;background:none;color:var(--muted)" data-act="revIgnore" data-v="' + esc(x.uid) + '">' + esc(x.ignoreLabel || "Ignora") + '</button></div></div></div>';
+  return h;
+}
+function vReview() {
+  const R = S.review || (S.review = { f: "all" });
+  if (!R.local) reviewRefresh();
+  const k = reviewCounts();
+  const list = reviewFiltered();
+  const nItems = [...S.items.values()].filter(i => !i.deleted).length;
+  let h = '<div class="wrap stack">';
+  h += topBar("Revisione", "Ultimo controllo: " + (R.at ? new Date(R.at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "—") + " · " + nItems + " pezzi", '<button type="button" class="iconbtn" data-act="revRefresh" aria-label="Ripeti il controllo">' + ic("refresh", 21) + '</button>');
+  const box = (n, l, col) => '<div class="card pad" style="padding:12px"><div style="font-size:22px;font-weight:700;color:' + col + '">' + n + '</div><div class="small muted">' + l + '</div></div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:-6px">' + box(k.err, "Errori", "var(--down)") + box(k.warn, "Da controllare", "#7A5A00") + box(k.tip, "Suggerimenti", "var(--acc)") + '</div>';
+  // livelli
+  const cs = R.cat || lsGet("col.revCat", null);
+  h += '<div class="card pad stack" style="gap:10px">';
+  h += '<div class="between small"><span class="muted">Controllo di coerenza</span><span class="b up">Fatto</span></div>';
+  if (S.env === "pwa") {
+    h += '<div class="between small"><span class="muted">Confronto con i cataloghi</span>' + (R.catBusy ? '<span class="b muted" id="revCatMsg">' + esc(R.catMsg || "In corso…") + '</span>' : (R.cat ? '<span class="row" style="gap:8px"><span class="b up">Fatto · ' + cs.nCards + ' carte, ' + cs.nBooks + ' libri</span><button type="button" class="btn sm" data-act="revCatalog">Ripeti</button></span>' : '<button type="button" class="btn sm" data-act="revCatalog">Avvia</button>')) + '</div>';
+    h += '<div class="between small"><span class="muted">Verifica con Claude</span><button type="button" class="btn sm" data-act="revToArtifact">' + ic("copy", 16) + 'Apri l\'artifact</button></div>';
+    h += '<div class="xs muted" id="revPackMsg">' + esc(R.packMsg || "") + '</div>';
+  } else {
+    h += '<div class="between small"><span class="muted">Confronto con i cataloghi</span><span class="b muted">Solo nell\'app</span></div>';
+    h += '<div class="between small"><span class="muted">Verifica con Claude</span><button type="button" class="btn sm acc" data-act="revAi">Apri</button></div>';
+  }
+  h += '</div>';
+  // filtri
+  const chip = (v, l) => '<button type="button" class="chip' + ((R.f || "all") === v ? " on" : "") + '" data-act="revF" data-v="' + v + '">' + l + '</button>';
+  const cats = [...new Set(reviewAll().filter(x => x.catId).map(x => x.catId))].map(cat).filter(Boolean);
+  h += '<div class="chips">' + chip("all", "Tutte · " + k.all) + chip("err", "Errori") + chip("warn", "Da controllare") + chip("tip", "Suggerimenti") + '</div>';
+  if (cats.length > 1) h += '<select class="in" data-change="revCat" aria-label="Categoria"><option value="">Tutte le categorie</option>' + cats.map(c => '<option value="' + esc(c.id) + '"' + (R.cat_f === c.id ? " selected" : "") + '>' + esc(c.name) + '</option>').join("") + '</select>';
+  if (!list.length) h += '<div class="card pad empty">' + (k.all ? "Nessuna segnalazione con questi filtri." : "Nessun problema trovato: i dati sono coerenti.") + '</div>';
+  ["err", "warn", "tip"].forEach(sev => {
+    const part = list.filter(x => x.sev === sev);
+    if (!part.length) return;
+    const lim = (R.lim && R.lim[sev]) || 20;
+    h += '<div class="sect">' + REV_SEV[sev].sect + ' · ' + part.length + '</div><div class="card">';
+    part.slice(0, lim).forEach((x, j) => { h += revRow(x, j === 0); });
+    if (part.length > lim) h += '<button type="button" class="li b" style="border-top:1px solid var(--line2);color:var(--acc);font-size:13px" data-act="revMore" data-v="' + sev + '">Mostra altre ' + (part.length - lim) + '</button>';
+    h += '</div>';
+  });
+  h += '<div class="xs muted" style="text-align:center">Le segnalazioni ignorate non tornano ai controlli successivi.</div></div>';
+  return h;
+}
+function vReviewItem() {
+  const all = reviewAll();
+  const x = all.find(y => y.uid === S.view.uid);
+  if (!x) return '<div class="wrap">' + topBar("Segnalazione") + '<div class="card pad empty">Segnalazione risolta.</div></div>';
+  const it = S.items.get(x.itemId); const c = cat(x.catId);
+  const list = S.view.list || [];
+  const pos = list.indexOf(x.uid);
+  let h = '<div class="wrap stack">';
+  h += topBar(it.name || "Senza nome", pos >= 0 ? "Segnalazione " + (pos + 1) + " di " + list.length : "", revBadge(x.sev));
+  const img = (it.photos || []).length ? photoSrc(it.photos[0]) : remoteImg(it);
+  const sub = [c ? c.name : "", ...(c ? c.fields.slice(0, 3).map(f => fv(it, f.k)).filter(v => v !== "" && v != null) : [])].join(" · ");
+  h += '<button type="button" class="card li" style="margin-top:-6px" data-act="openItem" data-id="' + esc(it.id) + '"><span style="width:56px;height:76px;border-radius:8px;background:#E9ECE9;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center" class="xs muted">' + (img ? '<img src="' + esc(img) + '" alt="" style="width:100%;height:100%;object-fit:cover">' : "Foto") + '</span><span class="grow"><span class="b" style="display:block">' + esc(it.name || "") + '</span><span class="small muted" style="display:block">' + esc(sub) + '</span><span class="small muted" style="display:block">' + esc([it.cond, it.qty > 1 ? "qtà " + it.qty : ""].filter(Boolean).join(" · ")) + '</span></span><span class="muted">' + ic("right", 16, 2) + '</span></button>';
+  h += '<div class="notice' + (x.sev === "tip" ? "" : " warn") + '">' + esc(x.text) + '</div>';
+  if (x.cmp) {
+    h += '<div class="sect">Confronto</div><div class="card"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 14px" class="xs b muted"><span>Campo</span><span>Nella scheda</span><span>' + esc(x.srcName ? "In " + x.srcName : "Nel catalogo") + '</span></div>';
+    x.cmp.forEach(r => { const diff = normTxt(r[1]) !== normTxt(r[2]); h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:11px 14px;font-size:14px;border-top:1px solid var(--line2)' + (diff ? ";background:#FDF7F3" : "") + '"><span class="muted">' + esc(r[0]) + '</span><span' + (diff ? ' class="b down"' : "") + '>' + esc(r[1]) + '</span><span' + (diff ? ' class="b up"' : "") + '>' + esc(r[2]) + '</span></div>'; });
+    h += '</div>';
+  }
+  if (x.info) { h += '<div class="card pad">' + x.info.map(r => '<div class="kv"><span>' + esc(r[0]) + '</span><span>' + esc(r[1]) + '</span></div>').join("") + (x.note ? '<div class="small muted" style="padding-top:6px">' + esc(x.note) + '</div>' : "") + '</div>'; }
+  if (x.dupIds) { h += '<div class="sect">Schede uguali</div><div class="card list">' + x.dupIds.map(id => { const d = S.items.get(id); return d ? itemRow(d, c) : ""; }).join("") + '</div>'; }
+  h += '<div class="stack" style="gap:10px">';
+  if (x.fix) h += '<button type="button" class="btn acc full" data-act="revApply" data-v="' + esc(x.uid) + '">' + ic("check", 18, 2) + esc(x.fix.label || "Applica correzione") + '</button>';
+  const isBuy = x.key === "buyhigh" || x.key === "buylow";
+  h += '<div class="grid2"><button type="button" class="btn" data-act="editItem" data-id="' + esc(it.id) + '">Modifica scheda</button><button type="button" class="btn" style="color:var(--muted)" data-act="revIgnore" data-v="' + esc(x.uid) + '">' + esc(x.ignoreLabel || (isBuy ? "È corretto" : "Ignora")) + '</button></div>';
+  if (isBuy && S.env === "artifact") h += '<button type="button" class="btn" data-act="quoteOne" data-id="' + esc(it.id) + '">' + ic("refresh", 18) + 'Riquota</button>';
+  h += '</div>';
+  if (list.length > 1) h += '<div class="between"><button type="button" class="btn sm" style="border:none;background:none;color:var(--muted)" data-act="revNav" data-v="-1">Precedente</button><button type="button" class="btn sm" style="border:none;background:none;color:var(--acc)" data-act="revNav" data-v="1">Successiva</button></div>';
+  h += '</div>';
+  return h;
+}
+function vReviewList() {
+  const ids = S.view.ids || [];
+  const items = ids.map(id => S.items.get(id)).filter(i => i && !i.deleted);
+  let h = '<div class="wrap stack">' + topBar(S.view.title || "Pezzi", items.length + " pezzi");
+  h += '<div class="card list" style="margin-top:-6px">' + items.slice(0, S.view.lim || 100).map(i => itemRow(i, cat(i.catId), true)).join("") + '</div>';
+  if (items.length > (S.view.lim || 100)) h += '<button type="button" class="btn" data-act="revListMore">Mostra altri</button>';
+  return h + '</div>';
+}
+
+/* --- livello 3: verifica con Claude (solo artifact) --- */
+function raiCandidates() {
+  const r = S.rai;
+  let list;
+  if (r.mode === "app") list = (r.appIds || []).map(id => S.items.get(id));
+  else if (r.mode === "flagged") { const ids = new Set(reviewAll().filter(x => x.itemId).flatMap(x => x.dupIds || [x.itemId])); list = [...ids].map(id => S.items.get(id)); }
+  else if (r.mode === "never") list = [...S.items.values()].filter(i => !i.reviewedAt);
+  else list = [...r.sel].map(id => S.items.get(id));
+  list = list.filter(i => i && !i.deleted && cat(i.catId));
+  if (r.mode !== "app" && r.mode !== "manual" && r.catId) list = list.filter(i => i.catId === r.catId);
+  return list;
+}
+function raiLotSize() { return S.rai.web ? 3 : 6; }
+function vReviewAi() {
+  const r = S.rai || (S.rai = { mode: "flagged", catId: "", web: false, sel: new Set(), step: "pick", results: [] });
+  let h = '<div class="wrap stack">' + topBar("Verifica con Claude", "Controlla foto e dati di un gruppo di pezzi");
+  if (S.env === "pwa") return h + '<div class="card pad stack"><div class="small muted">La verifica con Claude funziona solo nell\'artifact. Dalla schermata Revisione tocca "Apri l\'artifact": i pezzi da controllare vengono copiati e li ricevi di là.</div></div></div>';
+  if (r.awaitApp) {
+    h += '<div class="card pad stack" style="margin-top:-6px;border-color:var(--acc)"><h2 style="font-size:16px">Pezzi dall\'app</h2><div class="small muted">L\'app ha copiato i pezzi da verificare. Tocca qui sotto per riceverli.</div><button type="button" class="btn acc" data-act="raiReceive">' + ic("download", 18) + 'Ricevi dall\'app</button><div class="xs muted" id="raiMsg"></div></div>';
+  }
+  if (r.step === "run") {
+    h += '<div class="card pad stack"><div class="b">' + esc(r.msg || "Verifica in corso") + '</div><div class="progress"><div style="width:' + (r.pct || 5) + '%"></div></div><div class="xs muted" id="raiStatus">' + esc(r.status || "") + '</div><button type="button" class="btn" data-act="raiStop">Interrompi</button></div></div>';
+    return h;
+  }
+  if (r.step === "done") return h + raiResultsHtml() + '</div>';
+  const seg = (v, l) => '<button type="button" class="' + (r.mode === v ? "on" : "") + '" data-act="raiMode" data-v="' + v + '">' + l + '</button>';
+  h += '<div class="sect">Quali pezzi</div><div class="seg" style="grid-template-columns:repeat(' + (r.appIds ? 4 : 3) + ',minmax(0,1fr))">' + (r.appIds ? seg("app", "Dall'app") : "") + seg("flagged", "Segnalati") + seg("never", "Mai verificati") + seg("manual", "Scelti a mano") + '</div>';
+  if (r.mode !== "app") {
+    h += '<label class="f"><span>Categoria</span><select class="in" data-change="raiCat"><option value="">' + (r.mode === "manual" ? "Scegli una categoria" : "Tutte le categorie") + '</option>' + S.config.cats.map(c => '<option value="' + esc(c.id) + '"' + (r.catId === c.id ? " selected" : "") + '>' + esc(c.name) + '</option>').join("") + '</select></label>';
+  }
+  if (r.mode === "manual" && r.catId) {
+    const its = catItems(r.catId).sort((a, b) => String(a.name).localeCompare(String(b.name), "it"));
+    h += '<div class="card list" style="max-height:360px;overflow:auto">' + (its.length ? its.map(i => '<label class="li" style="cursor:pointer"><input type="checkbox" data-change="raiSel" data-id="' + esc(i.id) + '"' + (r.sel.has(i.id) ? " checked" : "") + ' style="width:20px;height:20px;accent-color:var(--acc)"><span class="grow ellip">' + esc(i.name || "Senza nome") + '</span>' + (i.reviewedAt ? '<span class="xs muted">verificato ' + fmtDate(i.reviewedAt) + '</span>' : "") + '</label>').join("") : '<div class="empty small">Nessun pezzo</div>') + '</div>';
+  }
+  h += '<div class="card pad between"><label for="rai_web" class="grow" style="display:flex;flex-direction:column"><span class="b">Cerca anche sul web</span><span class="small muted">Più preciso, usa più messaggi</span></label><input id="rai_web" type="checkbox" data-change="raiWeb"' + (r.web ? " checked" : "") + ' style="width:22px;height:22px;accent-color:var(--acc)"></div>';
+  const cand = raiCandidates();
+  const n = Math.min(cand.length, RAI_MAX);
+  const lots = Math.ceil(n / raiLotSize());
+  h += '<div class="notice stack" style="gap:4px"><div class="b">' + n + ' pezzi · ' + lots + (lots === 1 ? " lotto" : " lotti") + '</div><div>Consumo stimato: ' + (lots <= 1 ? "basso (un solo messaggio a Claude)" : lots <= 4 ? "medio (" + lots + " messaggi a Claude)" : "alto (" + lots + " messaggi a Claude)") + '. ' + (cand.length > RAI_MAX ? "Si controllano i primi " + RAI_MAX + " pezzi per volta. " : "") + 'I pezzi controllati ricevono la data "verificato il".</div></div>';
+  h += '<button type="button" class="btn pri" data-act="raiRun"' + (n ? "" : " disabled") + '>Avvia verifica</button>';
+  if (r.results.length) h += '<button type="button" class="btn sm" data-act="raiShow">Vedi l\'ultimo risultato</button>';
+  return h + '</div>';
+}
+function raiResultsHtml() {
+  const r = S.rai;
+  const lab = { ok: ["Plausibile", ""], controlla: ["Da controllare", "amber"], non_verificabile: ["Non verificabile", "grey"] };
+  const shown = r.results.filter(x => !x.hidden && S.items.get(x.id));
+  const bad = shown.filter(x => x.esito !== "ok");
+  const ok = shown.filter(x => x.esito === "ok");
+  let h = '<div class="sect">Risultato · ' + r.results.length + ' pezzi</div><div class="card">';
+  const row = (x, first) => {
+    const it = S.items.get(x.id); const c = cat(it.catId); const L = lab[x.esito] || lab.non_verificabile;
+    let s = '<div class="stack" style="gap:6px;padding:12px 14px' + (first ? "" : ";border-top:1px solid var(--line2)") + '"><div class="between" style="align-items:flex-start"><span class="b">' + esc(it.name || "Senza nome") + '</span><span class="badge ' + L[1] + '">' + L[0] + '</span></div><div class="small muted">' + esc(x.nota || "") + '</div>';
+    const corr = Object.entries(x.corr || {}).filter(([k, v]) => { const cur = k === "nome" ? it.name : fv(it, k); return v !== "" && v != null && String(cur == null ? "" : cur) !== String(v); });
+    if (corr.length || x.esito !== "ok") {
+      s += '<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:4px">';
+      corr.forEach(([k, v]) => { const f = c.fields.find(y => y.k === k); s += '<button type="button" class="btn sm acc" data-act="raiFix" data-id="' + esc(x.id) + '" data-v="' + esc(k) + '">' + esc((k === "nome" ? "Nome" : f ? f.label : k) + ": " + v) + '</button>'; });
+      s += '<button type="button" class="btn sm" data-act="openItem" data-id="' + esc(x.id) + '">Apri</button><button type="button" class="btn sm" style="border-color:transparent;background:none;color:var(--muted)" data-act="raiHide" data-id="' + esc(x.id) + '">Ignora</button></div>';
+    }
+    return s + '</div>';
+  };
+  bad.forEach((x, j) => { h += row(x, j === 0); });
+  if (ok.length) {
+    if (r.showOk) ok.forEach((x, j) => { h += row(x, !bad.length && j === 0); });
+    else h += '<button type="button" class="li b" style="' + (bad.length ? "border-top:1px solid var(--line2);" : "") + 'color:var(--acc);font-size:13px" data-act="raiShowOk">' + (ok.length === 1 ? "1 plausibile" : ok.length + " plausibili") + '</button>';
+  }
+  if (!shown.length) h += '<div class="empty small">Nessun risultato da mostrare.</div>';
+  h += '</div>';
+  if (r.fromApp) h += '<div class="card pad stack"><h2 style="font-size:16px">Riporta nell\'app</h2><div class="small muted">Copia i risultati e le correzioni, poi nell\'app tocca "Ricevi da Claude".</div><div class="grid2"><button type="button" class="btn pri" data-act="sendCopy">' + ic("copy", 18) + 'Copia per l\'app</button><a class="btn" href="' + APP_URL + '" target="_blank" rel="noopener">Apri l\'app</a></div><div id="sendMsg" class="xs muted"></div></div>';
+  h += '<button type="button" class="btn" data-act="raiAgain">Nuova verifica</button>';
+  return h;
+}
+function raiPrompt(batch, web, photoOf) {
+  const data = batch.map(it => {
+    const c = cat(it.catId);
+    const det = {};
+    c.fields.forEach(f => { const v = fv(it, f.k); if (v !== undefined && v !== null && v !== "") det[f.k] = v; });
+    return { id: it.id, categoria: c.name, nome: it.name, stato: it.cond || "", quantita: it.qty, campi: det, foto: photoOf[it.id] || null };
+  });
+  const keys = {};
+  batch.forEach(it => { const c = cat(it.catId); keys[c.name] = c.fields.map(f => f.k + (f.options.length ? " (" + f.options.join(" | ") + ")" : "")).join(", "); });
+  return "Sei un perito di oggetti da collezione. Controlla se i dati di questi pezzi sono veri e coerenti, tra loro e con le foto quando ci sono (il campo foto indica il numero dell'immagine allegata, nell'ordine). Oggi è il " + today() + ".\n" +
+    "Cerca errori concreti: produttori, denominazioni, distillerie o vitigni che non corrispondono; annate o anni impossibili; nominale, metallo, autorità o zecca incoerenti per le monete; numeri di catalogo che non corrispondono all'emissione per i francobolli; set, numero o rarità sbagliati per le carte; autore, editore o anno sbagliati per libri e manga; dati diversi da quello che si legge in foto. Non segnalare i campi vuoti e non chiedere altre informazioni.\n" +
+    (web ? "Puoi usare la ricerca web, al massimo 2 ricerche per pezzo, solo quando serve a confermare un dubbio.\n" : "Non hai accesso al web: basati sulle tue conoscenze e sulle foto; se non sei sicuro usa esito non_verificabile.\n") +
+    "Campi disponibili per categoria (chiave e, tra parentesi, i valori ammessi):\n" + JSON.stringify(keys) + "\nPezzi:\n" + JSON.stringify(data) + "\n" +
+    'Rispondi solo con un array JSON, un oggetto per pezzo con lo stesso id: [{"id":"...","esito":"ok|controlla|non_verificabile","nota":"spiegazione breve, max 30 parole, in italiano","correzioni":{"chiave_campo":"valore corretto"}}]. In correzioni metti solo valori di cui sei sicuro, con le chiavi dei campi indicate (usa "nome" per il nome); per i campi a scelta usa uno dei valori ammessi. Se è tutto plausibile, esito ok e correzioni vuote.';
+}
+async function raiRun() {
+  const r = S.rai;
+  const list = raiCandidates().slice(0, RAI_MAX);
+  if (!list.length) return;
+  let lim = null;
+  try { lim = await S.sample.limits(); } catch (e) { }
+  const maxImg = lim && lim.images ? Math.max(1, lim.images.maxCount || 1) : 0;
+  r.step = "run"; r.pct = 5; r.msg = "Preparo i pezzi"; r.status = ""; r.results = []; r.showOk = false; render();
+  r.ctl = new AbortController();
+  let tools = null;
+  if (r.web) { const st = await getSearchTools(t => { r.status = t; const el = $("raiStatus"); if (el) el.textContent = t; }); if (st.status === "ok") tools = st.tools; else toast(webStatusMsg(st.status) || "Ricerca web non disponibile: verifico senza.", 5000); }
+  const size = raiLotSize();
+  const lots = [];
+  for (let i = 0; i < list.length; i += size) lots.push(list.slice(i, i + size));
+  try {
+    for (let b = 0; b < lots.length; b++) {
+      if (r.ctl.signal.aborted) break;
+      const lot = lots[b];
+      r.msg = lots.length > 1 ? "Lotto " + (b + 1) + " di " + lots.length : "Verifica in corso"; r.pct = 10 + Math.round(b / lots.length * 85); render();
+      const images = []; const photoOf = {};
+      for (const it of lot) {
+        if (images.length >= maxImg) break;
+        const pid = (it.photos || [])[0];
+        if (!pid) continue;
+        try { const bl = await getPhotoBlob(pid); if (bl) { images.push(await compressImage(bl, 900, 0.8)); photoOf[it.id] = images.length; } } catch (e) { }
+      }
+      const so = { signal: r.ctl.signal, cache: false };
+      if (images.length) so.images = images;
+      if (tools) so.tools = tools;
+      let arr = [];
+      try { const out = await S.sample.json(raiPrompt(lot, !!tools, photoOf), so); arr = Array.isArray(out) ? out : []; }
+      catch (e) { if (e && e.code === "cancelled") break; toast(sampleErr(e), 5000); if (e && ["not_granted", "sampling_disabled", "rate_limited", "session_expired"].includes(e.code)) break; continue; }
+      const upd = [];
+      arr.forEach(o => {
+        const it = o && lot.find(x => x.id === o.id); if (!it) return;
+        const esito = ["ok", "controlla", "non_verificabile"].includes(o.esito) ? o.esito : "non_verificabile";
+        const c = cat(it.catId);
+        const corr = {};
+        Object.entries(o.correzioni || {}).forEach(([k, v]) => {
+          if (v == null || v === "") return;
+          if (k === "nome") { corr.nome = String(v).slice(0, 160); return; }
+          const f = c.fields.find(y => y.k === k); if (!f) return;
+          if (f.type === "select" && f.options.length && !f.options.includes(String(v))) return;
+          corr[k] = f.type === "number" ? (parseNum(String(v)) ?? null) : f.type === "bool" ? !!v : String(v).slice(0, 200);
+          if (corr[k] == null) delete corr[k];
+        });
+        const res = { id: it.id, esito, nota: String(o.nota || "").slice(0, 300), corr };
+        r.results.push(res);
+        const n = Object.assign({}, it, { reviewedAt: today(), reviewRes: esito, reviewNote: res.nota });
+        upd.push(n);
+      });
+      if (upd.length) { try { await saveItems(upd); } catch (e) { } }
+    }
+  } finally {
+    r.step = r.results.length ? "done" : "pick";
+    if (!r.results.length) toast("Nessun risultato dalla verifica.", 4000);
+    reviewRefresh(true);
+    render(); window.scrollTo(0, 0);
+  }
+}
+async function raiFix(id, k) {
+  const x = S.rai.results.find(y => y.id === id); if (!x) return;
+  const it = Object.assign({}, S.items.get(id));
+  const v = x.corr[k];
+  if (k === "nome") it.name = v; else it.fields = Object.assign({}, it.fields || {}, { [k]: v });
+  try { await saveItem(it); delete x.corr[k]; if (!Object.keys(x.corr).length && x.esito === "controlla") x.esito = "ok"; toast("Corretto"); render(); } catch (e) { toast(dbErr(e), 4500); }
+}
+async function raiReceive() {
+  const msg = $("raiMsg");
+  let text = "";
+  try { text = await navigator.clipboard.readText(); } catch (e) { if (msg) msg.textContent = "Non riesco a leggere gli appunti: consenti l'accesso quando il browser lo chiede."; return; }
+  let data = null; try { data = JSON.parse(text); } catch (e) { }
+  if (!data || data.app !== "collezioni" || !data.review) { if (msg) msg.textContent = "Negli appunti non ci sono pezzi da verificare. Nell'app tocca di nuovo \"Apri l'artifact\" dalla Revisione."; return; }
+  analyzeImport(text, "dall'app");
+  if (S.imp && S.imp.toWrite.length) await importApply(); else S.imp = null;
+  const r = S.rai;
+  r.appIds = (data.ids || []).filter(id => S.items.get(id));
+  r.mode = "app"; r.awaitApp = false; r.fromApp = true; r.step = "pick";
+  S.view = { name: "reviewAi" };
+  toast(r.appIds.length + " pezzi ricevuti dall'app");
+  render();
+}
+
+/* --- app → artifact: pacchetto preparato in anticipo (la copia deve avvenire subito dopo il tocco) --- */
+function reviewPackIds() {
+  const flagged = new Set(reviewAll().filter(x => x.itemId && x.sev !== "tip").flatMap(x => x.dupIds || [x.itemId]));
+  const never = [...S.items.values()].filter(i => !i.deleted && !i.reviewedAt && !flagged.has(i.id) && (i.photos || []).length).map(i => i.id);
+  return [...flagged, ...never].slice(0, RAI_MAX);
+}
+function reviewPrepPack() {
+  if (S.env !== "pwa") return;
+  const R = S.review || (S.review = {});
+  const ids = reviewPackIds();
+  const key = ids.join(",");
+  if (R.pack && R.pack.key === key) return R.pack.promise;
+  const pack = { key, text: null, n: ids.length };
+  pack.promise = (async () => {
+    const items = ids.map(id => { const i = S.items.get(id); const o = cleanItem(i); o.id = i.id; o.catId = i.catId; return o; });
+    const photos = {}; let size = 0;
+    for (const it of items) { const p = (it.photos || [])[0]; if (!p || photos[p] || size > 450000) continue; const d = await smallPhoto(p); if (d) { photos[p] = d; size += d.length; } }
+    items.forEach(it => { it.photos = (it.photos || []).filter(p => photos[p]); });
+    pack.text = JSON.stringify({ app: "collezioni", schema: 1, source: "pwa", kind: "delta", review: true, ids, exportedAt: nowIso(), config: S.config, items, photos });
+    return pack;
+  })();
+  R.pack = pack;
+  return pack.promise;
+}
+async function reviewToArtifact(btn) {
+  const R = S.review || (S.review = {});
+  const pack = R.pack;
+  const say = t => { R.packMsg = t; const el = $("revPackMsg"); if (el) el.textContent = t; };
+  const open = () => { S.awaitReturn = true; lsSet("col.await", true); const url = ARTIFACT_URL + "#review"; const w = window.open(url, "_blank", "noopener"); if (!w) location.href = url; };
+  if (pack && pack.text) {
+    if (!pack.n) { say("Nessun pezzo da verificare: niente segnalazioni e tutto già verificato. Apro comunque l'artifact."); open(); return; }
+    try { await navigator.clipboard.writeText(pack.text); say(pack.n + " pezzi copiati: nell'artifact tocca \"Ricevi dall'app\"."); open(); return; } catch (e) { }
+  }
+  say("Preparo i pezzi da verificare…");
+  if (btn) btn.disabled = true;
+  await reviewPrepPack();
+  if (btn) { btn.disabled = false; btn.classList.add("acc"); btn.innerHTML = ic("copy", 16) + "Copia e apri"; }
+  say("Pronto: tocca di nuovo per copiare e aprire l'artifact.");
+}
+
 /* ================= Report PDF ================= */
 function loadScript(src) {
   return new Promise((res, rej) => { if (window.jspdf) return res(); const s = document.createElement("script"); s.src = src; s.onload = () => res(); s.onerror = () => rej(new Error("script")); document.head.appendChild(s); });
@@ -2061,6 +2598,29 @@ document.addEventListener("click", async ev => {
     case "cardPrices": await cardPrices(id || null); break;
     case "linkNow": { toast("Collego le carte al catalogo…", 30000); try { const r = await linkCatalog(id, (i, n) => toast("Collego: " + (i + 1) + " di " + n, 30000)); toast(r.linked + " carte collegate" + (r.failed.length ? "; non trovate: " + r.failed.slice(0, 3).join(", ") + (r.failed.length > 3 ? "…" : "") : ""), 7000); } catch (e) { toast("Non riesco a raggiungere il catalogo."); } render(); break; }
     case "cardPriceOne": await cardPriceOne(id); break;
+    case "review": S.review = Object.assign(S.review || {}, { f: "all", cat_f: "", lim: {} }); reviewRefresh(); go({ name: "review" }); break;
+    case "revRefresh": reviewRefresh(); toast("Controllo ripetuto"); render(); break;
+    case "revF": S.review.f = v; render(); break;
+    case "revMore": S.review.lim[v] = ((S.review.lim[v]) || 20) + 50; render(); break;
+    case "revApply": await reviewApply(v); break;
+    case "revIgnore": await reviewIgnore(v); break;
+    case "revOpen": go({ name: "reviewItem", uid: v, list: reviewFiltered().filter(x => !x.agg).map(x => x.uid) }); break;
+    case "revNav": { const L = S.view.list || []; const j = L.indexOf(S.view.uid) + parseInt(v, 10); if (j >= 0 && j < L.length) { S.view.uid = L[j]; render(); window.scrollTo(0, 0); } break; }
+    case "reviewList": { const x = reviewAll().find(y => y.uid === v); if (x) go({ name: "reviewList", ids: x.ids, title: x.title }); break; }
+    case "revListMore": S.view.lim = (S.view.lim || 100) + 200; render(); break;
+    case "reviewLink": await linkAll(false); reviewRefresh(); render(); break;
+    case "revCatalog": await reviewCatalog(); break;
+    case "revToArtifact": await reviewToArtifact(el); break;
+    case "revAi": if (!S.rai) S.rai = { mode: "flagged", catId: "", web: false, sel: new Set(), step: "pick", results: [] }; go({ name: "reviewAi" }); break;
+    case "raiMode": S.rai.mode = v; if (v === "manual") S.rai.sel = new Set(); render(); break;
+    case "raiRun": await raiRun(); break;
+    case "raiStop": if (S.rai.ctl) S.rai.ctl.abort(); break;
+    case "raiFix": await raiFix(id, v); break;
+    case "raiHide": { const x = S.rai.results.find(y => y.id === id); if (x) x.hidden = true; render(); break; }
+    case "raiShowOk": S.rai.showOk = true; render(); break;
+    case "raiShow": S.rai.step = "done"; render(); break;
+    case "raiAgain": S.rai.step = "pick"; render(); window.scrollTo(0, 0); break;
+    case "raiReceive": await raiReceive(); break;
     case "pick": {
       if (id === "item") readDraftForm();
       if (id === "scan" && S.scan) readScanForm();
@@ -2070,7 +2630,7 @@ document.addEventListener("click", async ev => {
       inp.click();
       break;
     }
-    case "back": if (S.view.name === "scan") { if (S.scan && S.scan.ctl) S.scan.ctl.abort(); scanCleanup(); } if (S.view.name === "quote" && S.quote && S.quote.ctl) S.quote.ctl.abort(); back(); break;
+    case "back": if (S.view.name === "reviewAi" && S.rai && S.rai.ctl) S.rai.ctl.abort(); if (S.view.name === "scan") { if (S.scan && S.scan.ctl) S.scan.ctl.abort(); scanCleanup(); } if (S.view.name === "quote" && S.quote && S.quote.ctl) S.quote.ctl.abort(); back(); break;
     case "toggleGroup": S.open[id] = !S.open[id]; lsSet("col.open", S.open); render(); break;
     case "openCat": go({ name: "cat", id }); break;
     case "openItem": go({ name: "item", id }); break;
@@ -2164,6 +2724,10 @@ document.addEventListener("change", async ev => {
   const i = el.dataset.i != null ? parseInt(el.dataset.i, 10) : null;
   switch (a) {
     case "catSort": S.catState[el.dataset.id].sort = el.value; render(); break;
+    case "revCat": S.review.cat_f = el.value; render(); break;
+    case "raiCat": S.rai.catId = el.value; if (S.rai.mode === "manual") S.rai.sel = new Set(); render(); break;
+    case "raiSel": if (el.checked) S.rai.sel.add(el.dataset.id); else S.rai.sel.delete(el.dataset.id); { const sc = el.closest(".card"); const top = sc ? sc.scrollTop : 0; render(); const nc = document.querySelector('[data-change="raiSel"]'); if (nc) nc.closest(".card").scrollTop = top; } break;
+    case "raiWeb": S.rai.web = el.checked; render(); break;
     case "histYear": S.histState.year = el.value; render(); break;
     case "draftCat": readDraftForm(); S.draft.catId = el.value; render(); break;
     case "picked": {
