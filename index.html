@@ -237,6 +237,7 @@ async function boot() {
     if (first && String(location.hash || "") === "#scan" && S.config && S.config.cats.length) { S.fromApp = true; S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; S.stack = [{ name: "home" }]; S.view = { name: "scan" }; render(); return; }
     softRender();
   }, err => { clearTimeout(slowT); S.loadErr = "Non riesco a leggere l'archivio (" + err.code + ")."; render(); });
+  subHistory();
 }
 
 function normConfig(c) {
@@ -256,7 +257,9 @@ function syncSubs() {
       const m = {};
       snap.docs.forEach(d => { m[d.id] = d.data(); });
       S.chunks[id] = m;
+      S.loadedCats = S.loadedCats || new Set(); S.loadedCats.add(id);
       rebuildItems(id);
+      scheduleSnapshot();
       softRender();
     }, err => { toast("Errore nel leggere una categoria (" + err.code + ")"); });
   }
@@ -277,6 +280,72 @@ function rebuildItems(catId) {
 }
 
 function softRender() { if (FORM_VIEWS.has(S.view.name)) { S.dirty = true; return; } render(); }
+
+/* ================= Storico del valore ================= */
+function subHistory() {
+  S.hist = S.hist || {};
+  S.db.doc("stats/history").onSnapshot(snap => {
+    S.histExists = snap.exists;
+    S.hist = (snap.exists && snap.data().days) || {};
+    S.histLoaded = true;
+    scheduleSnapshot();
+    softRender();
+  }, () => { S.histLoaded = true; });
+}
+function currentTotals() {
+  const c = {}; let t = 0, n = 0;
+  for (const it of S.items.values()) {
+    if (it.deleted || it.status !== "in") continue;
+    const v = itemTotal(it); c[it.catId] = Math.round(((c[it.catId] || 0) + v) * 100) / 100; t += v; n += Number(it.qty) || 0;
+  }
+  return { t: Math.round(t * 100) / 100, n, c };
+}
+function scheduleSnapshot() { clearTimeout(S._snapT); S._snapT = setTimeout(takeSnapshot, 4000); }
+async function takeSnapshot() {
+  if (!S.histLoaded || !S.config || !S.config.cats.length) return;
+  const loaded = S.loadedCats || new Set();
+  if (S.config.cats.some(c => !loaded.has(c.id))) return;
+  const cur = currentTotals();
+  if (!cur.n) return;
+  const d = today();
+  const prev = S.hist[d];
+  if (prev && prev.t === cur.t && prev.n === cur.n && JSON.stringify(prev.c || {}) === JSON.stringify(cur.c)) return;
+  try {
+    await enqueue(async () => {
+      const ref = S.db.doc("stats/history");
+      if (S.histExists) await ref.update({ days: { [d]: cur } }); else { await ref.set({ days: { [d]: cur } }); S.histExists = true; }
+    });
+    S.hist[d] = cur;
+  } catch (e) { }
+}
+function histSeries(catId, period) {
+  const days = Object.keys(S.hist || {}).sort();
+  const from = period === "all" ? "" : new Date(Date.now() - ({ "1m": 31, "6m": 183, "1y": 366 }[period] || 31) * 864e5).toISOString().slice(0, 10);
+  return days.filter(d => d >= from).map(d => ({ d, v: catId ? ((S.hist[d].c || {})[catId] || 0) : S.hist[d].t })).filter(p => p.v != null);
+}
+function valueChart(pts, h) {
+  h = h || 120;
+  if (pts.length < 2) return '<div class="xs muted" style="padding:8px 0">Il grafico si riempie giorno dopo giorno: ogni giorno in cui apri l\'app o aggiorni i prezzi viene salvato il valore.</div>';
+  const vs = pts.map(p => p.v), mn = Math.min(...vs), mx = Math.max(...vs), rg = (mx - mn) || Math.max(1, mx * 0.05);
+  const t0 = new Date(pts[0].d).getTime(), t1 = new Date(pts[pts.length - 1].d).getTime(), tr = (t1 - t0) || 1;
+  const X = p => ((new Date(p.d).getTime() - t0) / tr * 300).toFixed(1), Y = v => (h - 14 - (v - mn) / rg * (h - 28)).toFixed(1);
+  const line = pts.map((p, i) => (i ? "L" : "M") + X(p) + " " + Y(p.v)).join(" ");
+  const up = vs[vs.length - 1] >= vs[0];
+  const col = up ? "#2F5D50" : "#8F3A14";
+  return '<svg role="img" aria-label="Andamento del valore dal ' + fmtDate(pts[0].d) + ' al ' + fmtDate(pts[pts.length - 1].d) + '" viewBox="0 0 300 ' + h + '" preserveAspectRatio="none" style="width:100%;height:' + h + 'px;display:block"><path d="' + line + ' L300 ' + (h - 14) + ' L0 ' + (h - 14) + ' Z" fill="' + col + '" fill-opacity=".08"/><path d="' + line + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg><div class="between xs muted"><span>' + fmtDate(pts[0].d) + '</span><span>min ' + eur(mn) + ' · max ' + eur(mx) + '</span><span>' + fmtDate(pts[pts.length - 1].d) + '</span></div>';
+}
+function histBox(catId) {
+  const per = S.histPeriod || "1m";
+  const pts = histSeries(catId, per);
+  let h = '<div class="card pad stack" style="gap:8px">';
+  if (pts.length >= 2) {
+    const dv = pts[pts.length - 1].v - pts[0].v, pc = pts[0].v ? dv / pts[0].v * 100 : 0;
+    h += '<div class="between"><span class="small b ' + (dv >= 0 ? "up" : "down") + '">' + signedEur(dv) + ' (' + (pc >= 0 ? "+" : "−") + Math.abs(pc).toFixed(1).replace(".", ",") + '%)</span><span class="xs muted">nel periodo</span></div>';
+  }
+  h += valueChart(pts, catId ? 80 : 110);
+  h += '<div class="chips">' + [["1m", "1 mese"], ["6m", "6 mesi"], ["1y", "1 anno"], ["all", "Tutto"]].map(([k, l]) => '<button type="button" class="chip ' + (per === k ? "on" : "") + '" style="height:30px" data-act="histPeriod" data-v="' + k + '">' + l + '</button>').join("") + '</div></div>';
+  return h;
+}
 
 /* ================= Accesso dati ================= */
 function cat(id) { return S.config && S.config.cats.find(c => c.id === id); }
@@ -429,7 +498,7 @@ function vHome() {
   const lastQ = all.map(i => i.valueDate).filter(Boolean).sort().pop();
   let h = '<div class="wrap stack">';
   h += '<div class="between"><div><h1>Collezioni</h1></div><button type="button" class="iconbtn" data-act="cats" aria-label="Gestisci categorie">' + ic("settings", 22) + '</button></div>';
-  h += '<div><div class="small muted">Valore stimato totale</div><div style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + eur(tot) + '</div><div class="small muted">' + (lastQ ? "Ultima quotazione: " + fmtDate(lastQ) : "Nessuna quotazione ancora") + ' · ' + sumQty(all) + ' pezzi</div></div>';
+  h += '<div><div class="small muted">Valore stimato totale</div><div style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + eur(tot) + '</div><div class="small muted">' + (lastQ ? "Ultima quotazione: " + fmtDate(lastQ) : "Nessuna quotazione ancora") + ' · ' + sumQty(all) + ' pezzi</div></div>' + histBox(null);
   if (S.env === "pwa") {
     h += '<div class="grid2"><button type="button" class="btn pri" data-act="goArtifactScan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn" data-act="receive">' + ic("download") + 'Ricevi da Claude</button></div>';
     if (S.awaitReturn) h += '<div class="notice between"><span>Hai salvato dei pezzi nell\'artifact e premuto "Copia per l\'app"? Tocca qui per riceverli.</span><button type="button" class="btn sm" data-act="receive">Ricevi</button></div>';
@@ -493,7 +562,9 @@ function vCat(id) {
   const all = catItems(id);
   let h = '<div class="wrap stack">';
   h += topBar(c.name, sumQty(all) + " pezzi · valore " + eur(sumVal(all)), '<button type="button" class="iconbtn" style="background:var(--ink);color:#fff" data-act="newItem" data-id="' + esc(id) + '" aria-label="Aggiungi pezzo">' + ic("plus", 20, 1.8) + '</button>');
+  if (Object.keys(S.hist || {}).length > 1) h += histBox(id);
   if (S.env === "pwa" && catalogOf(id)) h += '<div class="grid2"><button type="button" class="btn pri" data-act="openSets" data-id="' + esc(id) + '">' + ic("grid", 18) + 'Set e completamento</button><button type="button" class="btn" data-act="cardPrices" data-id="' + esc(id) + '">' + ic("refresh", 18) + 'Aggiorna prezzi</button></div>';
+  if (S.env === "pwa") h += '<button type="button" class="btn" data-act="barcode" data-id="' + esc(id) + '">' + ic("filter", 18) + 'Scansiona codice a barre / ISBN</button>';
   h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="q" type="search" placeholder="Cerca in ' + esc(c.name) + '" aria-label="Cerca" value="' + esc(st.q) + '" data-input="catSearch" data-id="' + esc(id) + '"></label>';
   h += '<div class="between"><div class="chips">' + [["in", "In collezione"], ["wish", "Desideri"], ["out", "Usciti"]].map(([k, l]) => '<button type="button" class="chip ' + (st.f === k ? "on" : "") + '" data-act="catFilter" data-id="' + esc(id) + '" data-v="' + k + '">' + l + (counts[k] ? " " + counts[k] : "") + '</button>').join("") + '</div>';
   h += '<select class="in" style="width:auto;height:34px;font-size:13px;border-radius:17px" aria-label="Ordina" data-change="catSort" data-id="' + esc(id) + '">' + [["value", "Valore"], ["name", "Nome"], ["recent", "Recenti"]].map(([k, l]) => '<option value="' + k + '"' + (st.sort === k ? " selected" : "") + '>' + l + '</option>').join("") + '</select></div>';
@@ -552,6 +623,7 @@ function vItem(id) {
   if (it.remainingMl != null && it.status === "in") rows.push(["Nella bottiglia aperta", fmtCl(it.remainingMl) + " di " + fmtCl(bottleCap(it) || 700)]);
   (c ? c.fields : []).forEach(f => { const v = it.fields && it.fields[f.k]; if (v !== undefined && v !== null && v !== "") rows.push([f.label, f.type === "bool" ? (v ? "Sì" : "No") : f.type === "date" ? fmtDate(v) : v]); });
   if (it.location) rows.push(["Collocazione", it.location]);
+  if (it.barcode) rows.push(["Codice", it.barcode]);
   if (it.buyDate || it.buyFrom) rows.push(["Acquistato", [it.buyFrom, it.buyDate ? fmtDate(it.buyDate) : ""].filter(Boolean).join(" · ")]);
   if (it.tags) rows.push(["Tag", it.tags]);
   if (rows.length) h += '<div class="card list" style="padding:0 16px">' + rows.map(r => '<div class="kv"><span>' + esc(r[0]) + '</span><span>' + esc(r[1]) + '</span></div>').join("") + '</div>';
@@ -615,6 +687,7 @@ function vItemForm() {
   if (d.buyKind === "stimato") h += '<div class="xs muted">Il prezzo d\'acquisto attuale è stimato: se lo cambi diventa il prezzo reale.</div>';
   h += '<label class="f"><span>Acquistato da</span><input class="in" id="f_buyFrom" value="' + esc(d.buyFrom || "") + '" placeholder="Negozio, asta, privato…"></label>';
   h += '<div class="sect">Altro</div>';
+  h += '<label class="f"><span>Codice a barre / ISBN</span><input class="in" id="f_barcode" inputmode="numeric" value="' + esc(d.barcode || "") + '" placeholder="facoltativo"></label>';
   h += '<label class="f"><span>Collocazione</span><input class="in" id="f_loc" value="' + esc(d.location || "") + '" placeholder="Es. cantina, scaffale B3"></label>';
   h += '<label class="f"><span>Tag</span><input class="in" id="f_tags" value="' + esc(d.tags || "") + '" placeholder="separati da virgola"></label>';
   h += '<label class="f"><span>Note</span><textarea class="in" id="f_notes">' + esc(d.notes || "") + '</textarea></label>';
@@ -642,6 +715,7 @@ function readDraftForm() {
   d.buyDate = val("f_buyDate");
   d.buyFrom = val("f_buyFrom").trim();
   d.location = val("f_loc").trim();
+  if ($("f_barcode")) d.barcode = val("f_barcode").trim() || null;
   d.tags = val("f_tags").trim();
   d.notes = val("f_notes");
   if (c) c.fields.forEach(f => {
@@ -829,7 +903,7 @@ async function exitSave() {
   if (it.qty <= 0) { it.qty = 0; it.status = "out"; }
   try { await saveItem(it); closeModal(); toast("Registrato"); render(); } catch (err) { toast(dbErr(err), 4500); }
 }
-function closeModal() { $("modal").innerHTML = ""; S.exit = null; }
+function closeModal() { try { stopCamera(); } catch (e) { } $("modal").innerHTML = ""; S.exit = null; }
 
 /* ================= Dialogo di conferma ================= */
 function confirmBox(title, text, okLabel, danger) {
@@ -1497,6 +1571,7 @@ function vBackup() {
   if (S.env === "pwa") h0 = '<div class="card pad stack"><h2 style="font-size:16px">Ricevi da Claude</h2><div class="small muted">Nell\'artifact premi "Copia per l\'app", poi torna qui e tocca Ricevi.</div><button type="button" class="btn pri" data-act="receive">' + ic("download", 18) + 'Ricevi da Claude</button></div>';
   let h = '<div class="wrap stack"><div><h1>Backup</h1><div class="small muted" style="margin-top:4px">Scambia i dati con l\'app: ognuna fa da copia all\'altra.</div></div>' + h0;
   h += '<div class="card pad stack"><div class="between"><h2 style="font-size:16px">Esporta</h2><span class="small muted">' + all.filter(i => !i.deleted).length + ' pezzi</span></div><div class="small muted">Il file contiene categorie, pezzi, movimenti e quotazioni.</div><label class="row" style="cursor:pointer;min-height:44px"><input type="checkbox" id="exp_photos"' + (S.expPhotos !== false ? " checked" : "") + ' data-change="expPhotos" style="width:22px;height:22px;accent-color:#2F5D50"><span class="grow"><span style="display:block">Includi le foto</span><span class="xs muted">' + photoCount() + ' foto, circa ' + Math.max(1, Math.round(photoCount() * 0.25)) + ' MB in più</span></span></label><div id="expMsg" class="small muted"></div><button type="button" class="btn pri" data-act="export">' + ic("download", 18) + 'Scarica file di backup</button><button type="button" class="btn sm" data-act="exportCopy">Copia i dati negli appunti</button></div>';
+  if (S.config && S.config.cats.length) h += vReportBox();
   h += '<div class="card pad stack"><h2 style="font-size:16px">Importa</h2>';
   const imp = S.imp;
   if (!imp) {
@@ -1602,7 +1677,7 @@ function goArtifactScan() {
 }
 function exportData() {
   const items = [...S.items.values()].map(i => { const o = cleanItem(i); o.id = i.id; o.catId = i.catId; return o; });
-  return { app: "collezioni", schema: 1, source: "artifact", exportedAt: nowIso(), config: S.config, items };
+  return { app: "collezioni", schema: 1, source: S.env || "artifact", exportedAt: nowIso(), config: S.config, items, history: S.hist || {} };
 }
 async function doExport() {
   const data = exportData();
@@ -1679,6 +1754,9 @@ async function importApply() {
     cfg.cats = mergeList(cfg.cats, imp.impCfg.cats);
     if (imp.newCats || newer || !S.config) await saveConfig(cfg);
     S.config = normConfig(cfg);
+    const ih = imp.data.history || {};
+    const missing = {}; Object.keys(ih).forEach(d => { if (!(S.hist || {})[d]) missing[d] = ih[d]; });
+    if (Object.keys(missing).length) { try { await enqueue(async () => { const ref = S.db.doc("stats/history"); if (S.histExists) await ref.update({ days: missing }); else { await ref.set({ days: missing }); S.histExists = true; } }); Object.assign(S.hist, missing); } catch (e) { } }
     const items = imp.toWrite.map(it => { const o = cleanItem(it); o.id = it.id; o.catId = it.catId; o.updatedAt = it.updatedAt || nowIso(); return o; });
     // salva preservando updatedAt del file
     const groups = {}; const counts = {};
@@ -1705,15 +1783,221 @@ async function importApply() {
   } catch (e) { toast(dbErr(e), 5000); }
 }
 
+/* ================= Report PDF ================= */
+function loadScript(src) {
+  return new Promise((res, rej) => { if (window.jspdf) return res(); const s = document.createElement("script"); s.src = src; s.onload = () => res(); s.onerror = () => rej(new Error("script")); document.head.appendChild(s); });
+}
+function pdfTxt(t) { return String(t == null ? "" : t).replace(/€/g, "EUR").replace(/[–—]/g, "-").replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/…/g, "...").replace(/[^\x20-\xFF\n]/g, ""); }
+function pdfEur(n) { if (n == null || isNaN(n)) return "-"; return new Intl.NumberFormat("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(n)) + " EUR"; }
+async function thumbData(it) {
+  try {
+    let blob = null;
+    if (it.photos && it.photos[0]) blob = await getPhotoBlob(it.photos[0]);
+    else if (S.env === "pwa" && it.imageUrl) { const r = await fetch(it.imageUrl); if (r.ok) blob = await r.blob(); }
+    if (!blob) return null;
+    const small = await compressImage(blob, 220, 0.7);
+    return await blobToDataUrl(small);
+  } catch (e) { return null; }
+}
+function vReportBox() {
+  const r = S.rep = S.rep || { cats: null, min: null, photos: true };
+  const cats = S.config ? S.config.cats : [];
+  if (!r.cats) r.cats = new Set(cats.map(c => c.id));
+  let h = '<div class="card pad stack"><h2 style="font-size:16px">Report PDF</h2><div class="small muted">Elenco della collezione con foto, valori e totali, utile per l\'assicurazione.</div>';
+  h += '<div class="chips">' + cats.map(c => '<button type="button" class="chip ' + (r.cats.has(c.id) ? "on" : "") + '" data-act="repCat" data-id="' + esc(c.id) + '" aria-pressed="' + r.cats.has(c.id) + '">' + esc(c.name) + '</button>').join("") + '</div>';
+  h += '<div class="grid2"><label class="f"><span>Solo pezzi sopra (€)</span><input class="in" id="rep_min" inputmode="decimal" value="' + esc(numIn(r.min)) + '" placeholder="tutti"></label><label class="row" style="cursor:pointer;min-height:44px;align-self:end"><input type="checkbox" id="rep_photos"' + (r.photos ? " checked" : "") + ' style="width:22px;height:22px;accent-color:#2F5D50"><span>Con foto</span></label></div>';
+  h += '<div id="repMsg" class="small muted"></div><button type="button" class="btn pri" data-act="makeReport">' + ic("download", 18) + 'Crea report PDF</button></div>';
+  return h;
+}
+async function makeReport(btn) {
+  const r = S.rep;
+  r.min = parseNum(val("rep_min")); r.photos = $("rep_photos") ? $("rep_photos").checked : true;
+  const msg = $("repMsg");
+  const say = t => { if (msg) msg.textContent = t; };
+  const cats = S.config.cats.filter(c => r.cats.has(c.id));
+  const byCat = cats.map(c => ({ c, items: catItems(c.id).filter(i => i.status === "in" && (r.min == null || (Number(i.value) || 0) >= r.min)).sort((a, b) => itemTotal(b) - itemTotal(a)) })).filter(g => g.items.length);
+  if (!byCat.length) { say("Nessun pezzo corrisponde ai filtri."); return; }
+  btn.disabled = true; say("Carico il generatore di PDF…");
+  try { await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"); }
+  catch (e) { say("Non riesco a caricare il generatore di PDF: serve la connessione."); btn.disabled = false; return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = 210, M = 14; let y = M;
+  const ink = [23, 24, 28], muted = [95, 99, 107], acc = [47, 93, 80], line = [226, 226, 220];
+  const T = (t, x, yy, o) => doc.text(pdfTxt(t), x, yy, o || {});
+  const newPage = () => { doc.addPage(); y = M; };
+  const footer = () => { const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(...muted); T("Collezioni - report del " + fmtDate(today()) + " - pagina " + i + " di " + n, W / 2, 290, { align: "center" }); } };
+  // copertina
+  const totAll = byCat.reduce((a, g) => a + g.items.reduce((b, i) => b + itemTotal(i), 0), 0);
+  const nAll = byCat.reduce((a, g) => a + g.items.reduce((b, i) => b + (Number(i.qty) || 0), 0), 0);
+  const buyAll = byCat.reduce((a, g) => a + g.items.reduce((b, i) => b + (i.buyPrice != null ? i.buyPrice * (Number(i.qty) || 0) : 0), 0), 0);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(24); doc.setTextColor(...ink); T("Collezioni", M, y + 8); y += 16;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...muted); T("Report della collezione al " + fmtDate(today()), M, y); y += 12;
+  doc.setDrawColor(...line); doc.setFillColor(245, 245, 242); doc.roundedRect(M, y, W - 2 * M, 28, 3, 3, "F");
+  doc.setTextColor(...muted); doc.setFontSize(9); T("Valore stimato totale", M + 6, y + 8); T("Pezzi", M + 90, y + 8); T("Prezzi d'acquisto registrati", M + 130, y + 8);
+  doc.setTextColor(...ink); doc.setFont("helvetica", "bold"); doc.setFontSize(16); T(pdfEur(totAll), M + 6, y + 19); T(String(nAll), M + 90, y + 19); doc.setFontSize(12); T(pdfEur(buyAll), M + 130, y + 19);
+  y += 38;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(12); T("Riepilogo per categoria", M, y); y += 7;
+  doc.setFontSize(9); doc.setTextColor(...muted); doc.setFont("helvetica", "normal");
+  T("Categoria", M, y); T("Pezzi", 130, y, { align: "right" }); T("Valore", W - M, y, { align: "right" }); y += 2; doc.line(M, y, W - M, y); y += 5;
+  doc.setTextColor(...ink); doc.setFontSize(10);
+  byCat.forEach(g => { const v = g.items.reduce((b, i) => b + itemTotal(i), 0), n = g.items.reduce((b, i) => b + (Number(i.qty) || 0), 0); T(g.c.name, M, y); T(String(n), 130, y, { align: "right" }); T(pdfEur(v), W - M, y, { align: "right" }); y += 6; });
+  y += 2; doc.line(M, y, W - M, y); y += 6; doc.setFont("helvetica", "bold"); T("Totale", M, y); T(String(nAll), 130, y, { align: "right" }); T(pdfEur(totAll), W - M, y, { align: "right" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...muted); y += 10;
+  doc.text(doc.splitTextToSize(pdfTxt("I valori sono stime basate sulle quotazioni registrate nell'app (fonte e data indicate per ogni pezzo); non costituiscono una perizia."), W - 2 * M), M, y);
+  // dettaglio
+  let count = 0; const totalItems = byCat.reduce((a, g) => a + g.items.length, 0);
+  for (const g of byCat) {
+    newPage();
+    doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.setTextColor(...acc); T(g.c.name, M, y + 6); y += 12;
+    for (const it of g.items) {
+      count++; if (count % 5 === 0) say("Preparo il report: " + count + " di " + totalItems);
+      const rowH = r.photos ? 24 : 16;
+      if (y + rowH > 280) newPage();
+      let x = M;
+      if (r.photos) {
+        const img = await thumbData(it);
+        if (img) { try { doc.addImage(img, "JPEG", M, y, 20, 20, undefined, "FAST"); } catch (e) { } } else { doc.setFillColor(233, 236, 233); doc.rect(M, y, 20, 20, "F"); }
+        x = M + 24;
+      }
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...ink);
+      T(doc.splitTextToSize(pdfTxt(it.name), 100)[0], x, y + 4);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...muted);
+      const det = [itemSubtitle(it, g.c), it.cond ? "Stato: " + it.cond : "", it.location ? "Posizione: " + it.location : ""].filter(Boolean).join(" - ");
+      const detL = doc.splitTextToSize(pdfTxt(det), 100).slice(0, 2); doc.text(detL, x, y + 9);
+      const src = [it.valueSource, it.valueDate ? fmtDate(it.valueDate) : ""].filter(Boolean).join(", ");
+      if (src) T(doc.splitTextToSize(pdfTxt("Quotazione: " + src), 100)[0], x, y + (detL.length > 1 ? 17 : 13));
+      doc.setTextColor(...ink); doc.setFontSize(9);
+      T("Q.ta " + (it.qty || 0), 150, y + 4, { align: "right" });
+      doc.setFont("helvetica", "bold"); T(pdfEur(itemTotal(it)), W - M, y + 4, { align: "right" }); doc.setFont("helvetica", "normal");
+      doc.setFontSize(8); doc.setTextColor(...muted);
+      T("unit. " + pdfEur(it.value), W - M, y + 9, { align: "right" });
+      if (it.buyPrice != null) T("pagato " + pdfEur(it.buyPrice) + (it.buyKind === "stimato" ? " (stim.)" : ""), W - M, y + 13, { align: "right" });
+      y += rowH; doc.setDrawColor(...line); doc.line(M, y - 2, W - M, y - 2); y += 2;
+    }
+  }
+  footer();
+  say("Salvo il file…");
+  const name = "collezioni-report-" + today() + ".pdf";
+  const blob = doc.output("blob");
+  try {
+    if (!S.downloads) throw new Error("nodl");
+    try { await S.downloads.save({ filename: name, data: blob }); }
+    catch (e1) { await S.downloads.save({ filename: name, data: await blob.arrayBuffer() }); }
+    say("Report pronto: " + totalItems + " pezzi, " + doc.getNumberOfPages() + " pagine.");
+  } catch (e) { say("Il download non è riuscito o è stato annullato."); }
+  btn.disabled = false;
+}
+
+/* ================= Codice a barre (solo app) ================= */
+const BC = { stream: null, timer: null, det: null };
+function stopCamera() { clearInterval(BC.timer); BC.timer = null; if (BC.stream) { BC.stream.getTracks().forEach(t => t.stop()); BC.stream = null; } }
+function openBarcode(catId) {
+  S.bc = { catId, busy: false };
+  const c = cat(catId);
+  let h = '<div class="overlay" data-act="bcCloseBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Scansiona codice"><div class="grab"></div>';
+  h += '<div class="between"><div><h1 style="font-size:20px">Scansiona codice</h1><div class="small muted">' + esc(c ? c.name : "") + ' · ISBN o codice a barre</div></div><button type="button" class="iconbtn" data-act="bcClose" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
+  h += '<div style="position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3"><video id="bc_video" playsinline muted style="width:100%;height:100%;object-fit:cover"></video><div style="position:absolute;left:10%;right:10%;top:38%;height:24%;border:3px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 999px rgba(0,0,0,.25)"></div></div>';
+  h += '<div id="bc_status" class="small muted">Avvio la fotocamera…</div>';
+  h += '<div class="row"><input class="in grow" id="bc_code" inputmode="numeric" placeholder="Oppure scrivi il numero sotto il codice"><button type="button" class="btn" data-act="bcManual">Usa</button></div>';
+  h += '<div id="bc_result"></div></div></div>';
+  $("modal").innerHTML = h;
+  startCamera();
+}
+async function startCamera() {
+  const st = $("bc_status");
+  const say = t => { if (st) st.textContent = t; };
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { say("Fotocamera non disponibile: scrivi il numero qui sotto."); return; }
+  try {
+    BC.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } }, audio: false });
+    const v = $("bc_video"); if (!v) { stopCamera(); return; }
+    v.srcObject = BC.stream; await v.play();
+  } catch (e) { say("Non posso usare la fotocamera (permesso negato?): scrivi il numero qui sotto."); return; }
+  if (!("BarcodeDetector" in window)) { say("Questo browser non legge i codici dalla fotocamera: scrivi il numero qui sotto."); return; }
+  try {
+    const want = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "isbn" ];
+    let fm = want;
+    try { const sup = await BarcodeDetector.getSupportedFormats(); fm = want.filter(f => sup.includes(f)); } catch (e) { }
+    BC.det = new BarcodeDetector({ formats: fm.length ? fm : undefined });
+  } catch (e) { say("Lettore di codici non disponibile: scrivi il numero qui sotto."); return; }
+  say("Inquadra il codice a barre nel riquadro.");
+  BC.timer = setInterval(async () => {
+    const v = $("bc_video"); if (!v || !BC.det || S.bc.busy) return;
+    try { const r = await BC.det.detect(v); if (r && r.length && r[0].rawValue) { S.bc.busy = true; onBarcode(String(r[0].rawValue).trim()); } } catch (e) { }
+  }, 300);
+}
+function cleanCode(c) { return String(c || "").replace(/[^0-9Xx]/g, "").toUpperCase(); }
+function isIsbn(c) { return /^(97[89])\d{10}$/.test(c) || /^\d{9}[\dX]$/.test(c); }
+async function onBarcode(raw) {
+  stopCamera();
+  const code = cleanCode(raw) || String(raw).trim();
+  const res = $("bc_result"); const st = $("bc_status");
+  if (st) st.textContent = "Codice letto: " + code;
+  const dups = [...S.items.values()].filter(i => !i.deleted && (i.barcode === code || (i.fields && cleanCode(i.fields.isbn) === code)));
+  if (dups.length) {
+    const d = dups[0];
+    if (res) res.innerHTML = '<div class="notice warn stack" style="gap:8px"><span><b>Ce l\'hai già:</b> ' + esc(d.name) + ' (' + (d.status === "wish" ? "lista desideri" : d.status === "out" ? "uscito" : "in collezione, × " + d.qty) + ')</span><div class="grid2"><button type="button" class="btn sm" data-act="bcOpen" data-id="' + esc(d.id) + '">Apri</button><button type="button" class="btn sm" data-act="bcAnyway" data-v="' + esc(code) + '">Aggiungi comunque</button></div></div>';
+    return;
+  }
+  await bcCreate(code);
+}
+async function lookupBook(isbn) {
+  try {
+    const d = await getJson("https://www.googleapis.com/books/v1/volumes?q=isbn:" + isbn);
+    const v = d && d.items && d.items[0] && d.items[0].volumeInfo;
+    if (v) return { title: v.title + (v.subtitle ? ": " + v.subtitle : ""), authors: (v.authors || []).join(", "), publisher: v.publisher || "", year: (v.publishedDate || "").slice(0, 4), cover: v.imageLinks ? String(v.imageLinks.thumbnail || v.imageLinks.smallThumbnail || "").replace(/^http:/, "https:") : "" };
+  } catch (e) { }
+  try {
+    const d = await getJson("https://openlibrary.org/api/books?bibkeys=ISBN:" + isbn + "&format=json&jscmd=data");
+    const v = d && d["ISBN:" + isbn];
+    if (v) return { title: v.title + (v.subtitle ? ": " + v.subtitle : ""), authors: (v.authors || []).map(a => a.name).join(", "), publisher: (v.publishers || []).map(p => p.name).join(", "), year: String(v.publish_date || "").match(/\d{4}/) ? String(v.publish_date).match(/\d{4}/)[0] : "", cover: v.cover ? (v.cover.medium || v.cover.small || "") : "" };
+  } catch (e) { }
+  return null;
+}
+async function bcCreate(code) {
+  const b = S.bc; const c = cat(b.catId);
+  const st = $("bc_status");
+  const d = newDraft(b.catId, "in");
+  d.barcode = code;
+  let found = false;
+  if (isIsbn(code)) {
+    if (st) st.textContent = "Cerco il libro…";
+    const bk = await lookupBook(code);
+    if (bk) {
+      found = true;
+      d.name = bk.title || "";
+      const has = k => c && c.fields.some(f => f.k === k);
+      if (has("autore")) d.fields.autore = bk.authors;
+      if (has("editore")) d.fields.editore = bk.publisher;
+      if (has("anno") && bk.year) d.fields.anno = Number(bk.year);
+      if (has("isbn")) d.fields.isbn = code;
+      if (bk.cover) { d.imageUrl = bk.cover; }
+    }
+  }
+  closeModal(); stopCamera();
+  S.draft = d; d._origBuy = null;
+  go({ name: "itemForm", focus: "f_name" });
+  toast(found ? "Dati trovati: controlla e salva" : (isIsbn(code) ? "Libro non trovato negli archivi: completa a mano" : "Codice salvato: scrivi il titolo"), 4500);
+}
+
 /* ================= Eventi ================= */
 document.addEventListener("click", async ev => {
   const el = ev.target.closest("[data-act]");
   if (!el) return;
   const a = el.dataset.act, id = el.dataset.id, v = el.dataset.v, i = el.dataset.i != null ? parseInt(el.dataset.i, 10) : null;
   if (a === "closeModalBg") { if (ev.target === el) closeModal(); return; }
+  if (a === "bcCloseBg") { if (ev.target === el) { stopCamera(); closeModal(); } return; }
   if (el.tagName === "LABEL") return;
   switch (a) {
     case "tab": tab(v); break;
+    case "histPeriod": S.histPeriod = v; render(); break;
+    case "barcode": openBarcode(id); break;
+    case "bcClose": stopCamera(); closeModal(); break;
+    case "bcManual": { const c2 = cleanCode(val("bc_code")) || val("bc_code").trim(); if (!c2) { toast("Scrivi il numero del codice."); break; } S.bc.busy = true; await onBarcode(c2); break; }
+    case "bcOpen": stopCamera(); closeModal(); go({ name: "item", id }); break;
+    case "bcAnyway": await bcCreate(v); break;
+    case "repCat": { S.rep.min = parseNum(val("rep_min")); S.rep.photos = $("rep_photos") ? $("rep_photos").checked : true; if (S.rep.cats.has(id)) S.rep.cats.delete(id); else S.rep.cats.add(id); render(); break; }
+    case "makeReport": await makeReport(el); break;
     case "sendCopy": await sendCopy(el); break;
     case "receive": await receive(); break;
     case "goArtifactScan": goArtifactScan(); break;
@@ -1721,6 +2005,8 @@ document.addEventListener("click", async ev => {
     case "openSet": go({ name: "setDetail", catId: S.view.catId, setId: id }); break;
     case "setsLang": S.setsState.lang = v; S.setsState.sets = null; S.setsState.err = null; render(); break;
     case "setShow": S.setState.show = v; render(); break;
+    case "setRar": S.setState.rar = S.setState.rar === v ? null : v; render(); break;
+    case "setCalc": await setCalc(); break;
     case "setToggle": { const st = S.setState; if (st.sel.has(id)) st.sel.delete(id); else st.sel.add(id); render(); break; }
     case "setSelAll": S.setState.sel = new Set(S.setState.data.cards.map(x => x.id)); render(); break;
     case "setSelNone": S.setState.sel = new Set(); render(); break;
@@ -2271,8 +2557,10 @@ function vSetDetail() {
   const have = cards.filter(x => own[x.id] && own[x.id].qty).length;
   const pct = Math.round(have / Math.max(1, cards.length) * 100);
   h += '<div class="card pad stack" style="gap:8px"><div class="between"><span class="b">' + have + ' di ' + cards.length + ' carte</span><span class="small muted">' + pct + '% completo</span></div><div class="progress"><div style="width:' + pct + '%"></div></div></div>';
+  h += setExtraBox(v, st, own, src);
   h += '<div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Mostra">' + [["all", "Tutte"], ["miss", "Mancanti"], ["have", "Possedute"]].map(([k, l]) => '<button type="button" class="' + (st.show === k ? "on" : "") + '" data-act="setShow" data-v="' + k + '">' + l + '</button>').join("") + '</div>';
-  const shown = cards.filter(x => st.show === "all" || (st.show === "miss" ? !(own[x.id] && own[x.id].qty) : (own[x.id] && own[x.id].qty)));
+  const ex = setExtra(st, src);
+  const shown = cards.filter(x => (st.show === "all" || (st.show === "miss" ? !(own[x.id] && own[x.id].qty) : (own[x.id] && own[x.id].qty))) && (!st.rar || (ex && (rarityLabel(src, (ex[x.id] || {}).rarity) || "Altro") === st.rar)));
   h += '<div class="between"><span class="small muted">' + st.sel.size + ' selezionate</span><span class="row" style="gap:6px"><button type="button" class="btn sm" data-act="setSelMiss">Mancanti</button><button type="button" class="btn sm" data-act="setSelAll">Tutte</button><button type="button" class="btn sm" data-act="setSelNone">Nessuna</button></span></div>';
   h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">';
   shown.forEach(x => {
@@ -2283,6 +2571,38 @@ function vSetDetail() {
   h += '<div style="height:70px"></div><div style="position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom))"><div class="grid2" style="max-width:560px;margin:0 auto"><button type="button" class="btn" data-act="setAddWish"' + (st.sel.size ? "" : " disabled") + '>Desideri (' + st.sel.size + ')</button><button type="button" class="btn pri" data-act="setAdd"' + (st.sel.size ? "" : " disabled") + '>Aggiungi (' + st.sel.size + ')</button></div></div>';
   h += '</div>';
   return h;
+}
+function setExtra(st, src) {
+  if (src === "scryfall") { const m = {}; st.data.cards.forEach(x => { m[x.id] = { eur: x.eur, eurFoil: x.eurFoil, rarity: x.rarity }; }); return m; }
+  return CAT_CACHE.prices && CAT_CACHE.prices[st.key] || null;
+}
+function setExtraBox(v, st, own, src) {
+  const ex = setExtra(st, src);
+  const cards = st.data.cards;
+  let h = '<div class="card pad stack" style="gap:10px">';
+  if (!ex) {
+    h += '<div class="between"><span class="small muted">Costo per completare e rarità</span><button type="button" class="btn sm" data-act="setCalc"' + (st.calcBusy ? " disabled" : "") + '>' + (st.calcBusy ? esc(st.calcMsg || "Calcolo…") : "Calcola") + '</button></div>';
+    return h + '</div>';
+  }
+  const miss = cards.filter(x => !(own[x.id] && own[x.id].qty));
+  let cost = 0, noPrice = 0;
+  miss.forEach(x => { const p = ex[x.id]; const val = p ? (p.eur != null ? p.eur : p.eurFoil) : null; if (val == null) noPrice++; else cost += val; });
+  h += '<div class="between"><span><span class="small muted" style="display:block">Costo per completare</span><span class="b" style="font-size:20px">' + eur(cost) + '</span></span><span class="xs muted" style="text-align:right">' + miss.length + ' carte mancanti' + (noPrice ? '<br>' + noPrice + ' senza prezzo' : '') + '</span></div>';
+  const groups = {};
+  cards.forEach(x => { const r = rarityLabel(src, (ex[x.id] || {}).rarity) || "Altro"; const g = groups[r] = groups[r] || { tot: 0, have: 0 }; g.tot++; if (own[x.id] && own[x.id].qty) g.have++; });
+  const order = ["Comune", "Non comune", "Rara", "Rara holo", "Mitica", "Ultra rara", "Segreta", "Speciale", "Promo", "Altro"];
+  h += '<div class="small muted">Completamento per rarità (tocca per filtrare)</div><div class="chips">' + Object.keys(groups).sort((a, b) => order.indexOf(a) - order.indexOf(b)).map(r => '<button type="button" class="chip ' + (st.rar === r ? "on" : "") + '" data-act="setRar" data-v="' + esc(r) + '">' + esc(r) + ' ' + groups[r].have + '/' + groups[r].tot + '</button>').join("") + '</div>';
+  return h + '</div>';
+}
+async function setCalc() {
+  const v = S.view; const st = S.setState; const src = catalogOf(v.catId);
+  st.calcBusy = true; st.calcMsg = "Calcolo…"; render();
+  try {
+    const refs = st.data.cards.map(x => ({ src, set: v.setId, card: x.id, num: x.num }));
+    const p = await fetchPrices(src, refs, (d, n) => { st.calcMsg = d + " di " + n; const b = document.querySelector('[data-act="setCalc"]'); if (b) b.textContent = st.calcMsg; });
+    CAT_CACHE.prices = CAT_CACHE.prices || {}; CAT_CACHE.prices[st.key] = p;
+  } catch (e) { toast("Non riesco a raggiungere il catalogo."); }
+  st.calcBusy = false; render();
 }
 function openSetAdd(status) {
   const v = S.view; const c = cat(v.catId); const st = S.setState;
@@ -2445,6 +2765,7 @@ async function bootLocal() {
     syncSubs();
     softRender();
   });
+  subHistory();
 }
 
 window.addEventListener("error", e => { console.error(e.error || e.message); });
