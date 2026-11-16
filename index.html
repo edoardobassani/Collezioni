@@ -116,6 +116,8 @@ const FALLBACK_SCHEMAS = {
     required: ["urls"] }
 };
 const SEARCH_SESSION = "col-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
+const ARTIFACT_URL = "https://claude.ai/artifact/JpkhTbPkxorNiivEPpVSJB";
+const APP_URL = "https://edoardobassani.github.io/collezioni/";
 const CHANNELS = ["Privato", "Asta", "Cardmarket", "eBay", "Subito", "Negozio", "Altro"];
 const EXIT_TYPES = { consumato: "Consumato", venduto: "Venduto", regalato: "Regalato", scambiato: "Scambiato" };
 
@@ -228,9 +230,11 @@ async function boot() {
   claude.use("downloads").then(d => { S.downloads = d; }).catch(() => { });
   S.db.doc("config/main").onSnapshot(snap => {
     clearTimeout(slowT); S.slow = false;
+    const first = !S.configLoaded;
     S.configLoaded = true;
     S.config = snap.exists ? normConfig(snap.data()) : null;
     syncSubs();
+    if (first && String(location.hash || "") === "#scan" && S.config && S.config.cats.length) { S.fromApp = true; S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; S.stack = [{ name: "home" }]; S.view = { name: "scan" }; render(); return; }
     softRender();
   }, err => { clearTimeout(slowT); S.loadErr = "Non riesco a leggere l'archivio (" + err.code + ")."; render(); });
 }
@@ -427,8 +431,9 @@ function vHome() {
   h += '<div class="between"><div><h1>Collezioni</h1></div><button type="button" class="iconbtn" data-act="cats" aria-label="Gestisci categorie">' + ic("settings", 22) + '</button></div>';
   h += '<div><div class="small muted">Valore stimato totale</div><div style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + eur(tot) + '</div><div class="small muted">' + (lastQ ? "Ultima quotazione: " + fmtDate(lastQ) : "Nessuna quotazione ancora") + ' · ' + sumQty(all) + ' pezzi</div></div>';
   if (S.env === "pwa") {
+    h += '<div class="grid2"><button type="button" class="btn pri" data-act="goArtifactScan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn" data-act="receive">' + ic("download") + 'Ricevi da Claude</button></div>';
+    if (S.awaitReturn) h += '<div class="notice between"><span>Hai salvato dei pezzi nell\'artifact e premuto "Copia per l\'app"? Tocca qui per riceverli.</span><button type="button" class="btn sm" data-act="receive">Ricevi</button></div>';
     if (catalogCats().length) h += '<button type="button" class="btn" data-act="cardPrices">' + ic("refresh") + 'Aggiorna prezzi carte</button>';
-    h += '<div class="xs muted">Scheda da foto e quotazioni con Claude si fanno nell\'artifact su Claude; poi esporti e importi qui dal Backup.</div>';
   } else {
     h += '<div class="grid2"><button type="button" class="btn pri" data-act="scan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn" data-act="quoteStart">' + ic("refresh") + 'Aggiorna prezzi</button></div>';
   }
@@ -1284,6 +1289,7 @@ async function scanSave() {
     toast(items.length + " pezzi salvati");
     scanCleanup();
     tab("home");
+    openHandoff(items.length);
   } catch (e) { s.step = "review"; toast(dbErr(e), 5000); render(); }
 }
 function scanCleanup() { if (S.scan) [...(S.scan.urls || []), ...(S.scan.workUrls || [])].forEach(u => { try { URL.revokeObjectURL(u); } catch (e) { } }); S.scan = null; }
@@ -1486,7 +1492,10 @@ async function quoteApply() {
 /* ================= Backup ================= */
 function vBackup() {
   const all = [...S.items.values()];
-  let h = '<div class="wrap stack"><div><h1>Backup</h1><div class="small muted" style="margin-top:4px">Scambia i dati con l\'app: ognuna fa da copia all\'altra.</div></div>';
+  let h0 = "";
+  if (S.env === "artifact") h0 = '<div class="card pad stack"><h2 style="font-size:16px">Porta nell\'app</h2><div class="small muted">Copia le novità (pezzi nuovi o modificati, con foto ridotte) e incollale nell\'app con "Ricevi da Claude".</div><div class="grid2"><button type="button" class="btn pri" data-act="sendCopy">' + ic("copy", 18) + 'Copia per l\'app</button><a class="btn" href="' + APP_URL + '" target="_blank" rel="noopener">Apri l\'app</a></div><div id="sendMsg" class="xs muted">' + esc(lastSendText()) + '</div></div>';
+  if (S.env === "pwa") h0 = '<div class="card pad stack"><h2 style="font-size:16px">Ricevi da Claude</h2><div class="small muted">Nell\'artifact premi "Copia per l\'app", poi torna qui e tocca Ricevi.</div><button type="button" class="btn pri" data-act="receive">' + ic("download", 18) + 'Ricevi da Claude</button></div>';
+  let h = '<div class="wrap stack"><div><h1>Backup</h1><div class="small muted" style="margin-top:4px">Scambia i dati con l\'app: ognuna fa da copia all\'altra.</div></div>' + h0;
   h += '<div class="card pad stack"><div class="between"><h2 style="font-size:16px">Esporta</h2><span class="small muted">' + all.filter(i => !i.deleted).length + ' pezzi</span></div><div class="small muted">Il file contiene categorie, pezzi, movimenti e quotazioni.</div><label class="row" style="cursor:pointer;min-height:44px"><input type="checkbox" id="exp_photos"' + (S.expPhotos !== false ? " checked" : "") + ' data-change="expPhotos" style="width:22px;height:22px;accent-color:#2F5D50"><span class="grow"><span style="display:block">Includi le foto</span><span class="xs muted">' + photoCount() + ' foto, circa ' + Math.max(1, Math.round(photoCount() * 0.25)) + ' MB in più</span></span></label><div id="expMsg" class="small muted"></div><button type="button" class="btn pri" data-act="export">' + ic("download", 18) + 'Scarica file di backup</button><button type="button" class="btn sm" data-act="exportCopy">Copia i dati negli appunti</button></div>';
   h += '<div class="card pad stack"><h2 style="font-size:16px">Importa</h2>';
   const imp = S.imp;
@@ -1527,6 +1536,69 @@ async function collectPhotos(onProg) {
     catch (e) { miss++; }
   }
   return { photos: out, miss };
+}
+function lastSendText() { const t = lsGet("col.lastSend", null); return t ? "Ultimo invio: " + new Date(t).toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "Nessun invio ancora: la prima volta copia tutto."; }
+async function smallPhoto(id) {
+  try {
+    const b = await getPhotoBlob(id); if (!b) return null;
+    const small = await compressImage(b, 640, 0.72);
+    return await blobToDataUrl(small);
+  } catch (e) { return null; }
+}
+async function buildDelta(since) {
+  const items = [...S.items.values()].filter(i => !since || (i.updatedAt || "") > since).map(i => { const o = cleanItem(i); o.id = i.id; o.catId = i.catId; return o; });
+  const photos = {}; let size = 0, skipped = 0;
+  for (const it of items) for (const p of (it.photos || [])) {
+    if (photos[p]) continue;
+    if (size > 700000) { skipped++; continue; }
+    const d = await smallPhoto(p); if (d) { photos[p] = d; size += d.length; }
+  }
+  return { data: { app: "collezioni", schema: 1, source: S.env, kind: "delta", exportedAt: nowIso(), config: S.config, items, photos }, skipped };
+}
+async function sendCopy(btn) {
+  const msg = $("sendMsg") || $("hoMsg");
+  const since = lsGet("col.lastSend", null);
+  if (btn) btn.disabled = true;
+  if (msg) msg.textContent = "Preparo i dati…";
+  const started = nowIso();
+  const { data, skipped } = await buildDelta(since);
+  if (!data.items.length) { if (msg) msg.textContent = "Nessuna novità dall'ultimo invio."; if (btn) btn.disabled = false; return; }
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(data));
+    lsSet("col.lastSend", started);
+    if (msg) msg.textContent = data.items.length + " pezzi copiati" + (skipped ? " (" + skipped + " foto troppo pesanti: usale dal file di backup)" : "") + ". Ora apri l'app e tocca Ricevi da Claude.";
+  } catch (e) {
+    if (msg) msg.textContent = "Copia non riuscita: tocca di nuovo il pulsante.";
+  }
+  if (btn) btn.disabled = false;
+}
+function openHandoff(n) {
+  if (S.env !== "artifact") return;
+  let h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Porta nell\'app"><div class="grab"></div>';
+  h += '<div class="between"><div><h1 style="font-size:20px">' + n + ' pezzi salvati</h1><div class="small muted">Vuoi portarli subito nell\'app?</div></div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
+  h += '<ol class="small" style="margin:0;padding-left:18px;line-height:1.6"><li>Tocca <b>Copia per l\'app</b></li><li>Tocca <b>Apri l\'app</b></li><li>Nell\'app tocca <b>Ricevi da Claude</b></li></ol>';
+  h += '<div class="grid2"><button type="button" class="btn pri" data-act="sendCopy">' + ic("copy", 18) + 'Copia per l\'app</button><a class="btn" href="' + APP_URL + '" target="_blank" rel="noopener">Apri l\'app</a></div><div id="hoMsg" class="xs muted"></div>';
+  h += '<button type="button" class="btn sm" data-act="closeModal">Più tardi</button></div></div>';
+  $("modal").innerHTML = h;
+}
+async function receive() {
+  let text = "";
+  try { text = await navigator.clipboard.readText(); } catch (e) { toast("Non riesco a leggere gli appunti: consenti l'accesso quando il browser lo chiede, oppure incolla dal Backup.", 6000); tab("backup"); return; }
+  if (!text || text.indexOf('"app":"collezioni"') < 0) { toast("Negli appunti non ci sono dati di Collezioni. Nell'artifact premi prima \"Copia per l'app\".", 6000); return; }
+  S.awaitReturn = false; lsSet("col.await", false);
+  tab("backup");
+  analyzeImport(text, "dall'artifact");
+  if (S.imp && S.imp.data && S.imp.data.kind === "delta") {
+    if (!(S.imp.add + S.imp.upd + S.imp.newCats)) { toast("Questi pezzi sono già nell'app."); S.imp = null; render(); return; }
+    await importApply();
+  }
+}
+function goArtifactScan() {
+  S.awaitReturn = true; lsSet("col.await", true);
+  const url = ARTIFACT_URL + "#scan";
+  const w = window.open(url, "_blank", "noopener");
+  if (!w) location.href = url;
+  render();
 }
 function exportData() {
   const items = [...S.items.values()].map(i => { const o = cleanItem(i); o.id = i.id; o.catId = i.catId; return o; });
@@ -1642,6 +1714,9 @@ document.addEventListener("click", async ev => {
   if (el.tagName === "LABEL") return;
   switch (a) {
     case "tab": tab(v); break;
+    case "sendCopy": await sendCopy(el); break;
+    case "receive": await receive(); break;
+    case "goArtifactScan": goArtifactScan(); break;
     case "openSets": go({ name: "sets", catId: id }); break;
     case "openSet": go({ name: "setDetail", catId: S.view.catId, setId: id }); break;
     case "setsLang": S.setsState.lang = v; S.setsState.sets = null; S.setsState.err = null; render(); break;
@@ -2361,6 +2436,8 @@ async function bootLocal() {
   try { LOCAL.idb = idbOpen(); await LOCAL.idb; } catch (e) { S.loadErr = "Questo browser non permette di salvare i dati (IndexedDB non disponibile)."; render(); return; }
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
   S.db = makeLocalDb(); S.assets = makeLocalAssets(); S.downloads = makeLocalDownloads();
+  S.awaitReturn = !!lsGet("col.await", false);
+  if (String(location.hash || "") === "#scan") { try { history.replaceState(null, "", location.pathname); } catch (e) { } S.awaitReturn = true; lsSet("col.await", true); location.href = ARTIFACT_URL + "#scan"; return; }
   if ("serviceWorker" in navigator && location.protocol === "https:") { try { navigator.serviceWorker.register("sw.js"); } catch (e) { } }
   S.db.doc("config/main").onSnapshot(snap => {
     S.configLoaded = true;
