@@ -500,8 +500,8 @@ function vHome() {
   h += '<div class="between"><div><h1>Collezioni</h1></div><button type="button" class="iconbtn" data-act="cats" aria-label="Gestisci categorie">' + ic("settings", 22) + '</button></div>';
   h += '<div><div class="small muted">Valore stimato totale</div><div style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + eur(tot) + '</div><div class="small muted">' + (lastQ ? "Ultima quotazione: " + fmtDate(lastQ) : "Nessuna quotazione ancora") + ' · ' + sumQty(all) + ' pezzi</div></div>' + histBox(null);
   if (S.env === "pwa") {
-    h += '<div class="grid2"><button type="button" class="btn pri" data-act="goArtifactScan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn" data-act="receive">' + ic("download") + 'Ricevi da Claude</button></div>';
-    if (S.awaitReturn) h += '<div class="notice between"><span>Hai salvato dei pezzi nell\'artifact e premuto "Copia per l\'app"? Tocca qui per riceverli.</span><button type="button" class="btn sm" data-act="receive">Ricevi</button></div>';
+    h += '<div class="grid2"><button type="button" class="btn pri" data-act="goArtifactScan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn' + (S.awaitReturn ? " acc" : "") + '" data-act="receive">' + ic("download") + 'Ricevi da Claude</button></div>';
+    if (S.awaitReturn) h += '<div class="xs" style="color:var(--acc);text-align:right;margin-top:-6px">Se nell\'artifact hai premuto "Copia per l\'app", tocca Ricevi da Claude.</div>';
     if (catalogCats().length) h += '<button type="button" class="btn" data-act="cardPrices">' + ic("refresh") + 'Aggiorna prezzi carte</button>';
   } else {
     h += '<div class="grid2"><button type="button" class="btn pri" data-act="scan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn" data-act="quoteStart">' + ic("refresh") + 'Aggiorna prezzi</button></div>';
