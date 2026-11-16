@@ -1595,7 +1595,7 @@ function vBackup() {
     h += '<div class="row" style="padding:10px 12px;background:var(--bg);border-radius:10px">' + ic("download", 18) + '<span class="grow"><span style="display:block;font-weight:500">' + esc(imp.name) + '</span><span class="xs muted">' + esc(imp.data.source === "pwa" ? "dall'app" : imp.data.source === "artifact" ? "dall'artifact" : "") + (imp.data.exportedAt ? " · " + fmtDate(imp.data.exportedAt) : "") + '</span></span></div>';
     h += '<div class="list"><div class="kv"><span>Pezzi nuovi</span><span class="b">' + imp.add + '</span></div><div class="kv"><span>Aggiornati (versione più recente)</span><span class="b">' + imp.upd + '</span></div><div class="kv"><span>Già uguali o più vecchi</span><span class="b">' + imp.same + '</span></div>' + (imp.skip ? '<div class="kv"><span class="down">Categoria sconosciuta, saltati</span><span class="b down">' + imp.skip + '</span></div>' : '') + '<div class="kv"><span>Categorie nuove</span><span class="b">' + imp.newCats + '</span></div>' + (imp.photosN ? '<div class="kv"><span>Foto nel file</span><span class="b">' + imp.photosN + '</span></div>' : '') + '</div><div id="impMsg" class="small muted"></div>';
     h += '<div class="xs muted">Prima di unire conviene scaricare un backup di quello che c\'è ora qui.</div>';
-    h += '<div class="grid2"><button type="button" class="btn" data-act="importCancel">Annulla</button><button type="button" class="btn pri" data-act="importApply"' + (imp.add + imp.upd + imp.newCats ? "" : " disabled") + '>Unisci i dati</button></div>';
+    h += '<div class="grid2"><button type="button" class="btn" data-act="importCancel">Annulla</button><button type="button" class="btn pri" data-act="importApply"' + (imp.add + imp.upd + imp.newCats || imp.cfgNewer ? "" : " disabled") + '>Unisci i dati</button></div>';
   }
   h += '</div></div>';
   return h;
@@ -1652,7 +1652,7 @@ function prepareSend(force) {
   const since = lsGet("col.lastSend", null);
   const started = nowIso();
   const prep = { since, forItems: S.items.size, started, text: null, count: 0, skipped: 0 };
-  prep.promise = buildDelta(since).then(({ data, skipped }) => { prep.count = data.items.length; prep.skipped = skipped; prep.text = data.items.length ? JSON.stringify(data) : ""; return prep; });
+  prep.promise = buildDelta(since).then(({ data, skipped }) => { prep.count = data.items.length; prep.skipped = skipped; prep.cfg = !!(S.config && (!since || (S.config.updatedAt || "") > since)); prep.text = data.items.length || prep.cfg ? JSON.stringify(data) : ""; return prep; });
   S.sendPrep = prep;
   return prep.promise;
 }
@@ -1662,7 +1662,7 @@ async function sendCopy(btn) {
   const done = prep => {
     lsSet("col.lastSend", prep.started);
     S.sendPrep = null;
-    say(prep.count + " pezzi copiati" + (prep.skipped ? " (" + prep.skipped + " foto escluse per peso: usa il file di backup per quelle)" : "") + ". Ora apri l'app e tocca Ricevi da Claude.");
+    say((prep.count ? prep.count + " pezzi copiati" : "Categorie aggiornate copiate") + (prep.skipped ? " (" + prep.skipped + " foto escluse per peso: usa il file di backup per quelle)" : "") + ". Ora apri l'app e tocca Ricevi da Claude.");
   };
   let prep = S.sendPrep;
   // 1) dati già pronti: copia immediata
@@ -1678,7 +1678,7 @@ async function sendCopy(btn) {
       const blobP = p.then(pr => new Blob([pr.text || " "], { type: "text/plain" }));
       await navigator.clipboard.write([new ClipboardItem({ "text/plain": blobP })]);
       const pr = await p;
-      if (!pr.count) { say("Nessuna novità dall'ultimo invio."); return; }
+      if (!pr.count && !pr.cfg) { say("Nessuna novità dall'ultimo invio."); return; }
       done(pr); return;
     } catch (e) { }
   }
@@ -1686,8 +1686,8 @@ async function sendCopy(btn) {
   if (btn) btn.disabled = true;
   const pr = await p;
   if (btn) btn.disabled = false;
-  if (!pr.count) { say("Nessuna novità dall'ultimo invio."); return; }
-  say("Dati pronti (" + pr.count + " pezzi): tocca di nuovo «Copia per l'app».");
+  if (!pr.count && !pr.cfg) { say("Nessuna novità dall'ultimo invio."); return; }
+  say("Dati pronti (" + (pr.count ? pr.count + " pezzi" : "categorie aggiornate") + "): tocca di nuovo «Copia per l'app».");
   if (btn) { btn.innerHTML = ic("copy", 18) + "Copia ora"; btn.classList.add("acc"); }
 }
 function openHandoff(n) {
@@ -1708,7 +1708,7 @@ async function receive() {
   tab("backup");
   analyzeImport(text, "dall'artifact");
   if (S.imp && S.imp.data && S.imp.data.kind === "delta") {
-    if (!(S.imp.add + S.imp.upd + S.imp.newCats)) { toast("Questi pezzi sono già nell'app."); S.imp = null; render(); return; }
+    if (!(S.imp.add + S.imp.upd + S.imp.newCats) && !S.imp.cfgNewer) { toast("Questi pezzi sono già nell'app."); S.imp = null; render(); return; }
     await importApply();
   }
 }
@@ -1760,7 +1760,8 @@ function analyzeImport(text, name) {
     else if ((it.updatedAt || "") > (loc.updatedAt || "")) { upd++; toWrite.push(it); }
     else same++;
   }
-  S.imp = { photosN: data.photos ? Object.keys(data.photos).length : 0, name: name || "dati incollati", data, impCfg, newCats: newCats.length, add, upd, same, skip, toWrite };
+  const cfgNewer = !!(data.config && (impCfg.updatedAt || "") > ((S.config && S.config.updatedAt) || ""));
+  S.imp = { cfgNewer, photosN: data.photos ? Object.keys(data.photos).length : 0, name: name || "dati incollati", data, impCfg, newCats: newCats.length, add, upd, same, skip, toWrite };
   render();
 }
 async function importPhotos(imp) {
@@ -1829,7 +1830,7 @@ async function importApply() {
         if (exists) await ref.update({ items: g.items }); else await ref.set({ items: g.items });
       });
     }
-    toast("Importati " + items.length + " pezzi");
+    toast(items.length ? "Importati " + items.length + " pezzi" + (newer ? " e categorie aggiornate" : "") : (newer ? "Categorie aggiornate" : "Nessun pezzo nuovo"));
     S.imp = null;
     if (S.env === "pwa") setTimeout(() => linkAll(false), 800);
     syncSubs();
