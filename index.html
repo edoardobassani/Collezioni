@@ -506,7 +506,11 @@ function vHome() {
   const tot = sumVal(all);
   const lastQ = all.map(i => i.valueDate).filter(Boolean).sort().pop();
   let h = '<div class="wrap stack">';
-  h += '<div class="between"><div><h1>Collezioni</h1></div><button type="button" class="iconbtn" data-act="cats" aria-label="Gestisci categorie">' + ic("settings", 22) + '</button></div>';
+  let rk = null;
+  if (cfg && cfg.cats.length && S.items.size) { try { reviewRefresh(true); rk = reviewCounts(); } catch (e) { } }
+  const rn = rk ? rk.err + rk.warn : 0;
+  const revBtn = rk ? '<button type="button" class="iconbtn" style="position:relative" data-act="review" aria-label="Revisione dati' + (rn ? ": " + rn + " segnalazioni" : "") + '">' + ic("check", 22, 2) + (rn ? '<span aria-hidden="true" style="position:absolute;top:4px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:' + (rk.err ? "var(--down)" : "#7A5A00") + ';color:#fff;font-size:11px;font-weight:600;line-height:18px;text-align:center;box-sizing:border-box">' + (rn > 99 ? "99+" : rn) + '</span>' : '') + '</button>' : '';
+  h += '<div class="between"><div><h1>Collezioni</h1></div><div class="row" style="gap:0;margin-right:-10px">' + revBtn + '<button type="button" class="iconbtn" data-act="cats" aria-label="Gestisci categorie">' + ic("settings", 22) + '</button></div></div>';
   h += '<div><div class="small muted">Valore stimato totale</div><div style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + eur(tot) + '</div><div class="small muted">' + (lastQ ? "Ultima quotazione: " + fmtDate(lastQ) : "Nessuna quotazione ancora") + ' · ' + sumQty(all) + ' pezzi</div></div>' + histBox(null);
   if (S.env === "pwa") {
     h += '<div class="grid2"><button type="button" class="btn pri" data-act="goArtifactScan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn' + (S.awaitReturn ? " acc" : "") + '" data-act="receive">' + ic("download") + 'Ricevi da Claude</button></div>';
@@ -514,10 +518,6 @@ function vHome() {
     if (catalogCats().length) h += '<button type="button" class="btn" data-act="cardPrices">' + ic("refresh") + 'Aggiorna prezzi carte</button>';
   } else {
     h += '<div class="grid2"><button type="button" class="btn pri" data-act="scan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn" data-act="quoteStart">' + ic("refresh") + 'Aggiorna prezzi</button></div>';
-  }
-  if (cfg && cfg.cats.length && S.items.size) {
-    let rk = null; try { reviewRefresh(true); rk = reviewCounts(); } catch (e) { }
-    if (rk) h += '<button type="button" class="card li" data-act="review"><span class="ico">' + ic("check", 20, 2) + '</span><span class="grow"><span class="b" style="display:block">Revisione dati</span><span class="small muted">' + (rk.err + rk.warn ? [rk.err ? rk.err + (rk.err === 1 ? " errore" : " errori") : "", rk.warn ? rk.warn + " da controllare" : ""].filter(Boolean).join(" · ") : "Nessun problema trovato") + '</span></span>' + (rk.err ? '<span class="badge warn">' + rk.err + '</span>' : rk.warn ? '<span class="badge amber">' + rk.warn + '</span>' : '') + '<span class="muted">' + ic("right", 16, 2) + '</span></button>';
   }
   if (!cfg || !cfg.cats.length) {
     h += S.env === "pwa" ? '<div class="card pad stack" style="text-align:center"><div class="b">Benvenuto in Collezioni</div><div class="small muted">Per iniziare importa il backup esportato dall\'artifact su Claude: arriveranno categorie, pezzi e foto.</div><button type="button" class="btn acc" data-act="tab" data-v="backup">' + ic("upload", 18) + 'Importa il backup</button><button type="button" class="btn sm" data-act="newCat">Oppure crea una categoria</button></div></div>' : '<div class="card pad empty">Nessuna categoria. <br><br><button type="button" class="btn acc" data-act="newCat">Crea la prima categoria</button></div></div>';
