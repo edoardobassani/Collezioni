@@ -1567,6 +1567,7 @@ async function quoteApply() {
 function vBackup() {
   const all = [...S.items.values()];
   let h0 = "";
+  if (S.env === "artifact") setTimeout(() => prepareSend(false), 0);
   if (S.env === "artifact") h0 = '<div class="card pad stack"><h2 style="font-size:16px">Porta nell\'app</h2><div class="small muted">Copia le novità (pezzi nuovi o modificati, con foto ridotte) e incollale nell\'app con "Ricevi da Claude".</div><div class="grid2"><button type="button" class="btn pri" data-act="sendCopy">' + ic("copy", 18) + 'Copia per l\'app</button><a class="btn" href="' + APP_URL + '" target="_blank" rel="noopener">Apri l\'app</a></div><div id="sendMsg" class="xs muted">' + esc(lastSendText()) + '</div></div>';
   if (S.env === "pwa") h0 = '<div class="card pad stack"><h2 style="font-size:16px">Ricevi da Claude</h2><div class="small muted">Nell\'artifact premi "Copia per l\'app", poi torna qui e tocca Ricevi.</div><button type="button" class="btn pri" data-act="receive">' + ic("download", 18) + 'Ricevi da Claude</button></div>';
   let h = '<div class="wrap stack"><div><h1>Backup</h1><div class="small muted" style="margin-top:4px">Scambia i dati con l\'app: ognuna fa da copia all\'altra.</div></div>' + h0;
@@ -1616,7 +1617,7 @@ function lastSendText() { const t = lsGet("col.lastSend", null); return t ? "Ult
 async function smallPhoto(id) {
   try {
     const b = await getPhotoBlob(id); if (!b) return null;
-    const small = await compressImage(b, 640, 0.72);
+    const small = await compressImage(b, 480, 0.65);
     return await blobToDataUrl(small);
   } catch (e) { return null; }
 }
@@ -1625,27 +1626,56 @@ async function buildDelta(since) {
   const photos = {}; let size = 0, skipped = 0;
   for (const it of items) for (const p of (it.photos || [])) {
     if (photos[p]) continue;
-    if (size > 700000) { skipped++; continue; }
+    if (size > 450000) { skipped++; continue; }
     const d = await smallPhoto(p); if (d) { photos[p] = d; size += d.length; }
   }
   return { data: { app: "collezioni", schema: 1, source: S.env, kind: "delta", exportedAt: nowIso(), config: S.config, items, photos }, skipped };
 }
+/* I dati si preparano in anticipo: la copia negli appunti deve avvenire subito dopo il tocco,
+   altrimenti il browser la rifiuta. */
+function prepareSend(force) {
+  if (S.env !== "artifact") return null;
+  if (S.sendPrep && !force && S.sendPrep.forItems === S.items.size && S.sendPrep.since === lsGet("col.lastSend", null)) return S.sendPrep.promise;
+  const since = lsGet("col.lastSend", null);
+  const started = nowIso();
+  const prep = { since, forItems: S.items.size, started, text: null, count: 0, skipped: 0 };
+  prep.promise = buildDelta(since).then(({ data, skipped }) => { prep.count = data.items.length; prep.skipped = skipped; prep.text = data.items.length ? JSON.stringify(data) : ""; return prep; });
+  S.sendPrep = prep;
+  return prep.promise;
+}
 async function sendCopy(btn) {
   const msg = $("sendMsg") || $("hoMsg");
-  const since = lsGet("col.lastSend", null);
-  if (btn) btn.disabled = true;
-  if (msg) msg.textContent = "Preparo i dati…";
-  const started = nowIso();
-  const { data, skipped } = await buildDelta(since);
-  if (!data.items.length) { if (msg) msg.textContent = "Nessuna novità dall'ultimo invio."; if (btn) btn.disabled = false; return; }
-  try {
-    await navigator.clipboard.writeText(JSON.stringify(data));
-    lsSet("col.lastSend", started);
-    if (msg) msg.textContent = data.items.length + " pezzi copiati" + (skipped ? " (" + skipped + " foto troppo pesanti: usale dal file di backup)" : "") + ". Ora apri l'app e tocca Ricevi da Claude.";
-  } catch (e) {
-    if (msg) msg.textContent = "Copia non riuscita: tocca di nuovo il pulsante.";
+  const say = t => { if (msg) msg.textContent = t; };
+  const done = prep => {
+    lsSet("col.lastSend", prep.started);
+    S.sendPrep = null;
+    say(prep.count + " pezzi copiati" + (prep.skipped ? " (" + prep.skipped + " foto escluse per peso: usa il file di backup per quelle)" : "") + ". Ora apri l'app e tocca Ricevi da Claude.");
+  };
+  let prep = S.sendPrep;
+  // 1) dati già pronti: copia immediata
+  if (prep && prep.text != null && prep.since === lsGet("col.lastSend", null)) {
+    if (!prep.text) { say("Nessuna novità dall'ultimo invio."); return; }
+    try { await navigator.clipboard.writeText(prep.text); done(prep); return; } catch (e) { }
   }
+  // 2) dati non pronti: copia con contenuto "in arrivo" (supportata da Chrome)
+  const p = prepareSend(true);
+  say("Preparo i dati…");
+  if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+    try {
+      const blobP = p.then(pr => new Blob([pr.text || " "], { type: "text/plain" }));
+      await navigator.clipboard.write([new ClipboardItem({ "text/plain": blobP })]);
+      const pr = await p;
+      if (!pr.count) { say("Nessuna novità dall'ultimo invio."); return; }
+      done(pr); return;
+    } catch (e) { }
+  }
+  // 3) ripiego: dati pronti, serve un secondo tocco
+  if (btn) btn.disabled = true;
+  const pr = await p;
   if (btn) btn.disabled = false;
+  if (!pr.count) { say("Nessuna novità dall'ultimo invio."); return; }
+  say("Dati pronti (" + pr.count + " pezzi): tocca di nuovo «Copia per l'app».");
+  if (btn) { btn.innerHTML = ic("copy", 18) + "Copia ora"; btn.classList.add("acc"); }
 }
 function openHandoff(n) {
   if (S.env !== "artifact") return;
@@ -1655,6 +1685,7 @@ function openHandoff(n) {
   h += '<div class="grid2"><button type="button" class="btn pri" data-act="sendCopy">' + ic("copy", 18) + 'Copia per l\'app</button><a class="btn" href="' + APP_URL + '" target="_blank" rel="noopener">Apri l\'app</a></div><div id="hoMsg" class="xs muted"></div>';
   h += '<button type="button" class="btn sm" data-act="closeModal">Più tardi</button></div></div>';
   $("modal").innerHTML = h;
+  prepareSend(true);
 }
 async function receive() {
   let text = "";
