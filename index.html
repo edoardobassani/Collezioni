@@ -980,6 +980,12 @@ function vScan() {
       h += knownBox(s);
       h += '<button type="button" class="btn pri full" data-act="scanRun"' + (S.sample ? "" : " disabled") + '>Riconosci ' + s.files.length + ' foto</button>';
     }
+  } else if (s.step === "align") {
+    const k = s.alignIdx; const [R, C] = (s.grid || "3x3").split("x").map(Number);
+    h += '<div><div class="b">Allinea la pagina ' + (k + 1) + ' di ' + s.files.length + '</div><div class="small muted">Trascina i 4 punti verdi sugli angoli esterni della griglia delle tasche: le linee devono cadere tra una carta e l\'altra. Così anche una foto storta viene raddrizzata prima del ritaglio.</div></div>';
+    h += '<div id="alignBox" style="position:relative;touch-action:none;user-select:none;-webkit-user-select:none;border-radius:12px;overflow:hidden;background:#000"><img src="' + s.urls[k] + '" alt="Pagina ' + (k + 1) + '" style="display:block;width:100%;pointer-events:none" draggable="false"><svg id="alignSvg" viewBox="0 0 1 1" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none">' + alignLines(s.corners[k], R, C) + '</svg>' + s.corners[k].map((p, j) => '<div data-corner="' + j + '" style="position:absolute;left:' + (p.x * 100) + '%;top:' + (p.y * 100) + '%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:22px;background:rgba(47,93,80,.35);border:3px solid #fff;box-shadow:0 0 0 2px #2F5D50;cursor:grab;touch-action:none"></div>').join("") + '</div>';
+    h += '<div class="grid2"><button type="button" class="btn" data-act="alignPrev">Indietro</button><button type="button" class="btn" data-act="alignReset">Reimposta</button></div>';
+    h += '<button type="button" class="btn pri full" data-act="alignNext">' + (k < s.files.length - 1 ? "Conferma e vai alla pagina " + (k + 2) : "Conferma e riconosci") + '</button>';
   } else if (s.step === "run") {
     h += '<div class="card pad stack"><div class="b">Claude sta guardando le foto…</div><div class="small muted">' + esc(s.msg || "Può richiedere fino a un minuto.") + '</div><div class="progress"><div style="width:' + (s.pct || 15) + '%"></div></div><button type="button" class="btn sm" data-act="scanStop">Interrompi</button></div>';
   } else if (s.step === "review") {
@@ -1018,12 +1024,72 @@ function binderBox(s) {
   let h = '<div class="card pad stack" style="gap:10px"><label class="row" style="cursor:pointer;min-height:44px"><input type="checkbox" data-change="scanBinder"' + (s.binder ? " checked" : "") + ' style="width:22px;height:22px;accent-color:#2F5D50"><span class="grow"><span class="b" style="display:block">Pagina di raccoglitore</span><span class="xs muted">Più carte nella stessa foto: l\'app ritaglia ogni tasca e Claude le riconosce una per una</span></span></label>';
   if (s.binder) {
     h += '<div class="chips">' + GRIDS.map(([k, l]) => '<button type="button" class="chip ' + (s.grid === k ? "on" : "") + '" data-act="scanGrid" data-v="' + k + '">' + l + '</button>').join("") + '</div>';
-    h += '<div class="xs muted">Inquadra la pagina intera, dritta e senza bordi del tavolo: i ritagli seguono la griglia scelta. Le tasche vuote vengono ignorate.</div>';
+    h += '<div class="xs muted">Dopo "Riconosci" potrai allineare la griglia sugli angoli di ogni pagina, così anche le foto storte vengono raddrizzate. Le tasche vuote vengono ignorate.</div>';
   }
   h += '</div>';
   return h;
 }
-async function cropGrid(file, rows, cols) {
+function defCorners() { return [{ x: .05, y: .05 }, { x: .95, y: .05 }, { x: .95, y: .95 }, { x: .05, y: .95 }]; }
+function quadH(q) {
+  const [p0, p1, p2, p3] = q;
+  const dx1 = p1.x - p2.x, dx2 = p3.x - p2.x, dx3 = p0.x - p1.x + p2.x - p3.x;
+  const dy1 = p1.y - p2.y, dy2 = p3.y - p2.y, dy3 = p0.y - p1.y + p2.y - p3.y;
+  let g = 0, h = 0;
+  const den = dx1 * dy2 - dx2 * dy1;
+  if ((Math.abs(dx3) > 1e-9 || Math.abs(dy3) > 1e-9) && Math.abs(den) > 1e-12) { g = (dx3 * dy2 - dx2 * dy3) / den; h = (dx1 * dy3 - dx3 * dy1) / den; }
+  const a = p1.x - p0.x + g * p1.x, b = p3.x - p0.x + h * p3.x, c = p0.x;
+  const d = p1.y - p0.y + g * p1.y, e = p3.y - p0.y + h * p3.y, f = p0.y;
+  return (u, v) => { const w = g * u + h * v + 1; return { x: (a * u + b * v + c) / w, y: (d * u + e * v + f) / w }; };
+}
+function alignLines(q, R, C) {
+  const H = quadH(q);
+  const ln = (A, B, wdt) => '<line x1="' + A.x + '" y1="' + A.y + '" x2="' + B.x + '" y2="' + B.y + '" stroke="#FFFFFF" stroke-width="' + wdt + '" vector-effect="non-scaling-stroke" stroke-opacity=".9"/>';
+  let h = '<polygon points="' + q.map(p => p.x + "," + p.y).join(" ") + '" fill="rgba(47,93,80,.12)" stroke="#2F5D50" stroke-width="3" vector-effect="non-scaling-stroke"/>';
+  for (let i = 1; i < C; i++) h += ln(H(i / C, 0), H(i / C, 1), 2);
+  for (let j = 1; j < R; j++) h += ln(H(0, j / R), H(1, j / R), 2);
+  return h;
+}
+async function warpPage(file, q, rows, cols) {
+  const bmp = await createImageBitmap(file);
+  const k0 = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+  const sw = Math.round(bmp.width * k0), sh = Math.round(bmp.height * k0);
+  const sc = document.createElement("canvas"); sc.width = sw; sc.height = sh;
+  const sctx = sc.getContext("2d"); sctx.drawImage(bmp, 0, 0, sw, sh);
+  const src = sctx.getImageData(0, 0, sw, sh).data;
+  const H = quadH(q);
+  const p0 = H(0, 0), p1 = H(1, 0), p3 = H(0, 1);
+  const estW = Math.hypot((p1.x - p0.x) * sw, (p1.y - p0.y) * sh), estH = Math.hypot((p3.x - p0.x) * sw, (p3.y - p0.y) * sh);
+  const kk = Math.min(1, 2200 / Math.max(estW, estH));
+  const ow = Math.max(cols * 60, Math.round(estW * kk)), oh = Math.max(rows * 80, Math.round(estH * kk));
+  const oc = document.createElement("canvas"); oc.width = ow; oc.height = oh;
+  const octx = oc.getContext("2d"); const out = octx.createImageData(ow, oh); const od = out.data;
+  for (let y = 0; y < oh; y++) {
+    const v = (y + .5) / oh;
+    for (let x = 0; x < ow; x++) {
+      const p = H((x + .5) / ow, v);
+      const sx = Math.min(sw - 1, Math.max(0, Math.round(p.x * sw - .5))), sy = Math.min(sh - 1, Math.max(0, Math.round(p.y * sh - .5)));
+      const si = (sy * sw + sx) * 4, di = (y * ow + x) * 4;
+      od[di] = src[si]; od[di + 1] = src[si + 1]; od[di + 2] = src[si + 2]; od[di + 3] = 255;
+    }
+  }
+  octx.putImageData(out, 0, 0);
+  return oc;
+}
+async function cropGrid(file, rows, cols, corners) {
+  if (corners) {
+    const page = await warpPage(file, corners, rows, cols);
+    const out = [];
+    const cw = page.width / cols, ch = page.height / rows;
+    const ix = cw * 0.015, iy = ch * 0.015;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(cw - 2 * ix); cv.height = Math.round(ch - 2 * iy);
+      cv.getContext("2d").drawImage(page, c * cw + ix, r * ch + iy, cw - 2 * ix, ch - 2 * iy, 0, 0, cv.width, cv.height);
+      const blob = await new Promise(res => cv.toBlob(b => res(b), "image/jpeg", 0.9));
+      if (blob) out.push({ blob, row: r + 1, col: c + 1 });
+    }
+    return out;
+  }
   const out = [];
   const bmp = await createImageBitmap(file);
   const cw = bmp.width / cols, ch = bmp.height / rows;
@@ -1096,7 +1162,7 @@ async function scanRun() {
     const [R, C] = (s.grid || "3x3").split("x").map(Number);
     for (let p = 0; p < s.files.length; p++) {
       try {
-        const cells = await cropGrid(s.files[p], R, C);
+        const cells = await cropGrid(s.files[p], R, C, s.corners && s.corners[p]);
         cells.forEach(cl => { s.work.push(cl.blob); s.workUrls.push(URL.createObjectURL(cl.blob)); s.workPos.push("Pagina " + (p + 1) + ", riga " + cl.row + ", colonna " + cl.col); });
       } catch (e) { toast("Non riesco a ritagliare la foto " + (p + 1) + ".", 4000); }
     }
@@ -1130,7 +1196,7 @@ async function scanRun() {
           forcedCond = s.forced.cond || "";
         }
         results.push({
-          include: true, catId, name: String(o.nome || o.name || "Pezzo senza nome").slice(0, 160), qty: Math.max(1, parseInt(o.quantita || o.qty, 10) || 1),
+          include: true, catId, setCode: String(o.codice_set || "").trim().toLowerCase().slice(0, 20), name: String(o.nome || o.name || "Pezzo senza nome").slice(0, 160), qty: Math.max(1, parseInt(o.quantita || o.qty, 10) || 1),
           cond: forcedCond || (c.cond.includes(o.stato) ? o.stato : ""), condForced: !!forcedCond, fields, photo: batch[ph].idx,
           value: numOrNull(est.valore ?? est.value), valueLow: numOrNull(est.min ?? est.low), valueHigh: numOrNull(est.max ?? est.high),
           valueConf: normConf(est.affidabilita ?? est.conf), valueSource: "Stima di Claude dalle foto", valueUrl: null, note: String(o.note || est.nota || "").slice(0, 200)
@@ -1167,8 +1233,9 @@ function scanPrompt(n, onlyCat, hint, forced) {
     (hint ? "Indicazioni del proprietario (da rispettare): " + hint + "\n" : "") +
     "Categorie disponibili (usa esattamente l'id e le chiavi dei campi):\n" + JSON.stringify(catsForPrompt(onlyCat)) + "\n" +
     "Regole: compila solo ciò che leggi o riconosci con ragionevole certezza; lascia fuori i campi incerti. Per i campi di tipo elenco usa una delle opzioni. Per lo stato usa una voce della scala della categoria solo se si vede chiaramente, altrimenti lascialo vuoto. Il nome deve essere breve e riconoscibile (es. 'Barolo Riserva 2013', 'Charizard – Set Base', '500 lire Caravelle 1961').\n" +
+    "Per le carte Pokémon aggiungi \"codice_set\" con l'identificativo del set secondo TCGdex (es. base1 per il Set Base, base2 per Jungle, sv01 per Scarlatto e Violetto); per Magic il codice Scryfall del set (es. lea, mh2). Nel campo numero usa il formato stampato sulla carta (es. 4/102). Se non sei sicuro del codice, lascialo vuoto.\n" +
     "Dai anche una stima indicativa del valore di mercato attuale in euro per UNA unità, basata sulle tue conoscenze, con un intervallo e l'affidabilità (alta, media o bassa). Se non sai stimare, metti valore null.\n" +
-    'Rispondi solo con un array JSON, un oggetto per pezzo: [{"foto":1,"catId":"...","nome":"...","quantita":1,"stato":"...","fields":{"chiave":"valore"},"stima":{"valore":0,"min":0,"max":0,"affidabilita":"media"},"note":"dubbi o cose da verificare, max 20 parole"}]';
+    'Rispondi solo con un array JSON, un oggetto per pezzo: [{"foto":1,"catId":"...","nome":"...","quantita":1,"stato":"...","fields":{"chiave":"valore"},"stima":{"valore":0,"min":0,"max":0,"affidabilita":"media"},"codice_set":"","note":"dubbi o cose da verificare, max 20 parole"}]';
 }
 function sampleErr(e) {
   const c = e && e.code;
@@ -1202,6 +1269,7 @@ async function scanSave() {
       pid = photoIds[r.photo];
     }
     const it = newDraft(r.catId, "in");
+    if (r.setCode) it.setCode = r.setCode;
     Object.assign(it, { name: r.name, qty: r.qty, cond: r.cond, fields: r.fields, photos: pid ? [pid] : [], value: r.value, valueLow: r.valueLow, valueHigh: r.valueHigh, valueConf: r.valueConf, valueSource: r.valueSource, valueUrl: r.valueUrl, valueDate: r.value != null ? today() : null, notes: r.note || "" });
     if (it.value != null) { it.buyPrice = it.value; it.buyKind = "stimato"; it.valueHistory = [{ d: today(), v: it.value }]; }
     it.createdAt = nowIso();
@@ -1559,6 +1627,7 @@ async function importApply() {
     }
     toast("Importati " + items.length + " pezzi");
     S.imp = null;
+    if (S.env === "pwa") setTimeout(() => linkAll(false), 800);
     syncSubs();
     render();
   } catch (e) { toast(dbErr(e), 5000); }
@@ -1585,6 +1654,7 @@ document.addEventListener("click", async ev => {
     case "setAddWish": openSetAdd("wish"); break;
     case "setAddGo": await setAddGo(el); break;
     case "cardPrices": await cardPrices(id || null); break;
+    case "linkNow": { toast("Collego le carte al catalogo…", 30000); try { const r = await linkCatalog(id, (i, n) => toast("Collego: " + (i + 1) + " di " + n, 30000)); toast(r.linked + " carte collegate" + (r.failed.length ? "; non trovate: " + r.failed.slice(0, 3).join(", ") + (r.failed.length > 3 ? "…" : "") : ""), 7000); } catch (e) { toast("Non riesco a raggiungere il catalogo."); } render(); break; }
     case "cardPriceOne": await cardPriceOne(id); break;
     case "pick": {
       if (id === "item") readDraftForm();
@@ -1641,7 +1711,14 @@ document.addEventListener("click", async ev => {
     // scansione
     case "scan": if (!S.config || !S.config.cats.length) { toast("Crea prima almeno una categoria."); break; } S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; go({ name: "scan" }); break;
     case "scanRm": readScanForm(); try { URL.revokeObjectURL(S.scan.urls[i]); } catch (e) { } S.scan.files.splice(i, 1); S.scan.urls.splice(i, 1); render(); break;
-    case "scanRun": await scanRun(); break;
+    case "scanRun": {
+      readScanForm();
+      if (S.scan.binder) { const sc = S.scan; sc.corners = sc.files.map((f, k) => (sc.corners && sc.corners[k]) || defCorners()); sc.alignIdx = 0; sc.step = "align"; render(); break; }
+      await scanRun(); break;
+    }
+    case "alignNext": { const sc = S.scan; if (sc.alignIdx < sc.files.length - 1) { sc.alignIdx++; render(); window.scrollTo(0, 0); } else { sc.step = "pick"; await scanRun(); } break; }
+    case "alignPrev": { const sc = S.scan; if (sc.alignIdx > 0) { sc.alignIdx--; render(); } else { sc.step = "pick"; render(); } break; }
+    case "alignReset": S.scan.corners[S.scan.alignIdx] = defCorners(); render(); break;
     case "scanGrid": readScanForm(); S.scan.grid = v; render(); break;
     case "scanStop": if (S.scan && S.scan.ctl) S.scan.ctl.abort(); break;
     case "scanReset": scanCleanup(); S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; render(); break;
@@ -1737,6 +1814,27 @@ document.addEventListener("change", async ev => {
     }
   }
 });
+let DRAG = null;
+document.addEventListener("pointerdown", ev => {
+  const h = ev.target.closest && ev.target.closest("[data-corner]");
+  if (!h || !S.scan || S.scan.step !== "align") return;
+  ev.preventDefault();
+  DRAG = { el: h, j: parseInt(h.dataset.corner, 10) };
+  try { h.setPointerCapture(ev.pointerId); } catch (e) { }
+});
+document.addEventListener("pointermove", ev => {
+  if (!DRAG) return;
+  const box = $("alignBox"); if (!box) return;
+  const r = box.getBoundingClientRect();
+  const x = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), y = Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height));
+  const q = S.scan.corners[S.scan.alignIdx]; q[DRAG.j] = { x, y };
+  DRAG.el.style.left = (x * 100) + "%"; DRAG.el.style.top = (y * 100) + "%";
+  const [R, C] = (S.scan.grid || "3x3").split("x").map(Number);
+  const svg = $("alignSvg"); if (svg) svg.innerHTML = alignLines(q, R, C);
+});
+const endDrag = () => { DRAG = null; };
+document.addEventListener("pointerup", endDrag);
+document.addEventListener("pointercancel", endDrag);
 document.addEventListener("keydown", ev => { if (ev.key === "Escape" && $("modal").innerHTML) closeModal(); });
 
 /* ================= Azioni categorie ================= */
@@ -1982,6 +2080,62 @@ async function cardPrices(onlyCat) {
   render();
 }
 
+
+/* --- collegamento al catalogo delle carte inserite da foto --- */
+function normTxt(t) { return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); }
+function normNum(n) { let t = String(n || "").split("/")[0].trim().toLowerCase().replace(/^#/, ""); t = t.replace(/^0+(?=\w)/, ""); return t; }
+function unlinked(catId) { return [...S.items.values()].filter(i => !i.deleted && i.catId === catId && !i.ref && i.fields && (i.fields.numero || i.fields.set)); }
+async function linkCatalog(catId, onProg) {
+  const src = catalogOf(catId); if (!src) return { linked: 0, failed: [] };
+  const list = unlinked(catId);
+  if (!list.length) return { linked: 0, failed: [] };
+  let sets = [];
+  try { sets = await loadSets(src, "en"); } catch (e) { }
+  if (src === "tcgdex") { try { const it = await loadSets(src, "it"); const seen = new Set(sets.map(x => x.id)); it.forEach(x => { if (!seen.has(x.id)) sets.push(x); else { const e = sets.find(y => y.id === x.id); e.nameIt = x.name; } }); } catch (e) { } }
+  const findSet = it => {
+    const code = normTxt(it.setCode); const nm = normTxt(it.fields.set);
+    if (code) { const s1 = sets.find(x => normTxt(x.id) === code); if (s1) return s1; }
+    if (!nm) return null;
+    let m = sets.filter(x => normTxt(x.id) === nm || normTxt(x.name) === nm || normTxt(x.nameIt) === nm);
+    if (m.length === 1) return m[0];
+    if (!m.length) m = sets.filter(x => nm.length > 3 && (normTxt(x.name).includes(nm) || nm.includes(normTxt(x.name)) || (x.nameIt && (normTxt(x.nameIt).includes(nm) || nm.includes(normTxt(x.nameIt))))));
+    if (m.length === 1) return m[0];
+    const total = String(it.fields.numero || "").split("/")[1];
+    if (m.length > 1 && total) { const t = m.filter(x => String(x.total) === total.trim()); if (t.length === 1) return t[0]; }
+    return m.length ? m[m.length - 1] : null;
+  };
+  const updated = []; const failed = [];
+  for (let i = 0; i < list.length; i++) {
+    const it = list[i];
+    if (onProg) onProg(i, list.length);
+    const st = findSet(it);
+    if (!st) { failed.push(it.name); continue; }
+    let data = null;
+    try { data = await loadSetCards(src, st.id, "en"); } catch (e) { }
+    if (!data) { failed.push(it.name); continue; }
+    const num = normNum(it.fields.numero);
+    let card = num ? data.cards.find(c => normNum(c.num) === num) : null;
+    if (!card) { const nm = normTxt(it.name.split(/[-–(]/)[0]); const byName = data.cards.filter(c => normTxt(c.name) === nm || normTxt(c.nameEn) === nm); if (byName.length === 1) card = byName[0]; }
+    if (!card) { failed.push(it.name); continue; }
+    const n = Object.assign({}, it);
+    n.ref = { src, set: src === "scryfall" ? (card.set || st.id) : st.id, card: card.id, num: card.num, lang: /ital/i.test(String(it.fields.lingua || "")) ? "it" : "en" };
+    if (!n.imageUrl) { n.imageUrl = card.img; n.imageUrlBig = card.imgBig; }
+    updated.push(n);
+  }
+  if (updated.length) await saveItems(updated);
+  return { linked: updated.length, failed };
+}
+async function linkAll(silent) {
+  if (S.env !== "pwa" || !navigator.onLine) return;
+  let tot = 0; const fail = [];
+  for (const c of catalogCats()) {
+    if (!unlinked(c.id).length) continue;
+    if (!silent) toast("Collego le carte di " + c.name + " al catalogo…", 30000);
+    try { const r = await linkCatalog(c.id, (i, n) => { if (!silent) toast("Collego " + c.name + ": " + (i + 1) + " di " + n, 30000); }); tot += r.linked; fail.push(...r.failed); } catch (e) { }
+  }
+  if (tot || fail.length) toast((tot ? tot + " carte collegate al catalogo" : "") + (fail.length ? (tot ? "; " : "") + fail.length + " da collegare a mano" : ""), 6000);
+  render();
+}
 /* --- viste --- */
 function ownedMap(catId) {
   const m = {};
@@ -2008,6 +2162,8 @@ function vSets() {
   let h = '<div class="wrap stack">' + topBar("Set " + (c ? c.name : ""), src === "tcgdex" ? "Catalogo TCGdex" : "Catalogo Scryfall");
   h += '<div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-label="Lingua del catalogo"><button type="button" class="' + (st.lang === "it" ? "on" : "") + '" data-act="setsLang" data-v="it">Italiano</button><button type="button" class="' + (st.lang === "en" ? "on" : "") + '" data-act="setsLang" data-v="en">Inglese</button></div>';
   h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="q" type="search" placeholder="Cerca un set (es. Set Base)" aria-label="Cerca set" value="' + esc(st.q) + '" data-input="setsSearch"></label>';
+  const nUnl = unlinked(v.catId).length;
+  if (nUnl) h += '<div class="notice between"><span>' + nUnl + ' carte inserite da foto o a mano non sono ancora collegate al catalogo, quindi non contano nel completamento.</span><button type="button" class="btn sm" data-act="linkNow" data-id="' + esc(v.catId) + '">Collega</button></div>';
   if (!st.sets && !st.err && !st.loading) { st.loading = true; loadSets(src, st.lang).then(x => { st.sets = x; st.loading = false; render(); }).catch(e => { st.err = e.message; st.loading = false; render(); }); }
   if (st.err) h += '<div class="notice warn">Non riesco a scaricare l\'elenco dei set (' + esc(st.err) + '). Controlla la connessione.</div>';
   else if (!st.sets) h += '<div class="card empty">Scarico l\'elenco dei set…</div>';
