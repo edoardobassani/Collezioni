@@ -1,0 +1,2221 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collezioni</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F5F5F2;--card:#FFFFFF;--line:#E2E2DC;--line2:#EEEEE9;--ink:#17181C;--muted:#5F636B;--acc:#2F5D50;--accbg:#EEF2EF;--up:#1D6B47;--down:#8F3A14;--warnbg:#FBEEE6}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:15px;-webkit-text-size-adjust:100%}
+button,input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
+a{color:var(--acc)}
+.wrap{max-width:560px;margin:0 auto;padding:20px 16px 110px}
+h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em}
+h2{margin:0;font-size:15px;font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.xs{font-size:11px}
+.b{font-weight:600}
+.up{color:var(--up)}.down{color:var(--down)}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.grow{flex:1;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.pad{padding:14px 16px}
+.list>*+*{border-top:1px solid var(--line2)}
+.li{display:flex;align-items:center;gap:12px;padding:11px 14px;width:100%;background:none;border:none;text-align:left;cursor:pointer}
+.li:hover{background:#FAFAF8}
+.ellip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ico{width:38px;height:38px;border-radius:10px;background:var(--accbg);color:var(--acc);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.ico.solid{background:var(--acc);color:#fff}
+.ico.sm{width:32px;height:32px;border-radius:9px}
+.ico img{width:100%;height:100%;object-fit:cover}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 16px;border-radius:12px;border:1px solid #D4D4CE;background:#fff;font-weight:600;cursor:pointer;text-decoration:none;color:var(--ink)}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.acc{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.danger{color:var(--down)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.btn[disabled]{opacity:.5;cursor:default}
+.btn.full{width:100%}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.iconbtn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:none;background:none;border-radius:12px;cursor:pointer;color:var(--ink)}
+.iconbtn:hover{background:#ECECE7}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{height:34px;padding:0 12px;border-radius:17px;border:1px solid #D4D4CE;background:#fff;font-size:13px;cursor:pointer}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:500}
+.seg{display:grid;gap:4px;padding:4px;background:#E9E9E4;border-radius:12px}
+.seg button{height:38px;border:none;border-radius:9px;background:transparent;font-size:13px;color:var(--muted);cursor:pointer}
+.seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+label.f{display:flex;flex-direction:column;gap:6px}
+label.f>span{font-size:12px;font-weight:500;color:var(--muted)}
+.in{height:46px;width:100%;background:#fff;border:1px solid var(--line);border-radius:12px;padding:0 14px;outline:none}
+textarea.in{height:auto;min-height:80px;padding:12px 14px;resize:vertical}
+.in:focus{border-color:var(--acc)}
+.search{display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;background:#fff;border:1px solid var(--line);border-radius:12px;color:var(--muted)}
+.search input{border:none;outline:none;background:transparent;flex:1;min-width:0}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:11px 0;font-size:14px}
+.kv>span:first-child{color:var(--muted)}
+.kv>span:last-child{text-align:right}
+.badge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;background:var(--accbg);color:var(--up);white-space:nowrap}
+.badge.warn{background:var(--warnbg);color:var(--down)}
+.badge.grey{background:#F0F0EC;color:var(--muted)}
+.photo{height:220px;border-radius:14px;background:#E9ECE9;display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted)}
+.photo img{width:100%;height:100%;object-fit:contain;background:#E9ECE9}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.thumb{width:72px;height:72px;border-radius:10px;overflow:hidden;background:#E9ECE9;position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb button{position:absolute;top:2px;right:2px;width:24px;height:24px;border-radius:12px;border:none;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:14px;line-height:1}
+.drop{position:relative;display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border:1px dashed #B9BAB3;border-radius:14px;cursor:pointer}
+.nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:5}
+.nav>div{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:6px 0 calc(10px + env(safe-area-inset-bottom))}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:48px;justify-content:center;border:none;background:none;font-size:11px;color:var(--muted);cursor:pointer}
+.nav button.on{color:var(--acc);font-weight:600}
+.overlay{position:fixed;inset:0;background:rgba(23,24,28,.45);z-index:10;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:12px 18px calc(24px + env(safe-area-inset-bottom))}
+.grab{width:40px;height:4px;border-radius:2px;background:#C9C9C3;margin:0 auto 10px}
+.dialog{background:#fff;border-radius:16px;max-width:400px;width:calc(100% - 32px);margin:auto auto;padding:20px}
+.overlay.center{align-items:center}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;max-width:90%;display:none}
+.empty{text-align:center;padding:32px 16px;color:var(--muted)}
+.spark{width:100%;height:56px;display:block}
+.progress{height:6px;background:#E9E9E4;border-radius:3px;overflow:hidden}
+.progress>div{height:100%;background:var(--acc);transition:width .3s}
+.sect{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
+.handle{display:flex;flex-direction:column}
+.tag{font-size:12px;color:var(--muted);padding:3px 8px;background:#F2F2EE;border-radius:8px}
+.notice{padding:12px 14px;border-radius:12px;background:var(--accbg);color:var(--acc);font-size:13px}
+.notice.warn{background:var(--warnbg);color:var(--down)}
+.hidden{display:none!important}
+.fileov{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0;z-index:2}
+</style>
+</head>
+<body>
+<div id="app"><div class="wrap"><div class="empty">Caricamento della collezione…</div></div></div>
+<input id="pick_cam" type="file" accept="image/*" capture="environment" data-change="picked" tabindex="-1" aria-hidden="true" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0">
+<input id="pick_gal" type="file" accept="image/*" multiple data-change="picked" tabindex="-1" aria-hidden="true" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0">
+<div id="modal"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+"use strict";
+/* ================= Costanti ================= */
+const SERVER = "Parallel Search";
+const CHUNK_MAX = 150;
+const HIST_MAX = 40;
+const FALLBACK_SCHEMAS = {
+  web_search: { type: "object", properties: {
+    objective: { type: "string", description: "Cosa si vuole trovare, in linguaggio naturale, con eventuali fonti preferite" },
+    search_queries: { type: "array", items: { type: "string" }, description: "Da 1 a 3 query brevi di 3-6 parole, senza virgolette" } },
+    required: ["objective", "search_queries"] },
+  web_fetch: { type: "object", properties: {
+    urls: { type: "array", items: { type: "string" }, description: "Indirizzi http/https delle pagine da leggere" },
+    objective: { type: "string", description: "Cosa cercare nelle pagine, max 200 caratteri" } },
+    required: ["urls"] }
+};
+const SEARCH_SESSION = "col-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
+const CHANNELS = ["Privato", "Asta", "Cardmarket", "eBay", "Subito", "Negozio", "Altro"];
+const EXIT_TYPES = { consumato: "Consumato", venduto: "Venduto", regalato: "Regalato", scambiato: "Scambiato" };
+
+/* ================= Icone ================= */
+const ICONS = {
+  wine: '<path d="M10 2h4v4.5c0 1 .5 1.6 1.3 2.4C16.4 10 17 11.2 17 13v7a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-7c0-1.8.6-3 1.7-4.1.8-.8 1.3-1.4 1.3-2.4z"/><path d="M7 14h10"/>',
+  whisky: '<path d="M5 6h14l-1.6 13.2A2 2 0 0 1 15.4 21H8.6a2 2 0 0 1-2-1.8z"/><path d="M6 11h12"/><rect x="9" y="13" width="4" height="4" rx="0.8"/>',
+  drinks: '<path d="M8 2h3v3.5c0 .8.4 1.3 1 1.9.9.9 1.4 1.8 1.4 3.2V20a1.5 1.5 0 0 1-1.5 1.5H6.6A1.5 1.5 0 0 1 5 20v-9.4c0-1.4.5-2.3 1.4-3.2.6-.6 1-1.1 1-1.9z"/><path d="M15.5 13h5l-.8 6.7a1.5 1.5 0 0 1-1.5 1.3h-.4a1.5 1.5 0 0 1-1.5-1.3z"/>',
+  cardstar: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 8.5l1.1 2.3 2.5.3-1.8 1.7.5 2.5-2.3-1.2-2.3 1.2.5-2.5-1.8-1.7 2.5-.3z"/>',
+  cardgem: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 7.5l3 4.5-3 4.5-3-4.5z"/>',
+  cards: '<rect x="8" y="4" width="12" height="16" rx="2"/><path d="M5.5 6.5 4 7.1a1.6 1.6 0 0 0-.9 2l3.6 9.6"/>',
+  stamp: '<rect x="4" y="3" width="16" height="18" rx="1" stroke-dasharray="1.6 1.8"/><rect x="7.5" y="6.5" width="9" height="11" rx="0.5"/>',
+  coins: '<ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><path d="M5 10v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-4"/><path d="M5 14v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-4"/>',
+  book: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/><path d="M9 7h6"/>',
+  film: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/>',
+  die: '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/>',
+  gamepad: '<path d="M7 8h10a4 4 0 0 1 4 4v1.5a3.5 3.5 0 0 1-6.3 2.1L14 15h-4l-.7.6A3.5 3.5 0 0 1 3 13.5V12a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="16" cy="12" r="0.8" fill="currentColor"/>',
+  coin: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5.5"/>',
+  ancient: '<path d="M12 3c4.8 0 8.7 3.6 9 8.3.3 5-3.6 9.5-8.9 9.7C6.9 21.2 3 17.4 3 12.4 3 7.2 7 3 12 3z"/><circle cx="12" cy="12" r="5.5" stroke-dasharray="1 2"/>',
+  crowncoin: '<circle cx="12" cy="12" r="8.5"/><path d="M8.4 14.6h7.2l.8-5.1-2.7 2-1.7-3-1.7 3-2.7-2z"/>',
+  box: '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
+  vinyl: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.5"/><path d="M12 6.5a5.5 5.5 0 0 1 5.5 5.5"/>',
+  watch: '<rect x="7" y="7" width="10" height="10" rx="2.5"/><path d="M9 7l.7-4h4.6l.7 4M9 17l.7 4h4.6l.7-4"/>',
+  star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>',
+  gem: '<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9.5 4 12 20l2.5-16"/>',
+  comic: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M4 10h16M12 10v11"/>',
+  camera2: '<path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  // icone interfaccia
+  camera: '<path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  refresh: '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  down: '<path d="M6 9l6 6 6-6"/>',
+  up: '<path d="M6 15l6-6 6 6"/>',
+  right: '<path d="M9 6l6 6-6 6"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  bookmark: '<path d="M7 3h10v18l-5-3.5L7 21z"/>',
+  download: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M4 17v3h16v-3"/>',
+  upload: '<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 17v3h16v-3"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-8 8"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
+  sort: '<path d="M7 4v16M4 7l3-3 3 3M17 20V4M14 17l3 3 3-3"/>'
+};
+const CAT_ICON_KEYS = ["wine", "whisky", "drinks", "cardstar", "cardgem", "cards", "stamp", "coins", "coin", "crowncoin", "ancient", "book", "film", "die", "gamepad", "box", "vinyl", "watch", "star", "gem", "comic"];
+function ic(k, s = 20, sw = 1.7) {
+  return '<svg aria-hidden="true" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[k] || ICONS.box) + '</svg>';
+}
+function iconHtml(icon, s = 20) {
+  if (icon && String(icon).startsWith("asset:")) return '<img alt="" src="' + photoSrc(String(icon).slice(6)) + '">';
+  return ic(icon || "box", s, 1.6);
+}
+
+/* ================= Utilità ================= */
+function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function uid(p = "i") { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function today() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function nowIso() { return new Date().toISOString(); }
+function fmtDate(s) { if (!s) return "—"; const d = new Date(s.length <= 10 ? s + "T12:00:00" : s); return isNaN(d) ? s : d.toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" }); }
+function eur(n) {
+  if (n == null || n === "" || isNaN(n)) return "—";
+  const v = Number(n);
+  return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: Math.abs(v) < 100 ? 2 : 0 }).format(v);
+}
+function signedEur(n) { if (n == null || isNaN(n)) return "—"; return (n > 0 ? "+ " : n < 0 ? "− " : "") + eur(Math.abs(n)); }
+function parseNum(s) {
+  if (s == null) return null;
+  let t = String(s).trim().replace(/[€\s]/g, "");
+  if (!t) return null;
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  const n = Number(t);
+  return isFinite(n) ? n : null;
+}
+function numIn(n) { return n == null || isNaN(n) ? "" : String(n).replace(".", ","); }
+function slug(s) { return (String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 24) || "cat") + "-" + Math.random().toString(36).slice(2, 6); }
+function toast(msg, ms = 2800) { const t = document.getElementById("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast._t); toast._t = setTimeout(() => { t.style.display = "none"; }, ms); }
+function lsGet(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+function $(id) { return document.getElementById(id); }
+function val(id) { const el = $(id); return el ? el.value : ""; }
+
+/* ================= Stato ================= */
+const S = {
+  db: null, user: null, sample: null, mcp: null, assets: null, downloads: null,
+  config: null, configLoaded: false, chunks: {}, items: new Map(), subs: {},
+  view: { name: "home" }, stack: [], open: lsGet("col.open", {}),
+  loadErr: null, slow: false, dirty: false, busy: false,
+  catState: {}, scan: null, quote: null, imp: null, draft: null
+};
+const FORM_VIEWS = new Set(["itemForm", "catForm", "groupForm", "scan", "quote", "backup"]);
+
+/* ================= Avvio ================= */
+async function boot() {
+  if (!window.claude || !window.claude.use) { return bootLocal(); }
+  S.env = "artifact";
+  const slowT = setTimeout(() => { S.slow = true; render(); }, 10000);
+  try { S.db = await claude.use("db"); } catch (e) { S.db = null; }
+  if (!S.db) { clearTimeout(slowT); S.loadErr = "L'archivio non è disponibile in questa vista. Apri l'artifact da Claude con il tuo account."; render(); return; }
+  claude.use("user").then(u => { S.user = u; }).catch(() => { });
+  claude.use("sample").then(s => { S.sample = s; render(); }).catch(() => { });
+  claude.use("mcp").then(m => { S.mcp = m; }).catch(() => { });
+  claude.use("assets").then(a => { S.assets = a; }).catch(() => { });
+  claude.use("downloads").then(d => { S.downloads = d; }).catch(() => { });
+  S.db.doc("config/main").onSnapshot(snap => {
+    clearTimeout(slowT); S.slow = false;
+    S.configLoaded = true;
+    S.config = snap.exists ? normConfig(snap.data()) : null;
+    syncSubs();
+    softRender();
+  }, err => { clearTimeout(slowT); S.loadErr = "Non riesco a leggere l'archivio (" + err.code + ")."; render(); });
+}
+
+function normConfig(c) {
+  const cfg = JSON.parse(JSON.stringify(c || {}));
+  cfg.groups = Array.isArray(cfg.groups) ? cfg.groups : [];
+  cfg.cats = Array.isArray(cfg.cats) ? cfg.cats : [];
+  cfg.cats.forEach(k => { k.fields = Array.isArray(k.fields) ? k.fields : []; k.cond = Array.isArray(k.cond) && k.cond.length ? k.cond : ["Nuovo", "Ottimo", "Buono", "Discreto", "Rovinato"]; });
+  return cfg;
+}
+
+function syncSubs() {
+  const ids = new Set((S.config ? S.config.cats : []).map(c => c.id));
+  for (const id of Object.keys(S.subs)) if (!ids.has(id)) { S.subs[id](); delete S.subs[id]; delete S.chunks[id]; rebuildItems(id); }
+  for (const id of ids) {
+    if (S.subs[id]) continue;
+    S.subs[id] = S.db.collection("cats/" + id + "/chunks").onSnapshot(snap => {
+      const m = {};
+      snap.docs.forEach(d => { m[d.id] = d.data(); });
+      S.chunks[id] = m;
+      rebuildItems(id);
+      softRender();
+    }, err => { toast("Errore nel leggere una categoria (" + err.code + ")"); });
+  }
+}
+
+function rebuildItems(catId) {
+  for (const [k, it] of S.items) if (it.catId === catId) S.items.delete(k);
+  const ch = S.chunks[catId] || {};
+  for (const [cid, doc] of Object.entries(ch)) {
+    const its = (doc && doc.items) || {};
+    for (const [id, it] of Object.entries(its)) {
+      if (!it || typeof it !== "object") continue;
+      const copy = JSON.parse(JSON.stringify(it));
+      copy.id = id; copy.catId = catId; copy._chunk = cid;
+      S.items.set(id, copy);
+    }
+  }
+}
+
+function softRender() { if (FORM_VIEWS.has(S.view.name)) { S.dirty = true; return; } render(); }
+
+/* ================= Accesso dati ================= */
+function cat(id) { return S.config && S.config.cats.find(c => c.id === id); }
+function group(id) { return S.config && S.config.groups.find(g => g.id === id); }
+function catItems(catId) { return [...S.items.values()].filter(i => i.catId === catId && !i.deleted); }
+function activeItems() { return [...S.items.values()].filter(i => !i.deleted && i.status === "in"); }
+function itemTotal(i) { return (Number(i.value) || 0) * (Number(i.qty) || 0); }
+function sumVal(list) { return list.reduce((a, i) => a + (i.status === "in" ? itemTotal(i) : 0), 0); }
+function sumQty(list) { return list.reduce((a, i) => a + (i.status === "in" ? (Number(i.qty) || 0) : 0), 0); }
+
+let wq = Promise.resolve();
+function enqueue(fn) { const p = wq.then(fn); wq = p.catch(() => { }); return p; }
+
+function cleanItem(it) {
+  const o = {};
+  const keys = ["name", "qty", "cond", "status", "value", "valueLow", "valueHigh", "valueDate", "valueSource", "valueUrl", "valueConf", "buyPrice", "buyKind", "buyDate", "buyFrom", "location", "tags", "notes", "fields", "photos", "movements", "valueHistory", "createdAt", "updatedAt", "deleted", "remainingMl", "capacityMl", "ref", "imageUrl"];
+  for (const k of keys) o[k] = it[k] === undefined ? null : it[k];
+  for (const k of Object.keys(it)) if (!(k in o) && k[0] !== "_" && k !== "id" && k !== "catId" && it[k] !== undefined) o[k] = it[k];
+  o.fields = it.fields || {};
+  o.photos = it.photos || [];
+  o.movements = it.movements || [];
+  o.valueHistory = (it.valueHistory || []).slice(-HIST_MAX);
+  o.deleted = !!it.deleted;
+  return o;
+}
+
+function chunkCounts(catId) {
+  const out = {};
+  for (const [cid, doc] of Object.entries(S.chunks[catId] || {})) out[cid] = Object.keys((doc && doc.items) || {}).length;
+  return out;
+}
+function pickChunk(catId, counts) {
+  const ids = Object.keys(counts).sort();
+  for (const id of ids) if (counts[id] < CHUNK_MAX) return id;
+  let n = ids.length + 1, id;
+  do { id = "c" + String(n).padStart(3, "0"); n++; } while (counts[id] != null);
+  counts[id] = 0;
+  return id;
+}
+
+/* Salva più pezzi raggruppandoli per blocco: una scrittura per blocco */
+async function saveItems(list) {
+  const groups = {};
+  const counts = {};
+  const moves = [];
+  for (const raw of list) {
+    const it = Object.assign({}, raw);
+    it.updatedAt = nowIso();
+    const prev = S.items.get(it.id);
+    let chunk = null;
+    if (prev && prev.catId === it.catId) chunk = prev._chunk;
+    if (prev && prev.catId !== it.catId) moves.push({ catId: prev.catId, chunk: prev._chunk, id: it.id });
+    if (!chunk) {
+      if (!counts[it.catId]) counts[it.catId] = chunkCounts(it.catId);
+      chunk = pickChunk(it.catId, counts[it.catId]);
+      counts[it.catId][chunk] = (counts[it.catId][chunk] || 0) + 1;
+    }
+    const key = it.catId + "/" + chunk;
+    (groups[key] = groups[key] || { catId: it.catId, chunk, items: {} }).items[it.id] = cleanItem(it);
+  }
+  for (const g of Object.values(groups)) {
+    await enqueue(async () => {
+      const ref = S.db.doc("cats/" + g.catId + "/chunks/" + g.chunk);
+      const exists = S.chunks[g.catId] && S.chunks[g.catId][g.chunk];
+      if (exists) await ref.update({ items: g.items });
+      else await ref.set({ items: g.items });
+    });
+  }
+  for (const m of moves) {
+    await enqueue(async () => {
+      const doc = S.chunks[m.catId] && S.chunks[m.catId][m.chunk];
+      if (!doc) return;
+      const items = Object.assign({}, doc.items || {});
+      delete items[m.id];
+      await S.db.doc("cats/" + m.catId + "/chunks/" + m.chunk).set({ items });
+    });
+  }
+}
+async function saveItem(it) { return saveItems([it]); }
+
+async function saveConfig(cfg) {
+  cfg.updatedAt = nowIso();
+  const clean = JSON.parse(JSON.stringify(cfg));
+  await enqueue(() => S.db.doc("config/main").set(clean));
+}
+
+function dbErr(e) {
+  const c = e && e.code;
+  if (c === "quota_exceeded") return "Spazio dell'archivio esaurito: " + (e.message || "");
+  if (c === "invalid_argument") return "Salvataggio rifiutato: non hai i permessi di scrittura o i dati non sono validi.";
+  if (c === "resource_exhausted") return "Troppe operazioni ravvicinate, riprova tra poco.";
+  return "Salvataggio non riuscito (" + (c || "errore") + ").";
+}
+
+/* ================= Navigazione ================= */
+function go(view) { S.stack.push(S.view); S.view = view; S.dirty = false; render(); window.scrollTo(0, 0); }
+function back() { S.view = S.stack.pop() || { name: "home" }; render(); }
+function tab(name) { S.stack = []; S.view = { name }; render(); window.scrollTo(0, 0); }
+
+function render() {
+  const app = $("app");
+  if (S.loadErr) { app.innerHTML = '<div class="wrap"><div class="empty">' + esc(S.loadErr) + '</div></div>'; return; }
+  if (!S.configLoaded) {
+    app.innerHTML = '<div class="wrap"><div class="empty">' + (S.slow ? "L'archivio non risponde ancora. Controlla la connessione: i dati arriveranno appena possibile." : "Caricamento della collezione…") + '</div></div>';
+    return;
+  }
+  const v = S.view;
+  let html = "";
+  try {
+    switch (v.name) {
+      case "home": html = vHome(); break;
+      case "cat": html = vCat(v.id); break;
+      case "item": html = vItem(v.id); break;
+      case "itemForm": html = vItemForm(); break;
+      case "history": html = vHistory(); break;
+      case "wish": html = vWish(); break;
+      case "backup": html = vBackup(); break;
+      case "cats": html = vCats(); break;
+      case "catForm": html = vCatForm(); break;
+      case "groupForm": html = vGroupForm(); break;
+      case "scan": html = vScan(); break;
+      case "quote": html = vQuote(); break;
+      case "sets": html = vSets(); break;
+      case "setDetail": html = vSetDetail(); break;
+      default: html = vHome();
+    }
+  } catch (e) { console.error(e); html = '<div class="wrap"><div class="empty">Errore di visualizzazione: ' + esc(e.message) + '</div></div>'; }
+  const navTabs = ["home", "history", "wish", "backup"];
+  const activeTab = navTabs.includes(v.name) ? v.name : (S.stack[0] && navTabs.includes(S.stack[0].name) ? S.stack[0].name : "home");
+  const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail"].includes(v.name);
+  app.innerHTML = html + (showNav ? navHtml(activeTab) : "");
+  afterRender();
+}
+function navHtml(active) {
+  const b = (n, k, l) => '<button type="button" data-act="tab" data-v="' + n + '" class="' + (active === n ? "on" : "") + '">' + ic(k, 22) + l + '</button>';
+  return '<nav class="nav" aria-label="Sezioni"><div>' + b("home", "grid", "Collezioni") + b("history", "clock", "Storico") + b("wish", "bookmark", "Desideri") + b("backup", "download", "Backup") + '</div></nav>';
+}
+function topBar(title, sub, right) {
+  return '<div class="row" style="margin-bottom:14px"><button type="button" class="iconbtn" style="margin-left:-12px" data-act="back" aria-label="Indietro">' + ic("back", 22, 1.8) + '</button><div class="grow"><h1 class="ellip">' + esc(title) + '</h1>' + (sub ? '<div class="small muted">' + sub + '</div>' : '') + '</div>' + (right || '') + '</div>';
+}
+function afterRender() {
+  const f = S.view.focus; if (f && $(f)) { $(f).focus(); S.view.focus = null; }
+}
+
+/* ================= Home ================= */
+function vHome() {
+  const cfg = S.config;
+  const all = activeItems();
+  const tot = sumVal(all);
+  const lastQ = all.map(i => i.valueDate).filter(Boolean).sort().pop();
+  let h = '<div class="wrap stack">';
+  h += '<div class="between"><div><h1>Collezioni</h1></div><button type="button" class="iconbtn" data-act="cats" aria-label="Gestisci categorie">' + ic("settings", 22) + '</button></div>';
+  h += '<div><div class="small muted">Valore stimato totale</div><div style="font-size:32px;font-weight:700;letter-spacing:-.02em">' + eur(tot) + '</div><div class="small muted">' + (lastQ ? "Ultima quotazione: " + fmtDate(lastQ) : "Nessuna quotazione ancora") + ' · ' + sumQty(all) + ' pezzi</div></div>';
+  if (S.env === "pwa") {
+    if (catalogCats().length) h += '<button type="button" class="btn" data-act="cardPrices">' + ic("refresh") + 'Aggiorna prezzi carte</button>';
+    h += '<div class="xs muted">Scheda da foto e quotazioni con Claude si fanno nell\'artifact su Claude; poi esporti e importi qui dal Backup.</div>';
+  } else {
+    h += '<div class="grid2"><button type="button" class="btn pri" data-act="scan">' + ic("camera") + 'Scheda da foto</button><button type="button" class="btn" data-act="quoteStart">' + ic("refresh") + 'Aggiorna prezzi</button></div>';
+  }
+  if (!cfg || !cfg.cats.length) {
+    h += S.env === "pwa" ? '<div class="card pad stack" style="text-align:center"><div class="b">Benvenuto in Collezioni</div><div class="small muted">Per iniziare importa il backup esportato dall\'artifact su Claude: arriveranno categorie, pezzi e foto.</div><button type="button" class="btn acc" data-act="tab" data-v="backup">' + ic("upload", 18) + 'Importa il backup</button><button type="button" class="btn sm" data-act="newCat">Oppure crea una categoria</button></div></div>' : '<div class="card pad empty">Nessuna categoria. <br><br><button type="button" class="btn acc" data-act="newCat">Crea la prima categoria</button></div></div>';
+    return h;
+  }
+  h += '<div class="between"><h2>Le tue collezioni</h2><button type="button" class="btn sm" data-act="cats">Modifica</button></div>';
+  const groups = [...cfg.groups].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const entries = [];
+  groups.forEach(g => entries.push({ type: "g", o: g.order || 0, g }));
+  cfg.cats.filter(c => !c.group || !group(c.group)).forEach(c => entries.push({ type: "c", o: c.order || 0, c }));
+  entries.sort((a, b) => a.o - b.o);
+  h += '<div class="stack" style="gap:8px">';
+  for (const e of entries) {
+    if (e.type === "c") { h += catRow(e.c, false); continue; }
+    const g = e.g;
+    const cats = cfg.cats.filter(c => c.group === g.id).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const its = cats.flatMap(c => catItems(c.id));
+    const open = !!S.open[g.id];
+    h += '<div class="card" style="overflow:hidden"><button type="button" class="li" data-act="toggleGroup" data-id="' + esc(g.id) + '" aria-expanded="' + open + '"><span class="ico solid">' + iconHtml(g.icon) + '</span><span class="grow"><span class="b" style="display:block">' + esc(g.name) + '</span><span class="small muted ellip" style="display:block">' + (open ? cats.length + " collezioni" : esc(cats.map(c => c.name).join(", ") || "vuoto")) + ' · ' + sumQty(its) + ' pezzi</span></span><span class="b">' + eur(sumVal(its)) + '</span><span class="muted">' + ic(open ? "up" : "down", 18, 2) + '</span></button>';
+    if (open) {
+      h += '<div style="border-top:1px solid var(--line2);padding:4px 0">';
+      if (!cats.length) h += '<div class="small muted" style="padding:10px 26px">Nessuna categoria in questo gruppo.</div>';
+      cats.forEach(c => { const ci = catItems(c.id); h += '<button type="button" class="li" style="padding-left:26px" data-act="openCat" data-id="' + esc(c.id) + '"><span class="ico sm">' + iconHtml(c.icon, 18) + '</span><span class="grow b" style="font-weight:500">' + esc(c.name) + ' <span class="muted" style="font-weight:400">· ' + sumQty(ci) + '</span></span><span class="small muted">' + eur(sumVal(ci)) + '</span><span class="muted">' + ic("right", 16, 2) + '</span></button>'; });
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+  h += '<button type="button" class="btn full" style="border-style:dashed;color:var(--muted)" data-act="newCat">' + ic("plus", 18) + 'Nuova categoria o gruppo</button>';
+  h += '</div></div>';
+  return h;
+}
+function catRow(c) {
+  const ci = catItems(c.id);
+  return '<button type="button" class="card li" data-act="openCat" data-id="' + esc(c.id) + '"><span class="ico">' + iconHtml(c.icon) + '</span><span class="grow"><span class="b" style="display:block">' + esc(c.name) + '</span><span class="small muted">' + sumQty(ci) + ' pezzi</span></span><span class="b">' + eur(sumVal(ci)) + '</span><span class="muted">' + ic("right", 16, 2) + '</span></button>';
+}
+
+/* ================= Elenco categoria ================= */
+function itemSubtitle(it, c) {
+  const parts = [];
+  (c ? c.fields : []).slice(0, 3).forEach(f => { const v = it.fields && it.fields[f.k]; if (v !== undefined && v !== null && v !== "" && v !== false) parts.push(f.type === "bool" ? f.label : String(v)); });
+  return parts.join(" · ");
+}
+function searchText(it) { return (it.name + " " + Object.values(it.fields || {}).join(" ") + " " + (it.tags || "") + " " + (it.notes || "") + " " + (it.location || "")).toLowerCase(); }
+function vCat(id) {
+  const c = cat(id);
+  if (!c) return '<div class="wrap">' + topBar("Categoria non trovata") + '</div>';
+  const st = S.catState[id] = S.catState[id] || { q: "", f: "in", sort: "value", limit: 100 };
+  let list = catItems(id);
+  const counts = { in: 0, wish: 0, out: 0 };
+  list.forEach(i => { counts[i.status] = (counts[i.status] || 0) + 1; });
+  list = list.filter(i => i.status === st.f);
+  if (st.q) { const q = st.q.toLowerCase(); list = list.filter(i => searchText(i).includes(q)); }
+  const sorters = { value: (a, b) => (Number(b.value) || 0) - (Number(a.value) || 0), name: (a, b) => a.name.localeCompare(b.name, "it"), recent: (a, b) => (b.createdAt || "").localeCompare(a.createdAt || "") };
+  list.sort(sorters[st.sort] || sorters.value);
+  const all = catItems(id);
+  let h = '<div class="wrap stack">';
+  h += topBar(c.name, sumQty(all) + " pezzi · valore " + eur(sumVal(all)), '<button type="button" class="iconbtn" style="background:var(--ink);color:#fff" data-act="newItem" data-id="' + esc(id) + '" aria-label="Aggiungi pezzo">' + ic("plus", 20, 1.8) + '</button>');
+  if (S.env === "pwa" && catalogOf(id)) h += '<div class="grid2"><button type="button" class="btn pri" data-act="openSets" data-id="' + esc(id) + '">' + ic("grid", 18) + 'Set e completamento</button><button type="button" class="btn" data-act="cardPrices" data-id="' + esc(id) + '">' + ic("refresh", 18) + 'Aggiorna prezzi</button></div>';
+  h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="q" type="search" placeholder="Cerca in ' + esc(c.name) + '" aria-label="Cerca" value="' + esc(st.q) + '" data-input="catSearch" data-id="' + esc(id) + '"></label>';
+  h += '<div class="between"><div class="chips">' + [["in", "In collezione"], ["wish", "Desideri"], ["out", "Usciti"]].map(([k, l]) => '<button type="button" class="chip ' + (st.f === k ? "on" : "") + '" data-act="catFilter" data-id="' + esc(id) + '" data-v="' + k + '">' + l + (counts[k] ? " " + counts[k] : "") + '</button>').join("") + '</div>';
+  h += '<select class="in" style="width:auto;height:34px;font-size:13px;border-radius:17px" aria-label="Ordina" data-change="catSort" data-id="' + esc(id) + '">' + [["value", "Valore"], ["name", "Nome"], ["recent", "Recenti"]].map(([k, l]) => '<option value="' + k + '"' + (st.sort === k ? " selected" : "") + '>' + l + '</option>').join("") + '</select></div>';
+  if (!list.length) {
+    h += '<div class="card empty">' + (st.q ? "Nessun risultato." : st.f === "in" ? "Nessun pezzo ancora. Aggiungilo con + oppure con la scheda da foto." : st.f === "wish" ? "Lista desideri vuota." : "Nessun pezzo uscito.") + '</div>';
+  } else {
+    h += '<div class="card list" style="overflow:hidden">';
+    list.slice(0, st.limit).forEach(it => { h += itemRow(it, c); });
+    h += '</div>';
+    if (list.length > st.limit) h += '<button type="button" class="btn full" data-act="catMore" data-id="' + esc(id) + '">Mostra altri (' + (list.length - st.limit) + ')</button>';
+  }
+  h += '</div>';
+  return h;
+}
+function itemRow(it, c, showCat) {
+  const thumb = it.photos && it.photos[0] ? '<img alt="" src="' + photoSrc(it.photos[0]) + '">' : remoteImg(it) ? '<img alt="" loading="lazy" src="' + esc(remoteImg(it)) + '">' : iconHtml(c && c.icon);
+  const sub = showCat && c ? esc(c.name) + (itemSubtitle(it, c) ? " · " + esc(itemSubtitle(it, c)) : "") : esc(itemSubtitle(it, c));
+  return '<button type="button" class="li" data-act="openItem" data-id="' + esc(it.id) + '"><span class="ico" style="width:42px;height:50px;border-radius:8px">' + thumb + '</span><span class="grow"><span class="b ellip" style="display:block">' + esc(it.name || "Senza nome") + '</span><span class="small muted ellip" style="display:block">' + (sub || "&nbsp;") + '</span>' + (it.cond ? '<span class="xs muted">' + esc(it.cond) + '</span>' : '') + '</span><span style="text-align:right;flex-shrink:0"><span class="b" style="display:block">' + eur(it.value) + '</span><span class="xs muted">' + (it.status === "in" ? "× " + (it.qty || 0) : it.status === "wish" ? "desiderio" : "uscito") + '</span></span></button>';
+}
+
+/* ================= Scheda pezzo ================= */
+function sparkline(hist) {
+  const pts = (hist || []).filter(p => p && p.v != null);
+  if (pts.length < 2) return '';
+  const vs = pts.map(p => p.v), mn = Math.min(...vs), mx = Math.max(...vs), rg = mx - mn || 1;
+  const d = pts.map((p, i) => (i ? "L" : "M") + (i / (pts.length - 1) * 320).toFixed(1) + " " + (50 - (p.v - mn) / rg * 42).toFixed(1)).join(" ");
+  const up = vs[vs.length - 1] >= vs[0];
+  return '<svg class="spark" role="img" aria-label="Andamento del valore, ' + (up ? "in crescita" : "in calo") + '" viewBox="0 0 320 56" preserveAspectRatio="none"><path d="' + d + '" fill="none" stroke="' + (up ? "#2F5D50" : "#8F3A14") + '" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><path d="M0 55.5H320" stroke="#E2E2DC"/></svg>';
+}
+function confBadge(c) { if (!c) return ""; return '<span class="badge ' + (c === "alta" ? "" : c === "media" ? "grey" : "warn") + '">affidabilità ' + esc(c) + '</span>'; }
+function vItem(id) {
+  const it = S.items.get(id);
+  if (!it || it.deleted) return '<div class="wrap">' + topBar("Pezzo non trovato") + '</div>';
+  const c = cat(it.catId);
+  let h = '<div class="wrap stack">';
+  h += topBar(c ? c.name : "", "", '<button type="button" class="btn sm" data-act="editItem" data-id="' + esc(id) + '">' + ic("edit", 16) + 'Modifica</button>');
+  const ph = it.photos || [];
+  h += '<div class="photo">' + (ph[0] ? '<img alt="Foto di ' + esc(it.name) + '" src="' + photoSrc(ph[0]) + '">' : remoteImg(it) ? '<img alt="Immagine di ' + esc(it.name) + '" src="' + esc(remoteImg(it, true)) + '">' : '<span class="stack" style="align-items:center;gap:6px">' + ic(c ? c.icon : "box", 40, 1.3) + '<span class="small">Nessuna foto</span></span>') + '</div>';
+  if (ph.length > 1) h += '<div class="thumbs">' + ph.slice(1).map(p => '<div class="thumb"><img alt="" src="' + photoSrc(p) + '"></div>').join("") + '</div>';
+  h += '<div><div class="xs b" style="color:var(--acc);letter-spacing:.04em;text-transform:uppercase">' + esc(c ? c.name : "") + (it.status === "wish" ? " · lista desideri" : it.status === "out" ? " · uscito" : "") + '</div><h1 style="margin-top:4px">' + esc(it.name) + '</h1><div class="muted" style="margin-top:2px">' + esc(itemSubtitle(it, c)) + '</div></div>';
+  // valore
+  const gain = it.value != null && it.buyPrice != null ? (it.value - it.buyPrice) : null;
+  h += '<div class="card pad stack" style="gap:10px"><div class="between" style="align-items:flex-end"><div><div class="small muted">Valore stimato a pezzo</div><div style="font-size:26px;font-weight:700">' + eur(it.value) + '</div>' + (it.valueLow != null && it.valueHigh != null && it.valueLow !== it.valueHigh ? '<div class="xs muted">intervallo ' + eur(it.valueLow) + ' – ' + eur(it.valueHigh) + '</div>' : '') + '</div>';
+  h += '<div style="text-align:right">' + (gain != null && it.buyKind === "reale" ? '<div class="small b ' + (gain >= 0 ? "up" : "down") + '">' + signedEur(gain) + ' dall\'acquisto</div>' : '') + '<div class="xs muted">' + (it.buyPrice != null ? "pagato " + eur(it.buyPrice) + (it.buyKind === "stimato" ? " (stimato)" : "") : "prezzo d'acquisto non indicato") + '</div></div></div>';
+  h += sparkline(it.valueHistory);
+  h += '<div class="between xs muted"><span>' + (it.valueSource ? "Fonte: " + esc(it.valueSource) : "Nessuna quotazione") + '</span><span>' + (it.valueDate ? fmtDate(it.valueDate) : "") + '</span></div>';
+  h += '<div class="between">' + confBadge(it.valueConf) + (it.valueUrl ? '<a class="xs" href="' + esc(it.valueUrl) + '" target="_blank" rel="noopener">Apri la fonte</a>' : '<span></span>') + '</div>';
+  if (it.buyKind === "stimato") h += '<div class="notice warn">Il prezzo d\'acquisto è stimato dalla quotazione. Se ricordi quanto l\'hai pagato, inseriscilo da Modifica.</div>';
+  if (S.env === "pwa" && it.ref && catalogOf(it.catId)) h += '<button type="button" class="btn sm" data-act="cardPriceOne" data-id="' + esc(id) + '">' + ic("refresh", 16) + 'Aggiorna prezzo dal catalogo</button>';
+  else if (S.sample) h += '<button type="button" class="btn sm" data-act="quoteOne" data-id="' + esc(id) + '">' + ic("refresh", 16) + 'Aggiorna quotazione</button>';
+  h += '</div>';
+  // dati
+  const rows = [];
+  if (it.status === "in") rows.push(["Quantità", it.qty]);
+  if (it.cond) rows.push(["Stato", it.cond]);
+  if (it.remainingMl != null && it.status === "in") rows.push(["Nella bottiglia aperta", fmtCl(it.remainingMl) + " di " + fmtCl(bottleCap(it) || 700)]);
+  (c ? c.fields : []).forEach(f => { const v = it.fields && it.fields[f.k]; if (v !== undefined && v !== null && v !== "") rows.push([f.label, f.type === "bool" ? (v ? "Sì" : "No") : f.type === "date" ? fmtDate(v) : v]); });
+  if (it.location) rows.push(["Collocazione", it.location]);
+  if (it.buyDate || it.buyFrom) rows.push(["Acquistato", [it.buyFrom, it.buyDate ? fmtDate(it.buyDate) : ""].filter(Boolean).join(" · ")]);
+  if (it.tags) rows.push(["Tag", it.tags]);
+  if (rows.length) h += '<div class="card list" style="padding:0 16px">' + rows.map(r => '<div class="kv"><span>' + esc(r[0]) + '</span><span>' + esc(r[1]) + '</span></div>').join("") + '</div>';
+  if (it.notes) h += '<div class="card pad"><div class="small muted" style="margin-bottom:4px">Note</div><div style="white-space:pre-wrap">' + esc(it.notes) + '</div></div>';
+  // movimenti
+  const mv = [...(it.movements || [])].reverse();
+  if (mv.length) {
+    h += '<h2>Movimenti</h2><div class="card list" style="padding:0 16px">';
+    mv.forEach(m => {
+      const label = m.part ? (m.levelTo === "Finita" ? "Bottiglia finita" : "Bevuta parziale") : m.type === "carico" ? "Carico" : (EXIT_TYPES[m.type] || m.type);
+      const det = [];
+      if (m.type === "venduto") { if (m.price != null) det.push("incasso " + eur(m.price)); if (m.fees) det.push("spese " + eur(m.fees)); if (m.channel) det.push(m.channel); }
+      if (m.type === "carico" && m.price != null) det.push(eur(m.price));
+      if (m.part) det.push(m.ml != null ? "versati " + fmtCl(m.ml) + (m.mlTo > 0 ? ", restano " + fmtCl(m.mlTo) : ", finita") : "da " + m.levelFrom + " a " + (m.levelTo === "Finita" ? "vuota" : m.levelTo));
+      if (m.rating) det.push("voto " + m.rating + "/10");
+      if (m.note) det.push(m.note);
+      h += '<div class="kv" style="align-items:center"><span style="color:var(--ink)"><span style="display:block;font-weight:500">' + esc(label) + (m.part ? '' : ' · ' + esc(m.qty)) + '</span><span class="small muted">' + esc(det.join(" · ")) + '</span></span><span class="small muted">' + fmtDate(m.date) + '</span></div>';
+    });
+    h += '</div>';
+  }
+  // azioni
+  h += '<div class="grid2" style="margin-top:6px">';
+  if (it.status === "in") h += '<button type="button" class="btn pri" data-act="exit" data-id="' + esc(id) + '">Scarica / vendi</button>';
+  else if (it.status === "wish") h += '<button type="button" class="btn pri" data-act="gotIt" data-id="' + esc(id) + '">L\'ho preso</button>';
+  else h += '<button type="button" class="btn" data-act="restore" data-id="' + esc(id) + '">Rimetti in collezione</button>';
+  h += '<button type="button" class="btn" data-act="dup" data-id="' + esc(id) + '">' + ic("copy", 18) + 'Duplica</button></div>';
+  h += '<button type="button" class="btn danger full" data-act="delItem" data-id="' + esc(id) + '">' + ic("trash", 18) + 'Elimina pezzo</button>';
+  h += '</div>';
+  return h;
+}
+
+/* ================= Modulo pezzo ================= */
+function newDraft(catId, status) {
+  const c = cat(catId);
+  return { id: uid(), catId, name: "", qty: 1, cond: "", status: status || "in", value: null, valueLow: null, valueHigh: null, valueDate: null, valueSource: null, valueUrl: null, valueConf: null, buyPrice: null, buyKind: null, buyDate: "", buyFrom: "", location: "", tags: "", notes: "", fields: {}, photos: [], movements: [], valueHistory: [], createdAt: null, _new: true, _origBuy: null, _cats: c ? c.id : null };
+}
+function vItemForm() {
+  const d = S.draft;
+  if (!d) return '<div class="wrap">' + topBar("Nessun pezzo") + '</div>';
+  const c = cat(d.catId);
+  let h = '<div class="wrap stack">';
+  h += topBar(d._new ? "Nuovo pezzo" : "Modifica pezzo", c ? esc(c.name) : "");
+  // categoria
+  h += '<label class="f"><span>Categoria</span><select class="in" id="f_cat" data-change="draftCat">' + S.config.cats.map(k => '<option value="' + esc(k.id) + '"' + (k.id === d.catId ? " selected" : "") + '>' + esc(k.name) + '</option>').join("") + '</select></label>';
+  h += '<div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-label="Dove si trova">' + [["in", "In collezione"], ["wish", "Lista desideri"]].map(([k, l]) => '<button type="button" class="' + (d.status === k || (k === "in" && d.status === "out") ? "on" : "") + '" data-act="draftStatus" data-v="' + k + '">' + l + '</button>').join("") + '</div>';
+  h += '<label class="f"><span>Nome</span><input class="in" id="f_name" value="' + esc(d.name) + '" placeholder="Es. Barolo Riserva 2013"></label>';
+  // foto
+  h += '<div class="stack" style="gap:8px"><span class="small muted" style="font-weight:500">Foto</span><div class="thumbs">' + (d.photos || []).map((p, i) => '<div class="thumb"><img alt="" src="' + photoSrc(p) + '"><button type="button" data-act="rmPhoto" data-i="' + i + '" aria-label="Rimuovi foto">×</button></div>').join("") + '<button type="button" class="thumb" style="display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);border:1px dashed #B9BAB3;background:#fff" data-act="pick" data-v="cam" data-id="item" aria-label="Scatta foto">' + ic("camera", 22) + '</button><button type="button" class="thumb" style="display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);border:1px dashed #B9BAB3;background:#fff" data-act="pick" data-v="gal" data-id="item" aria-label="Aggiungi dalla galleria">' + ic("image", 22) + '</button></div>' + (S.assets ? '' : '<span class="xs muted">Il caricamento foto non è disponibile in questa vista.</span>') + '</div>';
+  h += '<div class="grid2"><label class="f"><span>Quantità</span><input class="in" id="f_qty" inputmode="numeric" value="' + esc(d.qty) + '"></label><label class="f"><span>Stato di conservazione</span><select class="in" id="f_cond"><option value="">—</option>' + (c ? c.cond : []).map(o => '<option' + (o === d.cond ? " selected" : "") + '>' + esc(o) + '</option>').join("") + '</select></label></div>';
+  // campi categoria
+  if (c && c.fields.length) {
+    h += '<div class="sect">Dettagli ' + esc(c.name) + '</div>';
+    h += '<div class="stack" style="gap:10px">' + c.fields.map(f => fieldInput(f, d.fields[f.k])).join("") + '</div>';
+  }
+  // valore
+  h += '<div class="sect">Valore</div>';
+  h += '<div class="grid2"><label class="f"><span>Quotazione attuale (a pezzo)</span><input class="in" id="f_value" inputmode="decimal" value="' + esc(numIn(d.value)) + '" placeholder="€"></label><div class="f" style="display:flex;flex-direction:column;gap:6px"><span class="small muted" style="font-weight:500">&nbsp;</span><button type="button" class="btn" data-act="draftQuote"' + (S.sample ? "" : " disabled") + (S.env === "pwa" ? ' hidden' : '') + '>' + ic("search", 18) + 'Cerca quotazione</button></div></div>';
+  if (d.valueSource) h += '<div class="xs muted">Fonte: ' + esc(d.valueSource) + (d.valueDate ? " · " + fmtDate(d.valueDate) : "") + ' ' + confBadge(d.valueConf) + '</div>';
+  h += '<div id="quoteMsg" class="small muted"></div>';
+  h += '<div class="grid2"><label class="f"><span>Prezzo d\'acquisto (a pezzo)</span><input class="in" id="f_buy" inputmode="decimal" value="' + esc(numIn(d.buyPrice)) + '" placeholder="se vuoto = quotazione"></label><label class="f"><span>Data d\'acquisto</span><input class="in" id="f_buyDate" type="date" value="' + esc(d.buyDate || "") + '"></label></div>';
+  if (d.buyKind === "stimato") h += '<div class="xs muted">Il prezzo d\'acquisto attuale è stimato: se lo cambi diventa il prezzo reale.</div>';
+  h += '<label class="f"><span>Acquistato da</span><input class="in" id="f_buyFrom" value="' + esc(d.buyFrom || "") + '" placeholder="Negozio, asta, privato…"></label>';
+  h += '<div class="sect">Altro</div>';
+  h += '<label class="f"><span>Collocazione</span><input class="in" id="f_loc" value="' + esc(d.location || "") + '" placeholder="Es. cantina, scaffale B3"></label>';
+  h += '<label class="f"><span>Tag</span><input class="in" id="f_tags" value="' + esc(d.tags || "") + '" placeholder="separati da virgola"></label>';
+  h += '<label class="f"><span>Note</span><textarea class="in" id="f_notes">' + esc(d.notes || "") + '</textarea></label>';
+  h += '<div class="grid2" style="margin-top:6px"><button type="button" class="btn" data-act="back">Annulla</button><button type="button" class="btn pri" data-act="saveDraft">Salva</button></div>';
+  h += '</div>';
+  return h;
+}
+function fieldInput(f, v, prefix) {
+  const id = (prefix || "fx_") + f.k;
+  if (f.type === "select") return '<label class="f"><span>' + esc(f.label) + '</span><select class="in" id="' + esc(id) + '"><option value="">—</option>' + (f.options || []).map(o => '<option' + (o === v ? " selected" : "") + '>' + esc(o) + '</option>').join("") + (v && !(f.options || []).includes(v) ? '<option selected>' + esc(v) + '</option>' : '') + '</select></label>';
+  if (f.type === "bool") return '<label class="row" style="min-height:44px;cursor:pointer"><input type="checkbox" id="' + esc(id) + '"' + (v ? " checked" : "") + ' style="width:22px;height:22px;accent-color:#2F5D50"><span>' + esc(f.label) + '</span></label>';
+  if (f.type === "date") return '<label class="f"><span>' + esc(f.label) + '</span><input class="in" type="date" id="' + esc(id) + '" value="' + esc(v || "") + '"></label>';
+  if (f.type === "long") return '<label class="f"><span>' + esc(f.label) + '</span><textarea class="in" id="' + esc(id) + '">' + esc(v || "") + '</textarea></label>';
+  return '<label class="f"><span>' + esc(f.label) + '</span><input class="in" id="' + esc(id) + '"' + (f.type === "number" ? ' inputmode="decimal"' : '') + ' value="' + esc(v == null ? "" : v) + '"></label>';
+}
+function readDraftForm() {
+  const d = S.draft; if (!d) return;
+  const c = cat(d.catId);
+  d.name = val("f_name").trim();
+  d.qty = Math.max(0, parseInt(val("f_qty"), 10) || 0);
+  d.cond = val("f_cond");
+  d.value = parseNum(val("f_value"));
+  const buy = parseNum(val("f_buy"));
+  d._buyInput = buy;
+  d.buyDate = val("f_buyDate");
+  d.buyFrom = val("f_buyFrom").trim();
+  d.location = val("f_loc").trim();
+  d.tags = val("f_tags").trim();
+  d.notes = val("f_notes");
+  if (c) c.fields.forEach(f => {
+    const el = $("fx_" + f.k); if (!el) return;
+    if (f.type === "bool") d.fields[f.k] = el.checked;
+    else if (f.type === "number") { const n = parseNum(el.value); d.fields[f.k] = n == null ? "" : n; }
+    else d.fields[f.k] = el.value.trim();
+  });
+}
+async function saveDraft() {
+  readDraftForm();
+  const d = S.draft;
+  if (!d.name) { toast("Inserisci almeno il nome."); return; }
+  const it = Object.assign({}, d);
+  const buyIn = d._buyInput;
+  if (buyIn == null) {
+    if (d.buyPrice != null && !d._new) { /* svuotato a mano */ it.buyPrice = null; it.buyKind = null; }
+    if (it.value != null && it.status !== "wish") { it.buyPrice = it.value; it.buyKind = "stimato"; }
+  } else if (buyIn !== d._origBuy || d.buyKind !== "stimato") { it.buyPrice = buyIn; it.buyKind = "reale"; }
+  if (it.status === "out" && it.qty > 0) it.status = "in";
+  if (d._new) {
+    it.createdAt = nowIso();
+    if (it.status === "in") it.movements = [{ type: "carico", qty: it.qty, date: it.buyDate || today(), price: it.buyPrice != null ? it.buyPrice * it.qty : null }];
+    if (it.value != null && !(it.valueHistory || []).length) it.valueHistory = [{ d: it.valueDate || today(), v: it.value }];
+  }
+  ["_new", "_origBuy", "_cats", "_buyInput", "_chunk"].forEach(k => delete it[k]);
+  S.busy = true;
+  try {
+    await saveItem(it);
+    toast("Salvato");
+    S.draft = null;
+    const top = S.stack[S.stack.length - 1];
+    if (top && top.name === "item" && top.id === it.id) S.stack.pop();
+    S.view = { name: "item", id: it.id };
+    render();
+  } catch (e) { toast(dbErr(e), 4500); }
+  S.busy = false;
+}
+
+/* ================= Foto ================= */
+async function compressImage(file, max = 1280, q = 0.82) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const r = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(bmp.width * r); cv.height = Math.round(bmp.height * r);
+    cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+    return await new Promise(res => cv.toBlob(b => res(b || file), "image/jpeg", q));
+  } catch (e) { return file; }
+}
+async function uploadPhoto(file) {
+  if (!S.assets) throw new Error("Caricamento foto non disponibile");
+  const blob = await compressImage(file);
+  const r = await S.assets.upload(blob);
+  if (S.env === "pwa") LOCAL.urls.set(r.id, URL.createObjectURL(blob));
+  return r.id;
+}
+
+/* ================= Uscita (scarico / vendita) ================= */
+const LEVEL_FRAC = { "Piena": 1, "3/4": 0.75, "1/2": 0.5, "1/4": 0.25, "Quasi finita": 0.08, "Finita": 0 };
+function levelFrac(l) { return LEVEL_FRAC[l] != null ? LEVEL_FRAC[l] : 1; }
+function levelFromFrac(f) { return f >= 0.875 ? "Piena" : f >= 0.625 ? "3/4" : f >= 0.375 ? "1/2" : f >= 0.15 ? "1/4" : "Quasi finita"; }
+function bottleCap(it) {
+  if (it.capacityMl) return it.capacityMl;
+  const f = it.fields && it.fields.formato;
+  const m = f && String(f).match(/([\d.,]+)\s*(l|cl|ml)/i);
+  if (!m) return null;
+  const n = parseNum(m[1]); if (!n) return null;
+  const u = m[2].toLowerCase();
+  return Math.round(u === "l" ? n * 1000 : u === "cl" ? n * 10 : n);
+}
+function fmtCl(ml) { if (ml == null || isNaN(ml)) return "—"; const cl = Math.round(ml / 10 * 10) / 10; return String(cl).replace(".", ",") + " cl"; }
+function keepExit() {
+  const e = S.exit; if (!e) return;
+  if ($("x_note")) e.note = val("x_note").trim();
+  if ($("x_rating")) e.rating = parseInt(val("x_rating"), 10) || null;
+  if ($("x_date")) e.date = val("x_date");
+  if ($("x_cl")) e.cl = parseNum(val("x_cl"));
+  if ($("x_cap")) { const c = parseNum(val("x_cap")); if (c > 0) { const old = e.cap; e.cap = c * 10; if (e.remFrom === old) e.remFrom = e.cap; } }
+}
+function exitAfterText() {
+  const e = S.exit;
+  if (!e.cl || e.cl <= 0) return "Restano " + fmtCl(e.remFrom) + ".";
+  const after = Math.max(0, e.remFrom - e.cl * 10);
+  return after <= 0 ? "La bottiglia risulterà finita." : "Dopo resteranno " + fmtCl(after) + " (livello " + levelFromFrac(after / e.cap) + ").";
+}
+function openExit(id) {
+  const it = S.items.get(id); const c = cat(it.catId);
+  const types = Object.keys(EXIT_TYPES).filter(t => t !== "consumato" || (c && c.consumable));
+  const levelField = c && c.fields.find(f => f.k === "livello" && f.type === "select");
+  const capMl = bottleCap(it);
+  S.exit = { id, type: c && c.consumable ? "consumato" : "venduto", types, part: !!(levelField && ((it.fields && it.fields.livello && it.fields.livello !== "Piena") || it.remainingMl != null)), levels: levelField ? levelField.options : null, level: null, mode: "cl", cl: null, cap: capMl || 700, capAsk: !capMl };
+  S.exit.remFrom = it.remainingMl != null ? it.remainingMl : S.exit.cap * levelFrac((it.fields && it.fields.livello) || "Piena");
+  renderExit();
+}
+function renderExit() {
+  const e = S.exit; const it = S.items.get(e.id);
+  let h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Uscita dalla collezione"><div class="grab"></div>';
+  h += '<div class="between"><div><h1 style="font-size:20px">Uscita dalla collezione</h1><div class="small muted">' + esc(it.name) + ' · ' + it.qty + ' in collezione</div></div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
+  h += '<div class="seg" style="grid-template-columns:repeat(' + e.types.length + ',minmax(0,1fr))" role="group" aria-label="Tipo di uscita">' + e.types.map(t => '<button type="button" class="' + (e.type === t ? "on" : "") + '" data-act="exitType" data-v="' + t + '">' + EXIT_TYPES[t] + '</button>').join("") + '</div>';
+  const partMode = e.type === "consumato" && e.levels && e.part;
+  if (e.type === "consumato" && e.levels) {
+    h += '<div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-label="Quanto"><button type="button" class="' + (!e.part ? "on" : "") + '" data-act="exitPart" data-v="0">Bottiglia intera</button><button type="button" class="' + (e.part ? "on" : "") + '" data-act="exitPart" data-v="1">Una parte</button></div>';
+  }
+  if (partMode) {
+    const cap = e.cap;
+    const rem = e.remFrom;
+    h += '<div class="card pad stack" style="gap:8px"><div class="between"><span class="small muted">Nella bottiglia aperta</span><span class="b">' + fmtCl(rem) + ' di ' + fmtCl(cap) + '</span></div><div class="progress"><div style="width:' + Math.round(Math.max(0, Math.min(1, rem / cap)) * 100) + '%"></div></div></div>';
+    h += '<div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-label="Come indicarlo"><button type="button" class="' + (e.mode === "cl" ? "on" : "") + '" data-act="exitMode" data-v="cl">Quantità versata</button><button type="button" class="' + (e.mode === "lvl" ? "on" : "") + '" data-act="exitMode" data-v="lvl">Livello che resta</button></div>';
+    if (e.mode === "cl") {
+      h += '<label class="f"><span>Quanto hai versato (cl)</span><input class="in" id="x_cl" inputmode="decimal" value="' + esc(numIn(e.cl)) + '" placeholder="Es. 4" data-input="exitCl"></label>';
+      h += '<div class="chips">' + [2, 4, 6, 10].map(n => '<button type="button" class="chip ' + (e.cl === n ? "on" : "") + '" data-act="exitClChip" data-v="' + n + '">' + n + ' cl</button>').join("") + '</div>';
+      h += '<div class="small muted" id="x_after">' + exitAfterText() + '</div>';
+    } else {
+      const opts = e.levels.filter(l => l !== "Piena").concat(["Finita"]);
+      h += '<div class="chips">' + opts.map(l => '<button type="button" class="chip ' + (e.level === l ? "on" : "") + '" data-act="exitLevel" data-v="' + esc(l) + '">' + esc(l) + '</button>').join("") + '</div>';
+    }
+    if (e.capAsk) h += '<label class="f"><span>Capacità della bottiglia (cl)</span><input class="in" id="x_cap" inputmode="decimal" value="' + esc(numIn(cap / 10)) + '" data-input="exitCap"></label>';
+    h += '<label class="f"><span>Data</span><input class="in" id="x_date" type="date" value="' + esc(e.date || today()) + '"></label>';
+  } else {
+    h += '<div class="grid2"><label class="f"><span>Quantità</span><input class="in" id="x_qty" inputmode="numeric" value="1"></label><label class="f"><span>Data</span><input class="in" id="x_date" type="date" value="' + today() + '"></label></div>';
+  }
+  if (e.type === "venduto") {
+    h += '<div class="grid2"><label class="f"><span>Incasso totale</span><input class="in" id="x_price" inputmode="decimal" placeholder="€" data-input="exitCalc"></label><label class="f"><span>Commissioni e spese</span><input class="in" id="x_fees" inputmode="decimal" placeholder="€" data-input="exitCalc"></label></div>';
+    h += '<label class="f"><span>Canale</span><select class="in" id="x_channel">' + CHANNELS.map(c => '<option>' + c + '</option>').join("") + '</select></label>';
+  }
+  if (e.type === "consumato") h += '<label class="f"><span>Voto (1–10)</span><input class="in" id="x_rating" inputmode="numeric" placeholder="facoltativo" value="' + esc(e.rating || "") + '"></label>';
+  h += '<label class="f"><span>' + (e.type === "consumato" ? "Occasione e note di degustazione" : "Note") + '</span><input class="in" id="x_note" value="' + esc(e.note || "") + '" placeholder="' + (e.type === "venduto" ? "Acquirente, spedizione…" : e.type === "consumato" ? "Es. cena di Natale" : "") + '"></label>';
+  if (e.type === "venduto") h += '<div class="card list" style="padding:0 16px" id="x_calc">' + exitCalcHtml() + '</div>';
+  h += '<button type="button" class="btn pri full" data-act="exitSave">' + (partMode ? "Registra la bevuta" : "Registra " + EXIT_TYPES[e.type].toLowerCase()) + '</button>';
+  h += '</div></div>';
+  $("modal").innerHTML = h;
+}
+function exitCalcHtml() {
+  const it = S.items.get(S.exit.id);
+  const qty = Math.max(1, parseInt(val("x_qty"), 10) || 1);
+  const price = parseNum(val("x_price")), fees = parseNum(val("x_fees")) || 0;
+  const cost = it.buyPrice != null ? it.buyPrice * qty : null;
+  const net = price != null ? price - fees : null;
+  const g = net != null && cost != null ? net - cost : null;
+  return '<div class="kv"><span>Prezzo d\'acquisto' + (it.buyKind === "stimato" ? " (stimato)" : "") + '</span><span>' + eur(cost) + '</span></div><div class="kv"><span>Incasso netto</span><span>' + eur(net) + '</span></div><div class="kv"><span class="b" style="color:var(--ink)">Guadagno</span><span class="b ' + (g == null ? "" : g >= 0 ? "up" : "down") + '">' + signedEur(g) + '</span></div>';
+}
+async function exitSave() {
+  const e = S.exit; const it = Object.assign({}, S.items.get(e.id));
+  if (e.type === "consumato" && e.levels && e.part) {
+    keepExit();
+    let mlTo;
+    if (e.mode === "cl") {
+      if (!e.cl || e.cl <= 0) { toast("Indica quanti cl hai versato."); return; }
+      mlTo = Math.max(0, e.remFrom - e.cl * 10);
+    } else {
+      if (!e.level) { toast("Scegli quanto ne resta."); return; }
+      mlTo = e.cap * levelFrac(e.level);
+    }
+    mlTo = Math.round(mlTo);
+    const finished = mlTo <= 0;
+    const fromLvl = (it.fields && it.fields.livello) || "Piena";
+    const toLvl = finished ? "Finita" : levelFromFrac(mlTo / e.cap);
+    const m = { type: "consumato", part: true, qty: finished ? 1 : 0, levelFrom: fromLvl, levelTo: toLvl, mlFrom: Math.round(e.remFrom), mlTo, ml: Math.round(e.remFrom - mlTo), date: e.date || today(), note: e.note || "" };
+    if (e.rating) m.rating = Math.min(10, Math.max(1, e.rating));
+    it.movements = [...(it.movements || []), m];
+    it.fields = Object.assign({}, it.fields || {});
+    if (e.capAsk) it.capacityMl = e.cap;
+    if (finished) {
+      it.qty = it.qty - 1;
+      it.fields.livello = "Piena";
+      it.remainingMl = null;
+      if (it.cond === "Aperta") it.cond = "Sigillata";
+      if (it.qty <= 0) { it.qty = 0; it.status = "out"; }
+    } else {
+      it.fields.livello = toLvl;
+      it.remainingMl = mlTo;
+      const c = cat(it.catId);
+      if (c && c.cond.includes("Aperta")) it.cond = "Aperta";
+    }
+    try { await saveItem(it); closeModal(); toast(finished ? "Bottiglia finita" : "Restano " + fmtCl(mlTo)); render(); } catch (err) { toast(dbErr(err), 4500); }
+    return;
+  }
+  const qty = Math.min(it.qty, Math.max(1, parseInt(val("x_qty"), 10) || 1));
+  const m = { type: e.type, qty, date: val("x_date") || today(), note: val("x_note").trim() };
+  if (e.type === "venduto") { m.price = parseNum(val("x_price")); m.fees = parseNum(val("x_fees")); m.channel = val("x_channel"); m.cost = it.buyPrice != null ? it.buyPrice * qty : null; m.costKind = it.buyKind; }
+  if (e.type === "consumato") { const r = parseInt(val("x_rating"), 10); if (r) m.rating = Math.min(10, Math.max(1, r)); }
+  it.movements = [...(it.movements || []), m];
+  it.qty = it.qty - qty;
+  if (it.qty <= 0) { it.qty = 0; it.status = "out"; }
+  try { await saveItem(it); closeModal(); toast("Registrato"); render(); } catch (err) { toast(dbErr(err), 4500); }
+}
+function closeModal() { $("modal").innerHTML = ""; S.exit = null; }
+
+/* ================= Dialogo di conferma ================= */
+function confirmBox(title, text, okLabel, danger) {
+  return new Promise(res => {
+    $("modal").innerHTML = '<div class="overlay center"><div class="dialog stack" role="alertdialog" aria-modal="true" aria-label="' + esc(title) + '"><h2 style="font-size:17px">' + esc(title) + '</h2><div class="muted" style="font-size:14px">' + esc(text) + '</div><div class="grid2"><button type="button" class="btn" id="cb_no">Annulla</button><button type="button" class="btn ' + (danger ? "danger" : "pri") + '" id="cb_ok">' + esc(okLabel) + '</button></div></div></div>';
+    $("cb_no").onclick = () => { $("modal").innerHTML = ""; res(false); };
+    $("cb_ok").onclick = () => { $("modal").innerHTML = ""; res(true); };
+  });
+}
+
+/* ================= Storico ================= */
+function vHistory() {
+  const st = S.histState = S.histState || { f: "all", year: String(new Date().getFullYear()) };
+  const rows = [];
+  for (const it of S.items.values()) {
+    if (it.deleted) continue;
+    (it.movements || []).forEach(m => { if (m.type !== "carico") rows.push({ it, m }); });
+  }
+  const years = [...new Set(rows.map(r => (r.m.date || "").slice(0, 4)).filter(Boolean))].sort().reverse();
+  if (!years.includes(st.year)) years.unshift(st.year);
+  const inYear = rows.filter(r => (r.m.date || "").startsWith(st.year));
+  let inc = 0, gain = 0, gainEst = false, drunk = 0;
+  inYear.forEach(({ m }) => {
+    if (m.type === "venduto") { const net = (m.price || 0) - (m.fees || 0); inc += net; if (m.cost != null) { gain += net - m.cost; if (m.costKind === "stimato") gainEst = true; } }
+    if (m.type === "consumato") drunk += m.qty || 0;
+  });
+  let list = inYear.filter(r => st.f === "all" || r.m.type === st.f);
+  list.sort((a, b) => (b.m.date || "").localeCompare(a.m.date || ""));
+  let h = '<div class="wrap stack"><div class="between"><h1>Storico</h1><select class="in" style="width:auto;height:36px" aria-label="Anno" data-change="histYear">' + years.map(y => '<option' + (y === st.year ? " selected" : "") + '>' + y + '</option>').join("") + '</select></div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">' +
+    '<div class="card pad" style="padding:12px"><div class="xs muted">Incassato netto</div><div class="b" style="font-size:17px">' + eur(inc) + '</div></div>' +
+    '<div class="card pad" style="padding:12px"><div class="xs muted">Guadagno' + (gainEst ? "*" : "") + '</div><div class="b ' + (gain >= 0 ? "up" : "down") + '" style="font-size:17px">' + signedEur(gain) + '</div></div>' +
+    '<div class="card pad" style="padding:12px"><div class="xs muted">Bottiglie bevute</div><div class="b" style="font-size:17px">' + drunk + '</div></div></div>';
+  if (gainEst) h += '<div class="xs muted">* include vendite con prezzo d\'acquisto stimato.</div>';
+  h += '<div class="seg" style="grid-template-columns:repeat(5,minmax(0,1fr))" role="group" aria-label="Filtra">' + [["all", "Tutti"], ["venduto", "Venduti"], ["consumato", "Bevuti"], ["regalato", "Regalati"], ["scambiato", "Scambi"]].map(([k, l]) => '<button type="button" class="' + (st.f === k ? "on" : "") + '" data-act="histF" data-v="' + k + '">' + l + '</button>').join("") + '</div>';
+  if (!list.length) h += '<div class="card empty">Nessuna uscita registrata nel ' + esc(st.year) + '.</div>';
+  let month = "";
+  let open = false;
+  list.forEach(({ it, m }) => {
+    const mo = (m.date || "").slice(0, 7);
+    if (mo !== month) {
+      if (open) h += '</div>';
+      month = mo;
+      const d = new Date(mo + "-15T12:00:00");
+      h += '<div class="sect">' + (isNaN(d) ? "Senza data" : d.toLocaleDateString("it-IT", { month: "long" })) + '</div><div class="card list" style="padding:0 14px">';
+      open = true;
+    }
+    const c = cat(it.catId);
+    let right = "", note = "";
+    if (m.type === "venduto") { const net = (m.price || 0) - (m.fees || 0); right = eur(net); if (m.cost != null) { const g = net - m.cost; note = '<span class="xs b ' + (g >= 0 ? "up" : "down") + '">' + signedEur(g) + (m.costKind === "stimato" ? "*" : "") + '</span>'; } }
+    else if (m.part) { right = m.ml != null ? fmtCl(m.ml) : (m.levelTo === "Finita" ? "finita" : "resta " + m.levelTo); note = '<span class="xs muted">bevuta parziale</span>'; }
+    else { right = m.qty + (c && c.consumable ? " bt" : " pz"); note = '<span class="xs muted">' + EXIT_TYPES[m.type].toLowerCase() + '</span>'; }
+    h += '<button type="button" class="li" style="padding:11px 0" data-act="openItem" data-id="' + esc(it.id) + '"><span class="grow"><span class="ellip" style="display:block;font-weight:500">' + esc(it.name) + '</span><span class="small muted ellip" style="display:block">' + (m.part ? (m.ml != null ? (m.mlTo > 0 ? "Bevuta parziale, restano " + fmtCl(m.mlTo) : "Bevuta, bottiglia finita") : "Bevuta da " + esc(m.levelFrom) + (m.levelTo === "Finita" ? " a vuota" : " a " + esc(m.levelTo))) : EXIT_TYPES[m.type]) + ' · ' + fmtDate(m.date) + (m.channel ? " · " + esc(m.channel) : "") + (m.rating ? " · voto " + m.rating + "/10" : "") + '</span></span><span style="text-align:right"><span class="b" style="display:block">' + right + '</span>' + note + '</span></button>';
+  });
+  if (open) h += '</div>';
+  h += '</div>';
+  return h;
+}
+
+/* ================= Desideri ================= */
+function vWish() {
+  const list = [...S.items.values()].filter(i => !i.deleted && i.status === "wish").sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
+  let h = '<div class="wrap stack"><h1>Lista desideri</h1>';
+  h += '<div class="small muted">' + list.length + ' pezzi · costo stimato ' + eur(list.reduce((a, i) => a + (Number(i.value) || 0) * (Number(i.qty) || 1), 0)) + '</div>';
+  if (!list.length) h += '<div class="card empty">Nessun desiderio. Aggiungi un pezzo e scegli "Lista desideri".</div>';
+  else { h += '<div class="card list" style="overflow:hidden">'; list.forEach(it => { h += itemRow(it, cat(it.catId), true); }); h += '</div>'; }
+  if (S.config && S.config.cats.length) h += '<label class="f"><span>Aggiungi un desiderio in</span><select class="in" data-change="wishAdd"><option value="">Scegli la categoria…</option>' + S.config.cats.map(c => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join("") + '</select></label>';
+  h += '</div>';
+  return h;
+}
+
+/* ================= Gestione categorie ================= */
+function vCats() {
+  const cfg = S.config || { groups: [], cats: [] };
+  let h = '<div class="wrap stack">' + topBar("Categorie e gruppi");
+  const groups = [...cfg.groups].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const renderCat = c => '<div class="li" style="cursor:default"><span class="ico sm">' + iconHtml(c.icon, 18) + '</span><span class="grow"><span style="display:block;font-weight:500">' + esc(c.name) + '</span><span class="xs muted">' + c.fields.length + ' campi · ' + catItems(c.id).length + ' pezzi</span></span><button type="button" class="iconbtn" data-act="moveCat" data-id="' + esc(c.id) + '" data-v="-1" aria-label="Sposta su">' + ic("up", 18, 2) + '</button><button type="button" class="iconbtn" data-act="moveCat" data-id="' + esc(c.id) + '" data-v="1" aria-label="Sposta giù">' + ic("down", 18, 2) + '</button><button type="button" class="iconbtn" data-act="editCat" data-id="' + esc(c.id) + '" aria-label="Modifica ' + esc(c.name) + '">' + ic("edit", 18) + '</button></div>';
+  groups.forEach(g => {
+    h += '<div class="card" style="overflow:hidden"><div class="li" style="cursor:default"><span class="ico solid">' + iconHtml(g.icon) + '</span><span class="grow b">' + esc(g.name) + '</span><button type="button" class="iconbtn" data-act="editGroup" data-id="' + esc(g.id) + '" aria-label="Modifica gruppo ' + esc(g.name) + '">' + ic("edit", 18) + '</button></div><div class="list" style="border-top:1px solid var(--line2)">';
+    const cs = cfg.cats.filter(c => c.group === g.id).sort((a, b) => (a.order || 0) - (b.order || 0));
+    h += cs.length ? cs.map(renderCat).join("") : '<div class="small muted" style="padding:10px 14px">Nessuna categoria</div>';
+    h += '</div></div>';
+  });
+  const free = cfg.cats.filter(c => !c.group || !group(c.group));
+  if (free.length) h += '<div class="sect">Senza gruppo</div><div class="card list" style="overflow:hidden">' + free.map(renderCat).join("") + '</div>';
+  h += '<div class="grid2"><button type="button" class="btn" data-act="newGroup">' + ic("plus", 18) + 'Nuovo gruppo</button><button type="button" class="btn pri" data-act="newCatForm">' + ic("plus", 18) + 'Nuova categoria</button></div>';
+  h += '</div>';
+  return h;
+}
+function iconPicker(cur, actName) {
+  let h = '<div class="stack" style="gap:8px"><span class="small muted" style="font-weight:500">Icona</span><div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">';
+  CAT_ICON_KEYS.forEach(k => { const on = cur === k; h += '<button type="button" aria-label="Icona ' + k + '" aria-pressed="' + on + '" data-act="' + actName + '" data-v="' + k + '" style="aspect-ratio:1;border-radius:12px;border:' + (on ? "2px solid var(--acc)" : "1px solid var(--line)") + ';background:' + (on ? "var(--accbg)" : "#fff") + ';color:' + (on ? "var(--acc)" : "var(--ink)") + ';display:flex;align-items:center;justify-content:center;cursor:pointer">' + ic(k, 22, 1.6) + '</button>'; });
+  h += '</div>';
+  const isAsset = cur && String(cur).startsWith("asset:");
+  h += '<label class="drop" style="padding:12px 14px"><span class="ico" style="' + (isAsset ? "border:2px solid var(--acc)" : "") + '">' + (isAsset ? iconHtml(cur) : ic("image", 20)) + '</span><span class="grow"><span class="b" style="display:block;font-size:14px">' + (isAsset ? "Immagine tua in uso" : "Usa un'immagine tua") + '</span><span class="xs muted">PNG, JPG o SVG, meglio quadrata</span></span><input type="file" accept="image/*" class="fileov" data-change="iconUpload" data-v="' + actName + '"></label></div>';
+  return h;
+}
+function vCatForm() {
+  const d = S.catDraft;
+  let h = '<div class="wrap stack">' + topBar(d._new ? "Nuova categoria" : "Modifica categoria");
+  h += '<div class="grid2"><label class="f"><span>Nome</span><input class="in" id="c_name" value="' + esc(d.name) + '"></label><label class="f"><span>Gruppo</span><select class="in" id="c_group"><option value="">Nessun gruppo</option>' + (S.config ? S.config.groups : []).map(g => '<option value="' + esc(g.id) + '"' + (g.id === d.group ? " selected" : "") + '>' + esc(g.name) + '</option>').join("") + '</select></label></div>';
+  h += iconPicker(d.icon, "catIcon");
+  h += '<label class="row" style="min-height:44px;cursor:pointer"><input type="checkbox" id="c_cons"' + (d.consumable ? " checked" : "") + ' style="width:22px;height:22px;accent-color:#2F5D50"><span>Si consuma (es. vini, whisky): abilita lo scarico "Consumato"</span></label>';
+  h += '<label class="f"><span>Scala dello stato di conservazione (separata da virgole)</span><input class="in" id="c_cond" value="' + esc(d.cond.join(", ")) + '"></label>';
+  h += '<div class="sect">Campi della scheda</div><div class="xs muted">I campi comuni (nome, foto, quantità, stato, valore, acquisto, collocazione, tag, note) ci sono già.</div>';
+  h += '<div class="card list" style="padding:0 12px">';
+  d.fields.forEach((f, i) => {
+    h += '<div class="stack" style="gap:8px;padding:12px 0"><div class="row"><input class="in grow" aria-label="Nome del campo" value="' + esc(f.label) + '" data-input="fLabel" data-i="' + i + '" placeholder="Nome del campo"><select class="in" style="width:118px" aria-label="Tipo" data-change="fType" data-i="' + i + '">' + [["text", "Testo"], ["number", "Numero"], ["select", "Elenco"], ["bool", "Sì / no"], ["date", "Data"], ["long", "Testo lungo"]].map(([k, l]) => '<option value="' + k + '"' + (f.type === k ? " selected" : "") + '>' + l + '</option>').join("") + '</select></div>';
+    if (f.type === "select") h += '<input class="in" aria-label="Opzioni" value="' + esc((f.options || []).join(", ")) + '" data-input="fOpts" data-i="' + i + '" placeholder="Opzioni separate da virgola">';
+    h += '<div class="row" style="justify-content:flex-end;gap:4px"><button type="button" class="iconbtn" data-act="fMove" data-i="' + i + '" data-v="-1" aria-label="Sposta su">' + ic("up", 18, 2) + '</button><button type="button" class="iconbtn" data-act="fMove" data-i="' + i + '" data-v="1" aria-label="Sposta giù">' + ic("down", 18, 2) + '</button><button type="button" class="iconbtn" data-act="fDel" data-i="' + i + '" aria-label="Elimina campo" style="color:var(--down)">' + ic("trash", 18) + '</button></div></div>';
+  });
+  if (!d.fields.length) h += '<div class="small muted" style="padding:12px 0">Nessun campo specifico.</div>';
+  h += '</div><button type="button" class="btn" data-act="fAdd">' + ic("plus", 18) + 'Aggiungi campo</button>';
+  h += '<div class="grid2" style="margin-top:8px">' + (d._new ? '<button type="button" class="btn" data-act="back">Annulla</button>' : '<button type="button" class="btn danger" data-act="delCat">Elimina</button>') + '<button type="button" class="btn pri" data-act="saveCat">Salva</button></div>';
+  h += '</div>';
+  return h;
+}
+function readCatForm() {
+  const d = S.catDraft;
+  if ($("c_name")) d.name = val("c_name").trim();
+  if ($("c_group")) d.group = val("c_group") || null;
+  if ($("c_cons")) d.consumable = $("c_cons").checked;
+  if ($("c_cond")) d.cond = val("c_cond").split(",").map(s => s.trim()).filter(Boolean);
+}
+function vGroupForm() {
+  const d = S.groupDraft;
+  let h = '<div class="wrap stack">' + topBar(d._new ? "Nuovo gruppo" : "Modifica gruppo");
+  h += '<label class="f"><span>Nome del gruppo</span><input class="in" id="g_name" value="' + esc(d.name) + '" placeholder="Es. Bevande"></label>';
+  h += iconPicker(d.icon, "groupIcon");
+  h += '<div class="xs muted">Per mettere una categoria in questo gruppo, aprila e scegli il gruppo.</div>';
+  h += '<div class="grid2" style="margin-top:8px">' + (d._new ? '<button type="button" class="btn" data-act="back">Annulla</button>' : '<button type="button" class="btn danger" data-act="delGroup">Elimina gruppo</button>') + '<button type="button" class="btn pri" data-act="saveGroup">Salva</button></div></div>';
+  return h;
+}
+function fieldKey(label, existing) {
+  let base = String(label).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 24) || "campo";
+  let k = base, n = 2;
+  while (existing.includes(k)) k = base + "_" + n++;
+  return k;
+}
+
+/* ================= Scheda da foto ================= */
+function vScan() {
+  const s = S.scan;
+  let h = '<div class="wrap stack">' + topBar("Scheda da foto");
+  if (!S.sample) h += '<div class="notice warn">Claude non è disponibile in questa vista: apri l\'artifact dall\'app o dal sito di Claude.</div>';
+  if (s.step === "pick") {
+    h += '<label class="f"><span>Categoria</span><select class="in" id="s_cat" data-change="scanCatPick"><option value="auto">Riconosci in automatico</option>' + S.config.cats.map(c => '<option value="' + esc(c.id) + '"' + (s.catId === c.id ? " selected" : "") + '>' + esc(c.name) + '</option>').join("") + '</select></label>';
+    h += '<div class="grid2"><button type="button" class="drop" style="flex-direction:column;align-items:flex-start;gap:8px;text-align:left;font:inherit;color:inherit" data-act="pick" data-v="cam" data-id="scan"><span class="ico">' + ic("camera", 22) + '</span><span class="b">Scatta foto</span><span class="xs muted">Apre la fotocamera</span></button><button type="button" class="drop" style="flex-direction:column;align-items:flex-start;gap:8px;text-align:left;font:inherit;color:inherit" data-act="pick" data-v="gal" data-id="scan"><span class="ico">' + ic("image", 22) + '</span><span class="b">Dalla galleria</span><span class="xs muted">Anche più foto insieme</span></button></div>';
+    h += '<div class="xs muted">Puoi scattare più foto una dopo l\'altra: si aggiungono all\'elenco. Anche più pezzi nella stessa foto.</div>';
+    if (s.files.length) {
+      h += '<div class="thumbs">' + s.files.map((f, i) => '<div class="thumb"><img alt="Foto ' + (i + 1) + '" src="' + s.urls[i] + '"><button type="button" data-act="scanRm" data-i="' + i + '" aria-label="Rimuovi">×</button></div>').join("") + '</div>';
+      h += binderBox(s);
+      h += knownBox(s);
+      h += '<button type="button" class="btn pri full" data-act="scanRun"' + (S.sample ? "" : " disabled") + '>Riconosci ' + s.files.length + ' foto</button>';
+    }
+  } else if (s.step === "run") {
+    h += '<div class="card pad stack"><div class="b">Claude sta guardando le foto…</div><div class="small muted">' + esc(s.msg || "Può richiedere fino a un minuto.") + '</div><div class="progress"><div style="width:' + (s.pct || 15) + '%"></div></div><button type="button" class="btn sm" data-act="scanStop">Interrompi</button></div>';
+  } else if (s.step === "review") {
+    const inc = s.results.filter(r => r.include);
+    h += '<div class="notice">' + ic("check", 16, 2) + ' <b>' + s.results.length + ' pezzi riconosciuti.</b> Controlla e correggi prima di salvare.</div>';
+    s.results.forEach((r, i) => {
+      const c = cat(r.catId);
+      h += '<div class="card pad stack" style="gap:10px"><div class="row" style="align-items:flex-start"><label class="row" style="cursor:pointer;gap:12px;align-items:flex-start"><input type="checkbox" data-change="scanInc" data-i="' + i + '"' + (r.include ? " checked" : "") + ' aria-label="Includi" style="width:22px;height:22px;margin-top:2px;accent-color:#2F5D50">' + ((s.workUrls || s.urls)[r.photo] ? '<span class="thumb" style="width:56px;height:72px"><img alt="" src="' + (s.workUrls || s.urls)[r.photo] + '"></span>' : '') + '</label><div class="grow stack" style="gap:6px">';
+      h += '<select class="in" style="height:38px" aria-label="Categoria" data-change="scanCat" data-i="' + i + '">' + S.config.cats.map(k => '<option value="' + esc(k.id) + '"' + (k.id === r.catId ? " selected" : "") + '>' + esc(k.name) + '</option>').join("") + '</select>';
+      h += '<input class="in" style="height:40px;font-weight:600" aria-label="Nome" value="' + esc(r.name) + '" data-input="scanName" data-i="' + i + '">';
+      h += '<div class="small muted">' + esc(c ? itemSubtitle({ fields: r.fields }, c) : "") + '</div>';
+      h += '<select class="in" style="height:38px" aria-label="Stato di conservazione" data-change="scanCond" data-i="' + i + '"><option value="">Stato: non indicato</option>' + (c ? c.cond : []).map(o => '<option' + (o === r.cond ? " selected" : "") + '>Stato: ' + esc(o) + '</option>').join("") + '</select>';
+      h += '<div class="between"><span class="small">' + (r.value != null ? "Quotazione " + eur(r.value) + (r.valueLow != null && r.valueHigh != null && r.valueLow !== r.valueHigh ? " (" + eur(r.valueLow) + "–" + eur(r.valueHigh) + ")" : "") : "Senza quotazione") + '</span>' + confBadge(r.valueConf) + '</div>';
+      if (r.pos) h += '<div class="xs muted">' + esc(r.pos) + '</div>';
+      if (r.note) h += '<div class="xs muted">' + esc(r.note) + '</div>';
+      h += '<div class="row"><label class="row small" style="gap:6px">Quantità <input class="in" style="width:64px;height:36px" inputmode="numeric" value="' + esc(r.qty) + '" data-input="scanQty" data-i="' + i + '"></label></div>';
+      h += '</div></div></div>';
+    });
+    h += '<div class="small muted">Le stime qui sopra vengono dalle conoscenze di Claude. Per prezzi aggiornati cerca le quotazioni online prima di salvare.</div>';
+    h += '<button type="button" class="btn full" data-act="scanQuote"' + (inc.length && S.sample ? "" : " disabled") + '>' + ic("search", 18) + 'Cerca quotazioni online</button>';
+    h += '<div class="grid2"><button type="button" class="btn" data-act="scanReset">Nuove foto</button><button type="button" class="btn pri" data-act="scanSave"' + (inc.length ? "" : " disabled") + '>Salva ' + inc.length + ' pezzi</button></div>';
+  } else if (s.step === "saving") {
+    h += '<div class="card pad stack"><div class="b">Salvataggio…</div><div class="small muted">' + esc(s.msg || "") + '</div></div>';
+  }
+  h += '</div>';
+  return h;
+}
+function catsForPrompt(only) {
+  return S.config.cats.filter(c => !only || c.id === only).map(c => ({
+    id: c.id, nome: c.name, stati: c.cond,
+    campi: c.fields.map(f => ({ chiave: f.k, nome: f.label, tipo: f.type, opzioni: f.type === "select" ? f.options : undefined }))
+  }));
+}
+const GRIDS = [["3x3", "3×3 · 9 tasche"], ["4x3", "4 righe × 3 · 12"], ["3x4", "3 righe × 4 · 12"], ["2x2", "2×2 · 4"]];
+function binderBox(s) {
+  let h = '<div class="card pad stack" style="gap:10px"><label class="row" style="cursor:pointer;min-height:44px"><input type="checkbox" data-change="scanBinder"' + (s.binder ? " checked" : "") + ' style="width:22px;height:22px;accent-color:#2F5D50"><span class="grow"><span class="b" style="display:block">Pagina di raccoglitore</span><span class="xs muted">Più carte nella stessa foto: l\'app ritaglia ogni tasca e Claude le riconosce una per una</span></span></label>';
+  if (s.binder) {
+    h += '<div class="chips">' + GRIDS.map(([k, l]) => '<button type="button" class="chip ' + (s.grid === k ? "on" : "") + '" data-act="scanGrid" data-v="' + k + '">' + l + '</button>').join("") + '</div>';
+    h += '<div class="xs muted">Inquadra la pagina intera, dritta e senza bordi del tavolo: i ritagli seguono la griglia scelta. Le tasche vuote vengono ignorate.</div>';
+  }
+  h += '</div>';
+  return h;
+}
+async function cropGrid(file, rows, cols) {
+  const out = [];
+  const bmp = await createImageBitmap(file);
+  const cw = bmp.width / cols, ch = bmp.height / rows;
+  const ix = cw * 0.02, iy = ch * 0.02;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const sw = cw - 2 * ix, sh = ch - 2 * iy;
+    const k = Math.min(1, 1400 / Math.max(sw, sh));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(sw * k); cv.height = Math.round(sh * k);
+    cv.getContext("2d").drawImage(bmp, c * cw + ix, r * ch + iy, sw, sh, 0, 0, cv.width, cv.height);
+    const blob = await new Promise(res => cv.toBlob(b => res(b), "image/jpeg", 0.9));
+    if (blob) out.push({ blob, row: r + 1, col: c + 1 });
+  }
+  return out;
+}
+function knownBox(s) {
+  const c = s.catId && s.catId !== "auto" ? cat(s.catId) : null;
+  const f = s.forced || { cond: "", fields: {} };
+  let h = '<div class="card pad stack" style="gap:10px"><div><div class="b">Cosa sai già <span class="muted" style="font-weight:400">(facoltativo)</span></div><div class="xs muted">Claude userà questi dati così come sono, senza cambiarli, anche per stimare il prezzo. Valgono per tutti i pezzi di queste foto.</div></div>';
+  if (c) {
+    h += '<label class="f"><span>Stato di conservazione</span><select class="in" id="sf_cond"><option value="">Lascia valutare a Claude</option>' + c.cond.map(o => '<option' + (o === f.cond ? " selected" : "") + '>' + esc(o) + '</option>').join("") + '</select></label>';
+    const pick = c.fields.filter(fl => fl.type === "select" || fl.type === "bool");
+    const txt = c.fields.filter(fl => !(fl.type === "select" || fl.type === "bool"));
+    if (pick.length) h += '<div class="grid2" style="align-items:end">' + pick.map(fl => fieldInput(fl, (f.fields || {})[fl.k], "sf_")).join("") + '</div>';
+    if (txt.length) h += '<details' + (txt.some(fl => (f.fields || {})[fl.k] != null) ? " open" : "") + '><summary class="small" style="cursor:pointer;color:var(--acc);font-weight:500;min-height:32px;display:flex;align-items:center">Altri dettagli da scrivere (' + esc(txt.map(fl => fl.label.split(" (")[0].toLowerCase()).slice(0, 3).join(", ")) + '…)</summary><div class="stack" style="gap:10px;margin-top:8px">' + txt.map(fl => fieldInput(fl, (f.fields || {})[fl.k], "sf_")).join("") + '</div></details>';
+  } else {
+    h += '<div class="notice">Scegli la categoria qui sopra: compariranno le tendine con stato di conservazione e caratteristiche di quella categoria (es. Near Mint, FDC, Sigillato).</div>';
+  }
+  h += '<label class="f"><span>Altre indicazioni per Claude</span><input class="in" id="s_hint" value="' + esc(s.hint || "") + '" placeholder="Es. edizione italiana, prima edizione, retro nella foto 2"></label>';
+  h += '</div>';
+  return h;
+}
+function readScanForm() {
+  const s = S.scan; if (!s) return;
+  if ($("s_hint")) s.hint = val("s_hint").trim();
+  if ($("s_cat")) s.catId = val("s_cat") || s.catId;
+  const c = s.catId && s.catId !== "auto" ? cat(s.catId) : null;
+  const forced = { cond: "", fields: {} };
+  if (c) {
+    if ($("sf_cond")) forced.cond = val("sf_cond");
+    c.fields.forEach(fl => {
+      const el = $("sf_" + fl.k); if (!el) return;
+      if (fl.type === "bool") { if (el.checked) forced.fields[fl.k] = true; }
+      else if (fl.type === "number") { const n = parseNum(el.value); if (n != null) forced.fields[fl.k] = n; }
+      else if (String(el.value).trim()) forced.fields[fl.k] = String(el.value).trim();
+    });
+  }
+  if ($("sf_cond") || !c) s.forced = forced;
+}
+function forcedText(s) {
+  const c = s.catId && s.catId !== "auto" ? cat(s.catId) : null;
+  const f = s.forced; if (!c || !f) return "";
+  const parts = [];
+  if (f.cond) parts.push("stato di conservazione = " + f.cond);
+  c.fields.forEach(fl => { const v = f.fields[fl.k]; if (v !== undefined && v !== "") parts.push(fl.label + " = " + (fl.type === "bool" ? "sì" : v)); });
+  return parts.length ? "DATI GIÀ VERIFICATI DAL PROPRIETARIO (vincolanti: usali esattamente così, non contraddirli e basa la stima del valore su di essi): " + parts.join("; ") + ".\n" : "";
+}
+async function scanRun() {
+  const s = S.scan;
+  readScanForm();
+  let lim = null;
+  try { lim = await S.sample.limits(); } catch (e) { }
+  if (!lim || !lim.images) { toast("L'invio di immagini a Claude non è disponibile in questa vista.", 4500); return; }
+  const maxN = Math.max(1, lim.images.maxCount || 1);
+  s.step = "run"; s.pct = 5; s.msg = s.binder ? "Ritaglio le tasche" : "Invio delle foto"; render();
+  s.ctl = new AbortController();
+  (s.workUrls || []).forEach(u => { if (!s.urls.includes(u)) { try { URL.revokeObjectURL(u); } catch (e) { } } });
+  s.work = []; s.workUrls = []; s.workPos = [];
+  if (s.binder) {
+    const [R, C] = (s.grid || "3x3").split("x").map(Number);
+    for (let p = 0; p < s.files.length; p++) {
+      try {
+        const cells = await cropGrid(s.files[p], R, C);
+        cells.forEach(cl => { s.work.push(cl.blob); s.workUrls.push(URL.createObjectURL(cl.blob)); s.workPos.push("Pagina " + (p + 1) + ", riga " + cl.row + ", colonna " + cl.col); });
+      } catch (e) { toast("Non riesco a ritagliare la foto " + (p + 1) + ".", 4000); }
+    }
+  } else {
+    s.work = s.files.slice(); s.workUrls = s.urls.slice(); s.workPos = s.files.map(() => "");
+  }
+  const batches = [];
+  for (let i = 0; i < s.work.length; i += maxN) batches.push(s.work.slice(i, i + maxN).map((f, j) => ({ f, idx: i + j })));
+  const results = [];
+  try {
+    for (let b = 0; b < batches.length; b++) {
+      const batch = batches[b];
+      s.msg = batches.length > 1 ? "Gruppo " + (b + 1) + " di " + batches.length : "Riconoscimento in corso";
+      s.pct = 10 + Math.round(b / batches.length * 80); render();
+      const prompt = scanPrompt(batch.length, s.catId === "auto" ? null : s.catId, s.hint, forcedText(s) + (s.binder ? BINDER_NOTE : ""));
+      const out = await S.sample.json(prompt, { images: batch.map(x => x.f), signal: s.ctl.signal, cache: false });
+      const arr = Array.isArray(out) ? out : (out && Array.isArray(out.pezzi) ? out.pezzi : []);
+      arr.forEach(o => {
+        if (!o || typeof o !== "object") return;
+        let catId = String(o.catId || o.categoria || "");
+        if (!cat(catId)) catId = s.catId !== "auto" ? s.catId : S.config.cats[0].id;
+        const c = cat(catId);
+        const fields = {};
+        const src = o.fields && typeof o.fields === "object" ? o.fields : {};
+        c.fields.forEach(f => { const v = src[f.k]; if (v !== undefined && v !== null && v !== "") fields[f.k] = f.type === "bool" ? !!v : f.type === "number" ? (parseNum(v) ?? "") : String(v); });
+        const ph = Math.min(batch.length, Math.max(1, parseInt(o.foto || o.photo, 10) || 1)) - 1;
+        const est = o.stima || o.estimate || {};
+        let forcedCond = "";
+        if (s.forced && s.catId !== "auto" && catId === s.catId) {
+          Object.assign(fields, s.forced.fields || {});
+          forcedCond = s.forced.cond || "";
+        }
+        results.push({
+          include: true, catId, name: String(o.nome || o.name || "Pezzo senza nome").slice(0, 160), qty: Math.max(1, parseInt(o.quantita || o.qty, 10) || 1),
+          cond: forcedCond || (c.cond.includes(o.stato) ? o.stato : ""), condForced: !!forcedCond, fields, photo: batch[ph].idx,
+          value: numOrNull(est.valore ?? est.value), valueLow: numOrNull(est.min ?? est.low), valueHigh: numOrNull(est.max ?? est.high),
+          valueConf: normConf(est.affidabilita ?? est.conf), valueSource: "Stima di Claude dalle foto", valueUrl: null, note: String(o.note || est.nota || "").slice(0, 200)
+        });
+      });
+    }
+    if (s.binder) {
+      const merged = [];
+      const byKey = {};
+      results.forEach(r => {
+        const key = [r.catId, r.name.toLowerCase(), r.fields.set || "", r.fields.numero || "", r.fields.lingua || "", r.fields.edizione || "", r.fields.variante || "", r.cond].join("|");
+        if (byKey[key]) { byKey[key].qty += r.qty; byKey[key].pos += "; " + (s.workPos[r.photo] || ""); }
+        else { r.pos = s.workPos[r.photo] || ""; byKey[key] = r; merged.push(r); }
+      });
+      results.length = 0; merged.forEach(r => results.push(r));
+    }
+    s.results = results;
+    s.step = "review";
+    if (!results.length) { s.step = "pick"; toast("Claude non ha riconosciuto nessun pezzo. Prova con foto più nitide.", 4500); }
+  } catch (e) {
+    s.step = results.length ? "review" : "pick"; s.results = results;
+    if (e && e.code !== "cancelled") toast(sampleErr(e), 5000);
+  }
+  render();
+}
+function numOrNull(v) { const n = parseNum(v); return n == null ? null : n; }
+function normConf(v) { v = String(v || "").toLowerCase(); return ["alta", "media", "bassa"].includes(v) ? v : (v ? "media" : null); }
+const BINDER_NOTE = "MODALITÀ RACCOGLITORE: ogni immagine è il ritaglio di UNA sola tasca di una pagina di raccoglitore per carte. Crea al massimo una scheda per immagine, con 'foto' uguale al numero dell'immagine. Se la tasca è vuota, contiene solo il retro della carta o non si capisce, NON creare schede per quell'immagine. Leggi con attenzione nome, simbolo o sigla del set e numero della carta (di solito in basso, es. 4/102) e la lingua del testo. Se due tasche contengono la stessa carta, crea una scheda per ciascuna.\n";
+function scanPrompt(n, onlyCat, hint, forced) {
+  return "Sei l'assistente di catalogazione di una collezione personale. Ti allego " + n + " foto, numerate da 1 a " + n + " nell'ordine in cui le ricevi. In ogni foto possono esserci uno o più oggetti da collezione (bottiglie, monete, francobolli, carte collezionabili, libri, film, giochi…).\n" +
+    "Identifica ogni oggetto distinto e compila la sua scheda. Se due foto mostrano lo stesso oggetto (es. fronte e retro), crea una sola scheda.\n" +
+    (onlyCat ? "Tutti gli oggetti appartengono a questa categoria.\n" : "Assegna a ogni oggetto la categoria più adatta tra quelle elencate.\n") +
+    (forced || "") +
+    (hint ? "Indicazioni del proprietario (da rispettare): " + hint + "\n" : "") +
+    "Categorie disponibili (usa esattamente l'id e le chiavi dei campi):\n" + JSON.stringify(catsForPrompt(onlyCat)) + "\n" +
+    "Regole: compila solo ciò che leggi o riconosci con ragionevole certezza; lascia fuori i campi incerti. Per i campi di tipo elenco usa una delle opzioni. Per lo stato usa una voce della scala della categoria solo se si vede chiaramente, altrimenti lascialo vuoto. Il nome deve essere breve e riconoscibile (es. 'Barolo Riserva 2013', 'Charizard – Set Base', '500 lire Caravelle 1961').\n" +
+    "Dai anche una stima indicativa del valore di mercato attuale in euro per UNA unità, basata sulle tue conoscenze, con un intervallo e l'affidabilità (alta, media o bassa). Se non sai stimare, metti valore null.\n" +
+    'Rispondi solo con un array JSON, un oggetto per pezzo: [{"foto":1,"catId":"...","nome":"...","quantita":1,"stato":"...","fields":{"chiave":"valore"},"stima":{"valore":0,"min":0,"max":0,"affidabilita":"media"},"note":"dubbi o cose da verificare, max 20 parole"}]';
+}
+function sampleErr(e) {
+  const c = e && e.code;
+  const map = {
+    not_granted: "Non hai dato il permesso a questo artifact di usare Claude.",
+    sampling_disabled: "Claude non è disponibile per questo account.",
+    rate_limited: "Hai raggiunto il limite di utilizzo di Claude per ora: riprova più tardi.",
+    session_expired: "Sessione scaduta: accedi di nuovo a Claude.",
+    image_rejected: "Una delle immagini non è stata accettata (formato o dimensioni).",
+    images_unavailable: "L'invio di immagini non è disponibile in questa vista.",
+    tools_unavailable: "La ricerca web non è disponibile in questa vista.",
+    invalid_json: "La risposta di Claude non era nel formato atteso: riprova.",
+    refused: "Claude ha rifiutato questa richiesta.",
+    prompt_too_large: "Troppi dati in una volta: riprova con meno pezzi.",
+    empty_completion: "Claude non ha prodotto una risposta: riprova con meno pezzi."
+  };
+  return map[c] || "Errore di Claude (" + (c || "sconosciuto") + "): riprova.";
+}
+async function scanSave() {
+  const s = S.scan;
+  const inc = s.results.filter(r => r.include);
+  if (!inc.length) return;
+  s.step = "saving"; s.msg = "Carico le foto"; render();
+  const photoIds = {};
+  const items = [];
+  for (const r of inc) {
+    let pid = null;
+    const src = (s.work || s.files)[r.photo];
+    if (S.assets && src) {
+      if (photoIds[r.photo] === undefined) { try { photoIds[r.photo] = await uploadPhoto(src); } catch (e) { photoIds[r.photo] = null; } }
+      pid = photoIds[r.photo];
+    }
+    const it = newDraft(r.catId, "in");
+    Object.assign(it, { name: r.name, qty: r.qty, cond: r.cond, fields: r.fields, photos: pid ? [pid] : [], value: r.value, valueLow: r.valueLow, valueHigh: r.valueHigh, valueConf: r.valueConf, valueSource: r.valueSource, valueUrl: r.valueUrl, valueDate: r.value != null ? today() : null, notes: r.note || "" });
+    if (it.value != null) { it.buyPrice = it.value; it.buyKind = "stimato"; it.valueHistory = [{ d: today(), v: it.value }]; }
+    it.createdAt = nowIso();
+    it.movements = [{ type: "carico", qty: it.qty, date: today(), price: it.buyPrice != null ? it.buyPrice * it.qty : null }];
+    ["_new", "_origBuy", "_cats"].forEach(k => delete it[k]);
+    items.push(it);
+  }
+  s.msg = "Salvo " + items.length + " pezzi";
+  render();
+  try {
+    await saveItems(items);
+    toast(items.length + " pezzi salvati");
+    scanCleanup();
+    tab("home");
+  } catch (e) { s.step = "review"; toast(dbErr(e), 5000); render(); }
+}
+function scanCleanup() { if (S.scan) [...(S.scan.urls || []), ...(S.scan.workUrls || [])].forEach(u => { try { URL.revokeObjectURL(u); } catch (e) { } }); S.scan = null; }
+
+/* ================= Quotazioni ================= */
+async function getSearchTools(statusCb) {
+  const res = { tools: [], status: "none" };
+  if (!S.mcp) { res.status = "nomcp"; return res; }
+  let lim = null;
+  try { lim = await S.sample.limits(); } catch (e) { }
+  if (!lim || !lim.tools) { res.status = "notools"; return res; }
+  let srv = null;
+  try { const lt = await S.mcp.listTools(SERVER); srv = (lt.servers || []).find(x => x.server === SERVER); } catch (e) { }
+  if (!srv || !(srv.tools || []).length) { res.status = "notconnected"; return res; }
+  if (srv.authStatus === "needs_reauth") { res.status = "reauth"; return res; }
+  const names = ["web_search", "web_fetch"].filter(n => srv.tools.some(t => t.name === n));
+  for (const name of names.slice(0, (lim.tools.maxCount || 2))) {
+    let schema = null;
+    try { const d = await S.mcp.describeTool(SERVER, name); schema = d && d.inputSchema; } catch (e) { }
+    if (!schema || schema.type !== "object" || JSON.stringify(schema).length > 3900) schema = FALLBACK_SCHEMAS[name];
+    const info = srv.tools.find(t => t.name === name) || {};
+    const desc = (info.description || (name === "web_search" ? "Cerca sul web e restituisce estratti dei risultati con i link." : "Legge il contenuto delle pagine web indicate.")).slice(0, 900);
+    res.tools.push({
+      name, description: desc, inputSchema: schema,
+      execute: async (input, ctx) => {
+        if (statusCb) statusCb(name === "web_search" ? "Cerco: " + String((input && (input.objective || (input.search_queries || [])[0] || input.query)) || "").slice(0, 80) : "Leggo una pagina");
+        try {
+          const args = Object.assign({}, input || {}, { session_id: SEARCH_SESSION });
+          const r = await S.mcp.callTool(SERVER, name, args, { signal: ctx.signal, cache: false });
+          const out = r.payload !== undefined ? r.payload : r.content;
+          return (typeof out === "string" ? out : JSON.stringify(out)).slice(0, 24000);
+        } catch (e) {
+          if (e && (e.code === "needs_reauth" || e.code === "server_not_connected")) res.status = e.code;
+          throw new Error((e && e.code ? e.code + ": " : "") + (e && e.message ? e.message : "errore della ricerca"));
+        }
+      }
+    });
+  }
+  res.status = res.tools.length ? "ok" : "notconnected";
+  return res;
+}
+function quotePrompt(batch, web) {
+  const data = batch.map(b => {
+    const c = cat(b.catId);
+    const det = {};
+    (c ? c.fields : []).forEach(f => { const v = b.fields && b.fields[f.k]; if (v !== undefined && v !== null && v !== "") det[f.label] = v; });
+    return { id: b.id, categoria: c ? c.name : "", nome: b.name, stato: b.cond || "non indicato", dettagli: det };
+  });
+  return "Sei un perito di oggetti da collezione. Trova la quotazione di mercato ATTUALE, in euro, di UNA unità di ciascun pezzo qui sotto, nello stato di conservazione indicato dal proprietario (es. Near Mint, FDC, Sigillato): cerca prezzi riferiti proprio a quello stato e, se le fonti riportano stati diversi, adegua la stima. Se lo stato non è indicato, considera uno stato buono. Preferisci il mercato italiano ed europeo. Oggi è il " + today() + ".\n" +
+    (web ? "Usa la ricerca web: cerca vendite concluse, aste recenti, listini di negozi e marketplace specializzati (per esempio Cardmarket per le carte, aste ed enoteche online per vini e whisky, cataloghi e aste numismatiche o filateliche per monete e francobolli). Al massimo 2 ricerche per pezzo. Se le fonti non sono d'accordo, dai un intervallo e usa la mediana come valore. Non inventare fonti o link: se non trovi dati affidabili, metti affidabilità bassa e spiega nella nota.\n"
+      : "Non hai accesso al web: dai una stima basata sulle tue conoscenze, con affidabilità al massimo 'media' e di solito 'bassa', e fonte 'Stima di Claude senza ricerca web'.\n") +
+    "Pezzi:\n" + JSON.stringify(data) + "\n" +
+    'Alla fine rispondi solo con un array JSON, un oggetto per pezzo con lo stesso id: [{"id":"...","valore":0,"min":0,"max":0,"affidabilita":"alta|media|bassa","fonte":"nome breve della fonte principale","url":"link alla fonte o null","nota":"max 15 parole"}]. Se proprio non puoi stimare, valore null.';
+}
+async function quoteItems(list, opts) {
+  const o = opts || {};
+  const st = await getSearchTools(o.onStatus);
+  const web = st.status === "ok";
+  if (o.onWeb) o.onWeb(st.status);
+  const out = {};
+  const size = web ? 3 : 10;
+  for (let i = 0; i < list.length; i += size) {
+    if (o.signal && o.signal.aborted) break;
+    const batch = list.slice(i, i + size);
+    if (o.onProgress) o.onProgress(i, list.length, batch);
+    const so = { signal: o.signal };
+    if (web) so.tools = st.tools; else so.cache = false;
+    try {
+      const arr = await S.sample.json(quotePrompt(batch, web), so);
+      (Array.isArray(arr) ? arr : []).forEach(r => {
+        if (!r || !r.id) return;
+        out[r.id] = { value: numOrNull(r.valore ?? r.value), low: numOrNull(r.min ?? r.low), high: numOrNull(r.max ?? r.high), conf: normConf(r.affidabilita ?? r.conf), source: String(r.fonte || r.source || (web ? "Ricerca web" : "Stima di Claude senza ricerca web")).slice(0, 120), url: /^https?:\/\//.test(String(r.url || "")) ? String(r.url) : null, note: String(r.nota || r.note || "").slice(0, 160) };
+      });
+    } catch (e) {
+      if (e && e.code === "cancelled") break;
+      if (o.onError) o.onError(e, batch);
+      if (e && ["not_granted", "sampling_disabled", "rate_limited", "session_expired"].includes(e.code)) break;
+    }
+  }
+  if (o.onProgress) o.onProgress(list.length, list.length, []);
+  return { results: out, web, status: st.status };
+}
+function webStatusMsg(st) {
+  return {
+    ok: "", nomcp: "La ricerca web non è disponibile in questa vista: uso le stime di Claude.",
+    notools: "La ricerca web non è disponibile in questa vista: uso le stime di Claude.",
+    notconnected: "Il connettore Parallel Search non è collegato: uso le stime di Claude, meno affidabili. Collegalo in Impostazioni › Connettori di claude.ai.",
+    reauth: "Il connettore Parallel Search va ricollegato in Impostazioni › Connettori di claude.ai. Per ora uso le stime di Claude.",
+    needs_reauth: "Il connettore Parallel Search va ricollegato in Impostazioni › Connettori di claude.ai.",
+    server_not_connected: "Il connettore Parallel Search non è collegato: aggiungilo in Impostazioni › Connettori di claude.ai."
+  }[st] || "";
+}
+function applyQuote(it, r) {
+  const n = Object.assign({}, it);
+  if (r.value == null) return null;
+  n.value = r.value; n.valueLow = r.low; n.valueHigh = r.high; n.valueConf = r.conf; n.valueSource = r.source; n.valueUrl = r.url; n.valueDate = today();
+  const hist = [...(n.valueHistory || [])];
+  if (hist.length && hist[hist.length - 1].d === today()) hist[hist.length - 1] = { d: today(), v: r.value }; else hist.push({ d: today(), v: r.value });
+  n.valueHistory = hist.slice(-HIST_MAX);
+  if (n.buyPrice == null && n.status !== "wish") { n.buyPrice = r.value; n.buyKind = "stimato"; }
+  return n;
+}
+function vQuote() {
+  const q = S.quote;
+  let h = '<div class="wrap stack">' + topBar("Aggiorna prezzi");
+  if (!S.sample) h += '<div class="notice warn">Claude non è disponibile in questa vista.</div>';
+  if (q.step === "pick") {
+    const sel = q.sel;
+    h += '<div class="stack" style="gap:8px"><span class="small muted" style="font-weight:500">Cosa aggiornare</span><div class="chips">' + S.config.cats.map(c => '<button type="button" class="chip ' + (sel.has(c.id) ? "on" : "") + '" data-act="qCat" data-id="' + esc(c.id) + '" aria-pressed="' + sel.has(c.id) + '">' + esc(c.name) + '</button>').join("") + '</div></div>';
+    h += '<div class="grid2"><label class="f"><span>Solo pezzi sopra (€)</span><input class="in" id="q_min" inputmode="decimal" value="' + esc(numIn(q.min)) + '" placeholder="tutti" data-input="qFilter"></label><label class="f"><span>Non aggiornati da (giorni)</span><input class="in" id="q_days" inputmode="numeric" value="' + esc(q.days) + '" placeholder="tutti" data-input="qFilter"></label></div>';
+    h += '<label class="row" style="min-height:44px;cursor:pointer"><input type="checkbox" id="q_wish"' + (q.wish ? " checked" : "") + ' data-change="qWish" style="width:22px;height:22px;accent-color:#2F5D50"><span>Includi la lista desideri</span></label>';
+    h += '<div class="card pad" id="qSummary">' + quoteSummary() + '</div>';
+    h += '<button type="button" class="btn pri full" data-act="qRun"' + (quoteCandidates().length && S.sample ? "" : " disabled") + '>' + ic("refresh", 18) + 'Avvia l\'aggiornamento</button>';
+    h += '<div class="xs muted">Le carte in grandi quantità conviene aggiornarle dalla app, con le banche dati delle carte.</div>';
+  } else if (q.step === "run") {
+    h += '<div class="card pad stack"><div class="between"><span class="b">Aggiornamento in corso</span><span class="small muted">' + q.done + ' / ' + q.total + '</span></div><div class="progress"><div style="width:' + Math.round(q.done / Math.max(1, q.total) * 100) + '%"></div></div><div class="small muted" id="qStatus">' + esc(q.status || "Preparo la ricerca…") + '</div>' + (q.webMsg ? '<div class="notice warn">' + esc(q.webMsg) + '</div>' : '') + '<button type="button" class="btn sm" data-act="qStop">Interrompi</button></div>';
+  } else if (q.step === "review") {
+    const rows = q.rows;
+    const ok = rows.filter(r => r.n);
+    const delta = ok.reduce((a, r) => a + ((r.n.value || 0) - (r.it.value || 0)) * (r.it.status === "in" ? (r.it.qty || 0) : 0), 0);
+    const upN = ok.filter(r => r.it.value != null && r.n.value > r.it.value).length, downN = ok.filter(r => r.it.value != null && r.n.value < r.it.value).length;
+    const doubt = rows.filter(r => !r.n || r.n.valueConf === "bassa").length;
+    if (q.webMsg) h += '<div class="notice warn">' + esc(q.webMsg) + '</div>';
+    h += '<div class="card pad between"><div><div class="small muted">' + rows.length + ' pezzi controllati</div><div class="b" style="font-size:20px">' + signedEur(delta) + '</div></div><div class="small muted" style="text-align:right">' + upN + ' saliti · ' + downN + ' scesi<br>' + doubt + ' da verificare</div></div>';
+    h += '<div class="card list" style="overflow:hidden">';
+    rows.forEach((r, i) => {
+      const nv = r.n ? r.n.value : null;
+      const d = nv != null && r.it.value != null ? nv - r.it.value : null;
+      h += '<label class="li" style="cursor:pointer"><input type="checkbox" data-change="qInc" data-i="' + i + '"' + (r.apply ? " checked" : "") + (r.n ? "" : " disabled") + ' aria-label="Applica" style="width:20px;height:20px;accent-color:#2F5D50"><span class="grow"><span class="b ellip" style="display:block">' + esc(r.it.name) + '</span><span class="xs muted ellip" style="display:block">' + (r.n ? esc(r.n.valueSource || "") + (r.n.valueConf ? " · affidabilità " + esc(r.n.valueConf) : "") : esc(r.err || "Nessuna quotazione trovata")) + '</span></span><span style="text-align:right;flex-shrink:0"><span class="b" style="display:block">' + (nv != null ? eur(nv) : "—") + '</span><span class="xs b ' + (d == null ? "muted" : d > 0 ? "up" : d < 0 ? "down" : "muted") + '">' + (d == null ? (r.it.value == null ? "nuovo" : "") : d === 0 ? "invariato" : (d > 0 ? "▲ " : "▼ ") + eur(Math.abs(d))) + '</span></span></label>';
+    });
+    h += '</div><div class="grid2"><button type="button" class="btn" data-act="back">Annulla</button><button type="button" class="btn pri" data-act="qApply">Applica ' + rows.filter(r => r.apply).length + '</button></div>';
+  }
+  h += '</div>';
+  return h;
+}
+function quoteSummary() {
+  const q = S.quote;
+  const list = quoteCandidates();
+  const st = quoteStats();
+  let h = '<div class="b">' + list.length + ' pezzi da aggiornare</div>';
+  if (list.length) h += '<div class="small muted">Circa ' + Math.ceil(list.length / 3) + ' richieste a Claude. Ogni richiesta usa un po\' dei limiti del tuo piano.</div>';
+  const why = [];
+  if (st.recent) why.push(st.recent + " già aggiornati negli ultimi " + parseInt(q.days, 10) + " giorni");
+  if (st.cheap) why.push(st.cheap + " sotto la soglia di valore");
+  if (st.otherCat) why.push(st.otherCat + " in categorie non selezionate");
+  if (st.wish) why.push(st.wish + " nella lista desideri");
+  if (why.length) h += '<div class="small muted" style="margin-top:6px">Esclusi: ' + esc(why.join(", ")) + '.</div>';
+  if (!list.length && st.recent) h += '<div class="small" style="margin-top:6px">Per aggiornarli comunque, svuota il campo "Non aggiornati da".</div>';
+  if (!list.length && !S.items.size) h += '<div class="small muted" style="margin-top:6px">Non hai ancora pezzi in collezione.</div>';
+  if (list.length > 60) h += '<div class="small down" style="margin-top:6px">Sono molti: valuta di filtrare per valore o per categoria.</div>';
+  return h;
+}
+function quoteStats() {
+  const q = S.quote;
+  const days = parseInt(q.days, 10);
+  const cutoff = isNaN(days) || days <= 0 ? null : new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
+  const st = { recent: 0, cheap: 0, otherCat: 0, wish: 0 };
+  for (const i of S.items.values()) {
+    if (i.deleted || i.status === "out") continue;
+    if (i.status === "wish" && !q.wish) { st.wish++; continue; }
+    if (!q.sel.has(i.catId)) { st.otherCat++; continue; }
+    if (q.min != null && (Number(i.value) || 0) < q.min) { st.cheap++; continue; }
+    if (cutoff && i.valueDate && i.valueDate >= cutoff) st.recent++;
+  }
+  return st;
+}
+function quoteCandidates() {
+  const q = S.quote;
+  const min = q.min;
+  const days = parseInt(q.days, 10);
+  const cutoff = isNaN(days) || days <= 0 ? null : new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
+  return [...S.items.values()].filter(i => !i.deleted && q.sel.has(i.catId) && (i.status === "in" || (q.wish && i.status === "wish")) && (min == null || (Number(i.value) || 0) >= min) && (!cutoff || !i.valueDate || i.valueDate < cutoff));
+}
+function readQuoteForm() { const q = S.quote; if ($("q_min")) q.min = parseNum(val("q_min")); if ($("q_days")) q.days = val("q_days"); if ($("q_wish")) q.wish = $("q_wish").checked; }
+async function quoteRun() {
+  readQuoteForm();
+  const q = S.quote;
+  const list = quoteCandidates();
+  if (!list.length) return;
+  q.step = "run"; q.total = list.length; q.done = 0; q.status = "Preparo la ricerca…"; q.ctl = new AbortController(); render();
+  const errs = {};
+  const res = await quoteItems(list, {
+    signal: q.ctl.signal,
+    onStatus: t => { q.status = t; const el = $("qStatus"); if (el) el.textContent = t; },
+    onWeb: st => { q.webMsg = webStatusMsg(st); render(); },
+    onProgress: (done, total, batch) => { q.done = done; q.status = batch.length ? "Cerco: " + batch.map(b => b.name).join(", ").slice(0, 100) : "Fatto"; if (S.view.name === "quote") render(); },
+    onError: (e, batch) => { batch.forEach(b => { errs[b.id] = sampleErr(e); }); if (e && ["not_granted", "sampling_disabled", "rate_limited", "session_expired"].includes(e.code)) toast(sampleErr(e), 5000); }
+  });
+  q.rows = list.map(it => { const r = res.results[it.id]; const n = r ? applyQuote(it, r) : null; return { it, n, apply: !!n, err: errs[it.id] }; });
+  q.step = "review";
+  if (S.view.name === "quote") render();
+}
+async function quoteApply() {
+  const rows = S.quote.rows.filter(r => r.apply && r.n);
+  if (!rows.length) { back(); return; }
+  try { await saveItems(rows.map(r => r.n)); toast(rows.length + " quotazioni aggiornate"); S.quote = null; tab("home"); }
+  catch (e) { toast(dbErr(e), 5000); }
+}
+
+/* ================= Backup ================= */
+function vBackup() {
+  const all = [...S.items.values()];
+  let h = '<div class="wrap stack"><div><h1>Backup</h1><div class="small muted" style="margin-top:4px">Scambia i dati con l\'app: ognuna fa da copia all\'altra.</div></div>';
+  h += '<div class="card pad stack"><div class="between"><h2 style="font-size:16px">Esporta</h2><span class="small muted">' + all.filter(i => !i.deleted).length + ' pezzi</span></div><div class="small muted">Il file contiene categorie, pezzi, movimenti e quotazioni.</div><label class="row" style="cursor:pointer;min-height:44px"><input type="checkbox" id="exp_photos"' + (S.expPhotos !== false ? " checked" : "") + ' data-change="expPhotos" style="width:22px;height:22px;accent-color:#2F5D50"><span class="grow"><span style="display:block">Includi le foto</span><span class="xs muted">' + photoCount() + ' foto, circa ' + Math.max(1, Math.round(photoCount() * 0.25)) + ' MB in più</span></span></label><div id="expMsg" class="small muted"></div><button type="button" class="btn pri" data-act="export">' + ic("download", 18) + 'Scarica file di backup</button><button type="button" class="btn sm" data-act="exportCopy">Copia i dati negli appunti</button></div>';
+  h += '<div class="card pad stack"><h2 style="font-size:16px">Importa</h2>';
+  const imp = S.imp;
+  if (!imp) {
+    h += '<label class="drop" style="padding:12px 14px"><span class="ico">' + ic("upload", 20) + '</span><span class="grow"><span class="b" style="display:block;font-size:14px">Scegli il file di backup</span><span class="xs muted">File .json esportato dall\'app o da questo artifact</span></span><input type="file" accept=".json,application/json" class="fileov" data-change="importFile"></label>';
+    h += '<details><summary class="small muted" style="cursor:pointer">Oppure incolla i dati</summary><textarea class="in" id="imp_text" style="margin-top:8px" placeholder="Incolla qui il contenuto del file"></textarea><button type="button" class="btn sm" style="margin-top:8px" data-act="importText">Analizza</button></details>';
+  } else {
+    h += '<div class="row" style="padding:10px 12px;background:var(--bg);border-radius:10px">' + ic("download", 18) + '<span class="grow"><span style="display:block;font-weight:500">' + esc(imp.name) + '</span><span class="xs muted">' + esc(imp.data.source === "pwa" ? "dall'app" : imp.data.source === "artifact" ? "dall'artifact" : "") + (imp.data.exportedAt ? " · " + fmtDate(imp.data.exportedAt) : "") + '</span></span></div>';
+    h += '<div class="list"><div class="kv"><span>Pezzi nuovi</span><span class="b">' + imp.add + '</span></div><div class="kv"><span>Aggiornati (versione più recente)</span><span class="b">' + imp.upd + '</span></div><div class="kv"><span>Già uguali o più vecchi</span><span class="b">' + imp.same + '</span></div>' + (imp.skip ? '<div class="kv"><span class="down">Categoria sconosciuta, saltati</span><span class="b down">' + imp.skip + '</span></div>' : '') + '<div class="kv"><span>Categorie nuove</span><span class="b">' + imp.newCats + '</span></div>' + (imp.photosN ? '<div class="kv"><span>Foto nel file</span><span class="b">' + imp.photosN + '</span></div>' : '') + '</div><div id="impMsg" class="small muted"></div>';
+    h += '<div class="xs muted">Prima di unire conviene scaricare un backup di quello che c\'è ora qui.</div>';
+    h += '<div class="grid2"><button type="button" class="btn" data-act="importCancel">Annulla</button><button type="button" class="btn pri" data-act="importApply"' + (imp.add + imp.upd + imp.newCats ? "" : " disabled") + '>Unisci i dati</button></div>';
+  }
+  h += '</div></div>';
+  return h;
+}
+function photoIdsAll() {
+  const ids = new Set();
+  for (const it of S.items.values()) (it.photos || []).forEach(p => ids.add(p));
+  (S.config ? [...S.config.cats, ...S.config.groups] : []).forEach(x => { if (x.icon && String(x.icon).startsWith("asset:")) ids.add(String(x.icon).slice(6)); });
+  return [...ids];
+}
+function photoCount() { return photoIdsAll().length; }
+function blobToDataUrl(b) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); }); }
+function dataUrlToBlob(d) {
+  const m = String(d).match(/^data:([^;,]+)?(;base64)?,(.*)$/);
+  if (!m) return null;
+  const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: m[1] || "image/jpeg" });
+}
+async function collectPhotos(onProg) {
+  const out = {}; let miss = 0;
+  const ids = photoIdsAll();
+  for (let i = 0; i < ids.length; i++) {
+    if (onProg) onProg(i, ids.length);
+    try { const b = await getPhotoBlob(ids[i]); if (!b) throw 0; out[ids[i]] = await blobToDataUrl(b); }
+    catch (e) { miss++; }
+  }
+  return { photos: out, miss };
+}
+function exportData() {
+  const items = [...S.items.values()].map(i => { const o = cleanItem(i); o.id = i.id; o.catId = i.catId; return o; });
+  return { app: "collezioni", schema: 1, source: "artifact", exportedAt: nowIso(), config: S.config, items };
+}
+async function doExport() {
+  const data = exportData();
+  const withPh = $("exp_photos") ? $("exp_photos").checked : S.expPhotos !== false;
+  const msg = $("expMsg");
+  if (withPh && photoCount()) {
+    const r = await collectPhotos((i, n) => { if (msg) msg.textContent = "Preparo le foto: " + (i + 1) + " di " + n; });
+    data.photos = r.photos;
+    if (msg) msg.textContent = r.miss ? r.miss + " foto non sono state incluse." : "";
+  }
+  const json = JSON.stringify(data);
+  const name = "collezioni-artifact-" + today() + ".json";
+  if (!S.downloads) { toast("Il download non è disponibile qui: uso la copia negli appunti."); return copyExport(); }
+  try { await S.downloads.save({ filename: name, data: json }); toast("Backup pronto"); }
+  catch (e) { toast("Download annullato o non riuscito: puoi usare la copia negli appunti.", 4500); }
+}
+async function copyExport() {
+  try { await navigator.clipboard.writeText(JSON.stringify(exportData())); toast("Dati copiati negli appunti"); }
+  catch (e) { toast("Copia non riuscita in questa vista.", 4000); }
+}
+function analyzeImport(text, name) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) { toast("Il file non è un JSON valido."); return; }
+  if (!data || data.app !== "collezioni" || !Array.isArray(data.items)) { toast("Questo file non è un backup di Collezioni."); return; }
+  const impCfg = data.config ? normConfig(data.config) : { groups: [], cats: [] };
+  const localCats = new Set((S.config ? S.config.cats : []).map(c => c.id));
+  const newCats = impCfg.cats.filter(c => !localCats.has(c.id));
+  const knownCats = new Set([...localCats, ...newCats.map(c => c.id)]);
+  let add = 0, upd = 0, same = 0, skip = 0;
+  const toWrite = [];
+  for (const it of data.items) {
+    if (!it || !it.id || !it.catId) continue;
+    if (!knownCats.has(it.catId)) { skip++; continue; }
+    const loc = S.items.get(it.id);
+    if (!loc) { add++; toWrite.push(it); }
+    else if ((it.updatedAt || "") > (loc.updatedAt || "")) { upd++; toWrite.push(it); }
+    else same++;
+  }
+  S.imp = { photosN: data.photos ? Object.keys(data.photos).length : 0, name: name || "dati incollati", data, impCfg, newCats: newCats.length, add, upd, same, skip, toWrite };
+  render();
+}
+async function importPhotos(imp) {
+  const map = {};
+  const ph = imp.data.photos;
+  if (!ph || !S.assets) return map;
+  let local = new Set();
+  try { const l = await S.assets.list(); (l.assets || []).forEach(a => local.add(a.id)); } catch (e) { }
+  const need = new Set();
+  imp.toWrite.forEach(it => (it.photos || []).forEach(p => need.add(p)));
+  [...imp.impCfg.cats, ...imp.impCfg.groups].forEach(x => { if (x.icon && String(x.icon).startsWith("asset:")) need.add(String(x.icon).slice(6)); });
+  const ids = [...need].filter(id => ph[id] && !local.has(id));
+  const msg = $("impMsg");
+  for (let i = 0; i < ids.length; i++) {
+    if (msg) msg.textContent = "Carico le foto: " + (i + 1) + " di " + ids.length;
+    try { const b = dataUrlToBlob(ph[ids[i]]); if (!b) continue; const r = await S.assets.upload(b); map[ids[i]] = r.id; } catch (e) { }
+  }
+  return map;
+}
+async function importApply() {
+  const imp = S.imp; if (!imp) return;
+  try {
+    const photoMap = await importPhotos(imp);
+    const remapIcon = x => { if (x.icon && String(x.icon).startsWith("asset:")) { const id = String(x.icon).slice(6); if (photoMap[id]) x.icon = "asset:" + photoMap[id]; } };
+    imp.impCfg.cats.forEach(remapIcon); imp.impCfg.groups.forEach(remapIcon);
+    imp.toWrite.forEach(it => { it.photos = (it.photos || []).map(p => photoMap[p] || p); });
+    const cfg = S.config ? JSON.parse(JSON.stringify(S.config)) : { groups: [], cats: [] };
+    const newer = (imp.impCfg.updatedAt || "") > (cfg.updatedAt || "");
+    const mergeList = (loc, inc) => {
+      const m = new Map(loc.map(x => [x.id, x]));
+      inc.forEach(x => { if (!m.has(x.id) || newer) m.set(x.id, x); });
+      return [...m.values()];
+    };
+    cfg.groups = mergeList(cfg.groups, imp.impCfg.groups);
+    cfg.cats = mergeList(cfg.cats, imp.impCfg.cats);
+    if (imp.newCats || newer || !S.config) await saveConfig(cfg);
+    S.config = normConfig(cfg);
+    const items = imp.toWrite.map(it => { const o = cleanItem(it); o.id = it.id; o.catId = it.catId; o.updatedAt = it.updatedAt || nowIso(); return o; });
+    // salva preservando updatedAt del file
+    const groups = {}; const counts = {};
+    for (const it of items) {
+      const prev = S.items.get(it.id);
+      let chunk = prev && prev.catId === it.catId ? prev._chunk : null;
+      if (!chunk) { if (!counts[it.catId]) counts[it.catId] = chunkCounts(it.catId); chunk = pickChunk(it.catId, counts[it.catId]); counts[it.catId][chunk] = (counts[it.catId][chunk] || 0) + 1; }
+      const key = it.catId + "/" + chunk;
+      const body = cleanItem(it); body.updatedAt = it.updatedAt;
+      (groups[key] = groups[key] || { catId: it.catId, chunk, items: {} }).items[it.id] = body;
+    }
+    for (const g of Object.values(groups)) {
+      await enqueue(async () => {
+        const ref = S.db.doc("cats/" + g.catId + "/chunks/" + g.chunk);
+        const exists = S.chunks[g.catId] && S.chunks[g.catId][g.chunk];
+        if (exists) await ref.update({ items: g.items }); else await ref.set({ items: g.items });
+      });
+    }
+    toast("Importati " + items.length + " pezzi");
+    S.imp = null;
+    syncSubs();
+    render();
+  } catch (e) { toast(dbErr(e), 5000); }
+}
+
+/* ================= Eventi ================= */
+document.addEventListener("click", async ev => {
+  const el = ev.target.closest("[data-act]");
+  if (!el) return;
+  const a = el.dataset.act, id = el.dataset.id, v = el.dataset.v, i = el.dataset.i != null ? parseInt(el.dataset.i, 10) : null;
+  if (a === "closeModalBg") { if (ev.target === el) closeModal(); return; }
+  if (el.tagName === "LABEL") return;
+  switch (a) {
+    case "tab": tab(v); break;
+    case "openSets": go({ name: "sets", catId: id }); break;
+    case "openSet": go({ name: "setDetail", catId: S.view.catId, setId: id }); break;
+    case "setsLang": S.setsState.lang = v; S.setsState.sets = null; S.setsState.err = null; render(); break;
+    case "setShow": S.setState.show = v; render(); break;
+    case "setToggle": { const st = S.setState; if (st.sel.has(id)) st.sel.delete(id); else st.sel.add(id); render(); break; }
+    case "setSelAll": S.setState.sel = new Set(S.setState.data.cards.map(x => x.id)); render(); break;
+    case "setSelNone": S.setState.sel = new Set(); render(); break;
+    case "setSelMiss": { const own = ownedMap(S.view.catId); S.setState.sel = new Set(S.setState.data.cards.filter(x => !(own[x.id] && own[x.id].qty)).map(x => x.id)); render(); break; }
+    case "setAdd": openSetAdd("in"); break;
+    case "setAddWish": openSetAdd("wish"); break;
+    case "setAddGo": await setAddGo(el); break;
+    case "cardPrices": await cardPrices(id || null); break;
+    case "cardPriceOne": await cardPriceOne(id); break;
+    case "pick": {
+      if (id === "item") readDraftForm();
+      if (id === "scan" && S.scan) readScanForm();
+      S.pickTarget = id;
+      const inp = $(v === "cam" ? "pick_cam" : "pick_gal");
+      inp.value = "";
+      inp.click();
+      break;
+    }
+    case "back": if (S.view.name === "scan") { if (S.scan && S.scan.ctl) S.scan.ctl.abort(); scanCleanup(); } if (S.view.name === "quote" && S.quote && S.quote.ctl) S.quote.ctl.abort(); back(); break;
+    case "toggleGroup": S.open[id] = !S.open[id]; lsSet("col.open", S.open); render(); break;
+    case "openCat": go({ name: "cat", id }); break;
+    case "openItem": go({ name: "item", id }); break;
+    case "catFilter": S.catState[id].f = v; S.catState[id].limit = 100; render(); break;
+    case "catMore": S.catState[id].limit += 200; render(); break;
+    case "newItem": S.draft = newDraft(id, S.catState[id] && S.catState[id].f === "wish" ? "wish" : "in"); go({ name: "itemForm", focus: "f_name" }); break;
+    case "editItem": { const it = S.items.get(id); S.draft = JSON.parse(JSON.stringify(it)); S.draft._origBuy = it.buyPrice; go({ name: "itemForm" }); break; }
+    case "draftStatus": readDraftForm(); S.draft.status = v; render(); break;
+    case "rmPhoto": readDraftForm(); S.draft.photos.splice(i, 1); render(); break;
+    case "saveDraft": if (!S.busy) saveDraft(); break;
+    case "draftQuote": await draftQuote(el); break;
+    case "quoteOne": await quoteOne(id, el); break;
+    case "exit": openExit(id); break;
+    case "exitType": keepExit(); S.exit.type = v; renderExit(); break;
+    case "exitPart": keepExit(); S.exit.part = v === "1"; S.exit.level = null; renderExit(); break;
+    case "exitLevel": keepExit(); S.exit.level = v; renderExit(); break;
+    case "exitMode": keepExit(); S.exit.mode = v; renderExit(); break;
+    case "exitClChip": keepExit(); S.exit.cl = Number(v); renderExit(); break;
+    case "exitSave": await exitSave(); break;
+    case "closeModal": closeModal(); break;
+    case "gotIt": { const it = Object.assign({}, S.items.get(id)); it.status = "in"; it.qty = Math.max(1, it.qty || 1); it.buyDate = today(); it.movements = [...(it.movements || []), { type: "carico", qty: it.qty, date: today(), price: null }]; try { await saveItem(it); toast("Spostato in collezione: aggiorna il prezzo d'acquisto da Modifica"); render(); } catch (e) { toast(dbErr(e)); } break; }
+    case "restore": { const it = Object.assign({}, S.items.get(id)); it.status = "in"; it.qty = 1; try { await saveItem(it); render(); } catch (e) { toast(dbErr(e)); } break; }
+    case "dup": { const it = S.items.get(id); const d = JSON.parse(JSON.stringify(it)); d.id = uid(); d._new = true; d.qty = 1; d.movements = []; d.status = it.status === "out" ? "in" : it.status; d.createdAt = null; delete d._chunk; d._origBuy = d.buyPrice; S.draft = d; go({ name: "itemForm", focus: "f_name" }); break; }
+    case "delItem": { if (await confirmBox("Eliminare il pezzo?", "Sparirà da collezione, storico e totali. Si può recuperare solo da un backup.", "Elimina", true)) { const it = Object.assign({}, S.items.get(id)); it.deleted = true; try { await saveItem(it); toast("Eliminato"); back(); } catch (e) { toast(dbErr(e)); } } break; }
+    case "histF": S.histState.f = v; render(); break;
+    // categorie
+    case "cats": go({ name: "cats" }); break;
+    case "newCat": go({ name: "cats" }); break;
+    case "newCatForm": S.catDraft = { _new: true, id: null, name: "", group: null, icon: "box", consumable: false, cond: ["Nuovo", "Ottimo", "Buono", "Discreto", "Rovinato"], fields: [] }; go({ name: "catForm", focus: "c_name" }); break;
+    case "editCat": S.catDraft = JSON.parse(JSON.stringify(cat(id))); go({ name: "catForm" }); break;
+    case "catIcon": readCatForm(); S.catDraft.icon = v; render(); break;
+    case "groupIcon": S.groupDraft.name = val("g_name"); S.groupDraft.icon = v; render(); break;
+    case "fAdd": readCatForm(); S.catDraft.fields.push({ k: "", label: "", type: "text", options: [] }); render(); break;
+    case "fDel": readCatForm(); S.catDraft.fields.splice(i, 1); render(); break;
+    case "fMove": { readCatForm(); const f = S.catDraft.fields; const j = i + parseInt(v, 10); if (j >= 0 && j < f.length) { [f[i], f[j]] = [f[j], f[i]]; } render(); break; }
+    case "saveCat": await saveCat(); break;
+    case "delCat": await delCat(); break;
+    case "moveCat": await moveCat(id, parseInt(v, 10)); break;
+    case "newGroup": S.groupDraft = { _new: true, name: "", icon: "box" }; go({ name: "groupForm", focus: "g_name" }); break;
+    case "editGroup": S.groupDraft = JSON.parse(JSON.stringify(group(id))); go({ name: "groupForm" }); break;
+    case "saveGroup": await saveGroup(); break;
+    case "delGroup": await delGroup(); break;
+    // scansione
+    case "scan": if (!S.config || !S.config.cats.length) { toast("Crea prima almeno una categoria."); break; } S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; go({ name: "scan" }); break;
+    case "scanRm": readScanForm(); try { URL.revokeObjectURL(S.scan.urls[i]); } catch (e) { } S.scan.files.splice(i, 1); S.scan.urls.splice(i, 1); render(); break;
+    case "scanRun": await scanRun(); break;
+    case "scanGrid": readScanForm(); S.scan.grid = v; render(); break;
+    case "scanStop": if (S.scan && S.scan.ctl) S.scan.ctl.abort(); break;
+    case "scanReset": scanCleanup(); S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; render(); break;
+    case "scanSave": await scanSave(); break;
+    case "scanQuote": await scanQuote(el); break;
+    // quotazioni
+    case "quoteStart": if (!S.config || !S.config.cats.length) { toast("Crea prima almeno una categoria."); break; } S.quote = { step: "pick", sel: new Set(S.config.cats.filter(c => !/pok|magic|carte/i.test(c.name)).map(c => c.id)), min: null, days: "7", wish: false }; go({ name: "quote" }); break;
+    case "qCat": readQuoteForm(); if (S.quote.sel.has(id)) S.quote.sel.delete(id); else S.quote.sel.add(id); render(); break;
+    case "qRun": await quoteRun(); break;
+    case "qStop": if (S.quote && S.quote.ctl) S.quote.ctl.abort(); break;
+    case "qApply": await quoteApply(); break;
+    // backup
+    case "export": await doExport(); break;
+    case "exportCopy": await copyExport(); break;
+    case "importText": analyzeImport(val("imp_text"), "dati incollati"); break;
+    case "importCancel": S.imp = null; render(); break;
+    case "importApply": await importApply(); break;
+  }
+});
+document.addEventListener("input", ev => {
+  const el = ev.target; const a = el.dataset && el.dataset.input; if (!a) return;
+  const i = el.dataset.i != null ? parseInt(el.dataset.i, 10) : null;
+  if (a === "catSearch") {
+    const st = S.catState[el.dataset.id]; st.q = el.value; st.limit = 100;
+    clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 200);
+  }
+  if (a === "setsSearch") { S.setsState.q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 250); }
+  if (a === "qFilter") { readQuoteForm(); const el2 = $("qSummary"); if (el2) el2.innerHTML = quoteSummary(); const b = document.querySelector('[data-act="qRun"]'); if (b) b.disabled = !(quoteCandidates().length && S.sample); }
+  if (a === "exitCalc") { const c = $("x_calc"); if (c) c.innerHTML = exitCalcHtml(); }
+  if (a === "exitCl" || a === "exitCap") { keepExit(); const t = $("x_after"); if (t) t.textContent = exitAfterText(); }
+  if (a === "fLabel") S.catDraft.fields[i].label = el.value;
+  if (a === "fOpts") S.catDraft.fields[i].options = el.value.split(",").map(s => s.trim()).filter(Boolean);
+  if (a === "scanName") S.scan.results[i].name = el.value;
+  if (a === "scanQty") S.scan.results[i].qty = Math.max(1, parseInt(el.value, 10) || 1);
+});
+document.addEventListener("change", async ev => {
+  const el = ev.target; const a = el.dataset && el.dataset.change; if (!a) return;
+  const i = el.dataset.i != null ? parseInt(el.dataset.i, 10) : null;
+  switch (a) {
+    case "catSort": S.catState[el.dataset.id].sort = el.value; render(); break;
+    case "histYear": S.histState.year = el.value; render(); break;
+    case "draftCat": readDraftForm(); S.draft.catId = el.value; render(); break;
+    case "picked": {
+      const files = [...(el.files || [])];
+      el.value = "";
+      if (!files.length) break;
+      if (S.pickTarget === "scan" && S.scan) { files.forEach(f => { S.scan.files.push(f); S.scan.urls.push(URL.createObjectURL(f)); }); render(); break; }
+      if (S.pickTarget !== "item" || !S.draft) break;
+      if (!S.assets) { toast("Caricamento foto non disponibile in questa vista."); break; }
+      toast("Carico " + files.length + " foto…", 8000);
+      for (const f of files) { try { const pid = await uploadPhoto(f); S.draft.photos.push(pid); } catch (e) { toast("Una foto non è stata caricata."); } }
+      toast("Foto caricate"); render(); break;
+    }
+    case "addPhotos": {
+      readDraftForm();
+      const files = [...(el.files || [])]; if (!files.length) break;
+      if (!S.assets) { toast("Caricamento foto non disponibile in questa vista."); break; }
+      toast("Carico " + files.length + " foto…", 8000);
+      for (const f of files) { try { const pid = await uploadPhoto(f); S.draft.photos.push(pid); } catch (e) { toast("Una foto non è stata caricata."); } }
+      toast("Foto caricate"); render(); break;
+    }
+    case "fType": readCatForm(); S.catDraft.fields[i].type = el.value; render(); break;
+    case "iconUpload": {
+      const f = el.files && el.files[0]; if (!f) break;
+      if (!S.assets) { toast("Caricamento immagini non disponibile in questa vista."); break; }
+      try {
+        const blob = f.type === "image/svg+xml" ? f : await compressImage(f, 256, 0.9);
+        const r = await S.assets.upload(blob);
+        if (el.dataset.v === "catIcon") { readCatForm(); S.catDraft.icon = "asset:" + r.id; }
+        else { S.groupDraft.name = val("g_name"); S.groupDraft.icon = "asset:" + r.id; }
+        render();
+      } catch (e) { toast("Immagine non caricata."); }
+      break;
+    }
+    case "scanFiles": {
+      const s = S.scan; s.hint = val("s_hint"); s.catId = val("s_cat") || s.catId;
+      [...(el.files || [])].forEach(f => { s.files.push(f); s.urls.push(URL.createObjectURL(f)); });
+      render(); break;
+    }
+    case "scanInc": S.scan.results[i].include = el.checked; render(); break;
+    case "scanBinder": readScanForm(); S.scan.binder = el.checked; if (!S.scan.grid) S.scan.grid = "3x3"; render(); break;
+    case "scanCond": S.scan.results[i].cond = el.value.replace(/^Stato: /, ""); break;
+    case "scanCatPick": { const s = S.scan; s.hint = val("s_hint").trim(); s.catId = el.value; s.forced = { cond: "", fields: {} }; render(); break; }
+    case "scanCat": { const r = S.scan.results[i]; r.catId = el.value; const c = cat(el.value); const nf = {}; c.fields.forEach(f => { if (r.fields[f.k] != null) nf[f.k] = r.fields[f.k]; }); r.fields = nf; if (!c.cond.includes(r.cond)) r.cond = ""; render(); break; }
+    case "qInc": S.quote.rows[i].apply = el.checked; render(); break;
+    case "wishAdd": if (el.value) { S.draft = newDraft(el.value, "wish"); go({ name: "itemForm", focus: "f_name" }); } break;
+    case "qWish": readQuoteForm(); render(); break;
+    case "expPhotos": S.expPhotos = el.checked; break;
+    case "importFile": {
+      const f = el.files && el.files[0]; if (!f) break;
+      try { analyzeImport(await f.text(), f.name); } catch (e) { toast("Non riesco a leggere il file."); }
+      break;
+    }
+  }
+});
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && $("modal").innerHTML) closeModal(); });
+
+/* ================= Azioni categorie ================= */
+async function saveCat() {
+  readCatForm();
+  const d = S.catDraft;
+  if (!d.name) { toast("Dai un nome alla categoria."); return; }
+  const fields = [];
+  const keys = [];
+  for (const f of d.fields) {
+    if (!String(f.label || "").trim()) continue;
+    const k = f.k || fieldKey(f.label, keys);
+    keys.push(k);
+    fields.push({ k, label: f.label.trim(), type: f.type || "text", options: f.type === "select" ? (f.options || []) : [] });
+  }
+  const cfg = JSON.parse(JSON.stringify(S.config || { groups: [], cats: [] }));
+  const body = { id: d.id || slug(d.name), name: d.name, group: d.group || null, icon: d.icon || "box", consumable: !!d.consumable, cond: d.cond.length ? d.cond : ["Nuovo", "Ottimo", "Buono", "Discreto", "Rovinato"], fields, order: d.order != null ? d.order : (cfg.cats.length + cfg.groups.length) * 10 + 10 };
+  const ix = cfg.cats.findIndex(c => c.id === body.id);
+  if (ix >= 0) cfg.cats[ix] = body; else cfg.cats.push(body);
+  try { await saveConfig(cfg); S.config = normConfig(cfg); syncSubs(); toast("Categoria salvata"); back(); } catch (e) { toast(dbErr(e)); }
+}
+async function delCat() {
+  const d = S.catDraft;
+  const n = catItems(d.id).length;
+  if (n) { toast("La categoria contiene " + n + " pezzi: spostali o eliminali prima.", 4500); return; }
+  if (!(await confirmBox("Eliminare la categoria?", "La categoria " + d.name + " verrà rimossa.", "Elimina", true))) return;
+  const cfg = JSON.parse(JSON.stringify(S.config));
+  cfg.cats = cfg.cats.filter(c => c.id !== d.id);
+  try { await saveConfig(cfg); S.config = normConfig(cfg); syncSubs(); back(); } catch (e) { toast(dbErr(e)); }
+}
+async function moveCat(id, dir) {
+  const cfg = JSON.parse(JSON.stringify(S.config));
+  const c = cfg.cats.find(x => x.id === id);
+  const sibs = cfg.cats.filter(x => (x.group || null) === (c.group || null)).sort((a, b) => (a.order || 0) - (b.order || 0));
+  const ix = sibs.indexOf(c), j = ix + dir;
+  if (j < 0 || j >= sibs.length) return;
+  [sibs[ix], sibs[j]] = [sibs[j], sibs[ix]];
+  sibs.forEach((s, k) => { s.order = (k + 1) * 10 + (c.group ? 0 : 1000); });
+  try { await saveConfig(cfg); S.config = normConfig(cfg); render(); } catch (e) { toast(dbErr(e)); }
+}
+async function saveGroup() {
+  const d = S.groupDraft; d.name = val("g_name").trim();
+  if (!d.name) { toast("Dai un nome al gruppo."); return; }
+  const cfg = JSON.parse(JSON.stringify(S.config || { groups: [], cats: [] }));
+  const body = { id: d.id || slug(d.name), name: d.name, icon: d.icon || "box", order: d.order != null ? d.order : (cfg.cats.length + cfg.groups.length) * 10 + 10 };
+  const ix = cfg.groups.findIndex(g => g.id === body.id);
+  if (ix >= 0) cfg.groups[ix] = body; else cfg.groups.push(body);
+  try { await saveConfig(cfg); S.config = normConfig(cfg); toast("Gruppo salvato"); back(); } catch (e) { toast(dbErr(e)); }
+}
+async function delGroup() {
+  const d = S.groupDraft;
+  if (!(await confirmBox("Eliminare il gruppo?", "Le sue categorie resteranno, senza gruppo.", "Elimina", true))) return;
+  const cfg = JSON.parse(JSON.stringify(S.config));
+  cfg.groups = cfg.groups.filter(g => g.id !== d.id);
+  cfg.cats.forEach(c => { if (c.group === d.id) c.group = null; });
+  try { await saveConfig(cfg); S.config = normConfig(cfg); back(); } catch (e) { toast(dbErr(e)); }
+}
+
+/* ================= Quotazione singola ================= */
+async function draftQuote(btn) {
+  readDraftForm();
+  const d = S.draft;
+  if (!d.name) { toast("Scrivi prima il nome del pezzo."); return; }
+  btn.disabled = true; const msg = $("quoteMsg");
+  if (msg) msg.textContent = "Cerco la quotazione… può richiedere fino a un minuto.";
+  const res = await quoteItems([d], { onStatus: t => { if (msg) msg.textContent = t; }, onError: e => toast(sampleErr(e), 5000) });
+  const r = res.results[d.id];
+  if (r && r.value != null) {
+    Object.assign(d, { value: r.value, valueLow: r.low, valueHigh: r.high, valueConf: r.conf, valueSource: r.source, valueUrl: r.url, valueDate: today() });
+    const hist = d.valueHistory || []; hist.push({ d: today(), v: r.value }); d.valueHistory = hist.slice(-HIST_MAX);
+    if (!res.web) toast(webStatusMsg(res.status) || "Stima senza ricerca web", 5000);
+    render();
+  } else { btn.disabled = false; if (msg) msg.textContent = "Nessuna quotazione trovata. " + webStatusMsg(res.status); }
+}
+async function quoteOne(id, btn) {
+  const it = S.items.get(id); if (!it) return;
+  btn.disabled = true; btn.innerHTML = ic("refresh", 16) + "Cerco…";
+  const res = await quoteItems([it], { onStatus: t => { btn.textContent = t.slice(0, 40); }, onError: e => toast(sampleErr(e), 5000) });
+  const r = res.results[id];
+  if (r && r.value != null) {
+    const n = applyQuote(S.items.get(id), r);
+    try { await saveItem(n); toast("Quotazione aggiornata: " + eur(r.value) + (res.web ? "" : " (stima senza web)"), 4000); } catch (e) { toast(dbErr(e)); }
+  } else toast("Nessuna quotazione trovata. " + webStatusMsg(res.status), 5000);
+  render();
+}
+async function scanQuote(btn) {
+  const s = S.scan;
+  const inc = s.results.filter(r => r.include);
+  const list = inc.map((r, k) => ({ id: "s" + k, catId: r.catId, name: r.name, cond: r.cond, fields: r.fields, _r: r }));
+  btn.disabled = true; btn.textContent = "Cerco le quotazioni…";
+  const res = await quoteItems(list, { onStatus: t => { btn.textContent = t.slice(0, 50); }, onError: e => toast(sampleErr(e), 5000) });
+  let n = 0;
+  list.forEach(x => { const r = res.results[x.id]; if (r && r.value != null) { Object.assign(x._r, { value: r.value, valueLow: r.low, valueHigh: r.high, valueConf: r.conf, valueSource: r.source, valueUrl: r.url, note: r.note || x._r.note }); n++; } });
+  toast(n + " quotazioni trovate" + (res.web ? "" : " (senza ricerca web)"), 4000);
+  if (!res.web && webStatusMsg(res.status)) setTimeout(() => toast(webStatusMsg(res.status), 6000), 4100);
+  render();
+}
+
+/* ================= Cataloghi carte (solo app) ================= */
+const CATALOGS = { pokemon: "tcgdex", magic: "scryfall" };
+function catalogOf(catId) { return S.env === "pwa" ? CATALOGS[catId] || null : null; }
+function catalogCats() { return S.config ? S.config.cats.filter(c => catalogOf(c.id)) : []; }
+const CAT_CACHE = { sets: {}, setCards: {} };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function getJson(url, opts) {
+  const r = await fetch(url, Object.assign({ headers: { Accept: "application/json" } }, opts || {}));
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+function cacheGet(k, maxAgeMs) { const v = lsGet("col.cache." + k, null); return v && Date.now() - v.t < maxAgeMs ? v.d : null; }
+function cacheSet(k, d) { lsSet("col.cache." + k, { t: Date.now(), d }); }
+
+/* --- elenco set --- */
+async function loadSets(src, lang) {
+  const key = src + ":" + lang;
+  if (CAT_CACHE.sets[key]) return CAT_CACHE.sets[key];
+  let sets = cacheGet("sets." + key, 3 * 864e5);
+  if (!sets) {
+    if (src === "tcgdex") {
+      const d = await getJson("https://api.tcgdex.net/v2/" + lang + "/sets") || [];
+      sets = d.map(x => ({ id: x.id, name: x.name, total: (x.cardCount && (x.cardCount.official || x.cardCount.total)) || null, logo: x.logo ? x.logo + ".png" : (x.symbol ? x.symbol + ".png" : null) })).reverse();
+    } else {
+      const d = await getJson("https://api.scryfall.com/sets");
+      const skip = new Set(["token", "memorabilia", "alchemy", "minigame", "vanguard", "treasure_chest"]);
+      sets = ((d && d.data) || []).filter(x => !x.digital && !skip.has(x.set_type) && x.card_count > 0)
+        .sort((a, b) => (b.released_at || "").localeCompare(a.released_at || ""))
+        .map(x => ({ id: x.code, name: x.name, total: x.card_count, logo: x.icon_svg_uri || null, date: x.released_at || "" }));
+    }
+    cacheSet("sets." + key, sets);
+  }
+  CAT_CACHE.sets[key] = sets;
+  return sets;
+}
+/* --- carte di un set --- */
+async function loadSetCards(src, setId, lang) {
+  const key = src + ":" + setId + ":" + lang;
+  if (CAT_CACHE.setCards[key]) return CAT_CACHE.setCards[key];
+  let out = null;
+  if (src === "tcgdex") {
+    let d = await getJson("https://api.tcgdex.net/v2/" + lang + "/sets/" + encodeURIComponent(setId));
+    let usedLang = lang;
+    if (!d && lang !== "en") { d = await getJson("https://api.tcgdex.net/v2/en/sets/" + encodeURIComponent(setId)); usedLang = "en"; }
+    if (!d) throw new Error("Set non trovato");
+    const official = d.cardCount && (d.cardCount.official || d.cardCount.total);
+    out = { name: d.name, usedLang, total: official || (d.cards || []).length, cards: (d.cards || []).map(c => ({ id: c.id, num: String(c.localId), numFull: official ? c.localId + "/" + official : String(c.localId), name: c.name, img: c.image ? c.image + "/low.webp" : null, imgBig: c.image ? c.image + "/high.webp" : null })) };
+  } else {
+    const fetchAll = async (q) => {
+      let url = "https://api.scryfall.com/cards/search?unique=prints&order=set&include_extras=true&q=" + encodeURIComponent(q);
+      const all = [];
+      while (url) {
+        const d = await getJson(url);
+        if (!d) break;
+        all.push(...(d.data || []));
+        url = d.has_more ? d.next_page : null;
+        if (url) await sleep(110);
+      }
+      return all;
+    };
+    let usedLang = lang;
+    let cards = await fetchAll("e:" + setId + " lang:" + (lang === "it" ? "it" : "en"));
+    if (!cards.length && lang !== "en") { cards = await fetchAll("e:" + setId + " lang:en"); usedLang = "en"; }
+    if (!cards.length) throw new Error("Set non trovato");
+    const img = c => (c.image_uris || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris) || {});
+    out = { name: cards[0].set_name, usedLang, total: cards.length, cards: cards.map(c => ({ id: c.id, num: c.collector_number, numFull: c.collector_number, name: c.printed_name || c.name, nameEn: c.name, rarity: c.rarity, img: img(c).small || null, imgBig: img(c).normal || null, eur: numOrNull(c.prices && c.prices.eur), eurFoil: numOrNull(c.prices && c.prices.eur_foil), set: c.set })) };
+  }
+  out.cards.sort((a, b) => { const na = parseInt(a.num, 10), nb = parseInt(b.num, 10); return (isNaN(na) || isNaN(nb) || na === nb) ? String(a.num).localeCompare(String(b.num), "it", { numeric: true }) : na - nb; });
+  CAT_CACHE.setCards[key] = out;
+  return out;
+}
+/* --- prezzi --- */
+function rarityLabel(src, r) {
+  const v = String(r || "").toLowerCase();
+  if (src === "scryfall") return { common: "Comune", uncommon: "Non comune", rare: "Rara", mythic: "Mitica", special: "Speciale", bonus: "Speciale" }[v] || "";
+  if (!v) return "";
+  if (v.includes("secret") || v.includes("segret")) return "Segreta";
+  if (v.includes("ultra") || v.includes("illustration") || v.includes("hyper")) return "Ultra rara";
+  if (v.includes("holo")) return "Rara holo";
+  if (v.includes("promo")) return "Promo";
+  if (v.includes("uncommon") || v.includes("non comune")) return "Non comune";
+  if (v.includes("common") || v.includes("comune")) return "Comune";
+  if (v.includes("rare") || v.includes("rara")) return "Rara";
+  return "";
+}
+async function pool(list, n, fn, onProg) {
+  let i = 0, done = 0;
+  const workers = Array.from({ length: Math.min(n, list.length) }, async () => {
+    while (i < list.length) { const k = i++; try { await fn(list[k], k); } catch (e) { } done++; if (onProg) onProg(done, list.length); }
+  });
+  await Promise.all(workers);
+}
+/* restituisce {cardId: {eur, eurFoil, rarity}} */
+async function fetchPrices(src, refs, onProg) {
+  const out = {};
+  if (src === "tcgdex") {
+    await pool(refs, 6, async r => {
+      const d = await getJson("https://api.tcgdex.net/v2/en/cards/" + encodeURIComponent(r.card));
+      if (!d) return;
+      const cm = d.pricing && d.pricing.cardmarket;
+      out[r.card] = { eur: cm ? numOrNull(cm.trend != null ? cm.trend : cm.avg30) : null, eurFoil: cm ? numOrNull(cm["trend-holo"] != null ? cm["trend-holo"] : cm["avg30-holo"]) : null, rarity: d.rarity || "" };
+    }, onProg);
+  } else {
+    const ids = refs.map(r => r.set && r.num ? { set: r.set, collector_number: String(r.num) } : { id: r.card });
+    for (let i = 0; i < ids.length; i += 75) {
+      const chunk = ids.slice(i, i + 75), chunkRefs = refs.slice(i, i + 75);
+      const d = await getJson("https://api.scryfall.com/cards/collection", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ identifiers: chunk }) });
+      const found = (d && d.data) || [];
+      chunkRefs.forEach(r => {
+        const c = found.find(x => (r.set && x.set === r.set && String(x.collector_number) === String(r.num)) || x.id === r.card);
+        if (c) out[r.card] = { eur: numOrNull(c.prices && c.prices.eur), eurFoil: numOrNull(c.prices && c.prices.eur_foil), rarity: c.rarity };
+      });
+      if (onProg) onProg(Math.min(i + 75, ids.length), ids.length);
+      await sleep(110);
+    }
+  }
+  return out;
+}
+function priceFor(it, p) {
+  if (!p) return null;
+  const foil = it.fields && (it.fields.foil === true || /holo|foil/i.test(String(it.fields.variante || "")) && !/reverse/i.test(String(it.fields.variante || "")));
+  const v = foil ? (p.eurFoil != null ? p.eurFoil : p.eur) : (p.eur != null ? p.eur : p.eurFoil);
+  return v;
+}
+function quoteFromCatalog(it, v, src) {
+  return applyQuote(it, { value: v, low: null, high: null, conf: "alta", source: src === "tcgdex" ? "Cardmarket, prezzo di tendenza (via TCGdex)" : "Cardmarket, prezzo medio (via Scryfall)", url: null });
+}
+async function cardPrices(onlyCat) {
+  const cats = onlyCat ? [onlyCat] : catalogCats().map(c => c.id);
+  const items = [...S.items.values()].filter(i => !i.deleted && i.ref && cats.includes(i.catId) && i.status !== "out");
+  if (!items.length) { toast("Nessuna carta collegata al catalogo: aggiungile da \"Set e completamento\".", 5000); return; }
+  if (!navigator.onLine) { toast("Serve la connessione a internet."); return; }
+  toast("Aggiorno " + items.length + " carte…", 60000);
+  const updated = [];
+  for (const catId of cats) {
+    const src = catalogOf(catId); const its = items.filter(i => i.catId === catId); if (!its.length) continue;
+    const refs = []; const seen = new Set();
+    its.forEach(i => { if (!seen.has(i.ref.card)) { seen.add(i.ref.card); refs.push(i.ref); } });
+    const prices = await fetchPrices(src, refs, (d, n) => toast("Prezzi " + cat(catId).name + ": " + d + " di " + n, 60000));
+    its.forEach(i => { const v = priceFor(i, prices[i.ref.card]); if (v != null) { const n = quoteFromCatalog(i, v, src); if (n) updated.push(n); } });
+  }
+  if (updated.length) { try { await saveItems(updated); } catch (e) { toast(dbErr(e), 5000); return; } }
+  toast(updated.length + " prezzi aggiornati" + (items.length - updated.length ? ", " + (items.length - updated.length) + " senza prezzo" : ""), 5000);
+  render();
+}
+
+/* --- viste --- */
+function ownedMap(catId) {
+  const m = {};
+  for (const it of S.items.values()) {
+    if (it.deleted || it.catId !== catId || !it.ref) continue;
+    const k = it.ref.card;
+    m[k] = m[k] || { qty: 0, wish: false, sets: new Set() };
+    if (it.status === "in") m[k].qty += Number(it.qty) || 0;
+    if (it.status === "wish") m[k].wish = true;
+  }
+  return m;
+}
+function setOwnedCounts(catId) {
+  const m = {};
+  for (const it of S.items.values()) {
+    if (it.deleted || it.catId !== catId || !it.ref || it.status !== "in") continue;
+    (m[it.ref.set] = m[it.ref.set] || new Set()).add(it.ref.card);
+  }
+  return m;
+}
+function vSets() {
+  const v = S.view; const c = cat(v.catId); const src = catalogOf(v.catId);
+  const st = S.setsState = S.setsState && S.setsState.catId === v.catId ? S.setsState : { catId: v.catId, lang: "it", q: "", sets: null, err: null, loading: false };
+  let h = '<div class="wrap stack">' + topBar("Set " + (c ? c.name : ""), src === "tcgdex" ? "Catalogo TCGdex" : "Catalogo Scryfall");
+  h += '<div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-label="Lingua del catalogo"><button type="button" class="' + (st.lang === "it" ? "on" : "") + '" data-act="setsLang" data-v="it">Italiano</button><button type="button" class="' + (st.lang === "en" ? "on" : "") + '" data-act="setsLang" data-v="en">Inglese</button></div>';
+  h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="q" type="search" placeholder="Cerca un set (es. Set Base)" aria-label="Cerca set" value="' + esc(st.q) + '" data-input="setsSearch"></label>';
+  if (!st.sets && !st.err && !st.loading) { st.loading = true; loadSets(src, st.lang).then(x => { st.sets = x; st.loading = false; render(); }).catch(e => { st.err = e.message; st.loading = false; render(); }); }
+  if (st.err) h += '<div class="notice warn">Non riesco a scaricare l\'elenco dei set (' + esc(st.err) + '). Controlla la connessione.</div>';
+  else if (!st.sets) h += '<div class="card empty">Scarico l\'elenco dei set…</div>';
+  else {
+    const owned = setOwnedCounts(v.catId);
+    let list = st.sets;
+    if (st.q) { const q = st.q.toLowerCase(); list = list.filter(x => x.name.toLowerCase().includes(q) || x.id.toLowerCase().includes(q)); }
+    const mine = list.filter(x => owned[x.id]);
+    const row = x => { const n = owned[x.id] ? owned[x.id].size : 0; const pct = x.total ? Math.min(100, Math.round(n / x.total * 100)) : 0; return '<button type="button" class="li" data-act="openSet" data-id="' + esc(x.id) + '"><span class="ico" style="background:#fff;border:1px solid var(--line2)">' + (x.logo ? '<img alt="" loading="lazy" src="' + esc(x.logo) + '" style="object-fit:contain;padding:4px">' : ic(c ? c.icon : "cards", 18)) + '</span><span class="grow"><span class="b ellip" style="display:block">' + esc(x.name) + '</span><span class="xs muted">' + esc(x.id) + (x.date ? " · " + esc(x.date.slice(0, 4)) : "") + (x.total ? " · " + x.total + " carte" : "") + '</span>' + (n ? '<span class="progress" style="display:block;margin-top:6px"><span style="display:block;height:100%;width:' + pct + '%;background:var(--acc)"></span></span>' : '') + '</span>' + (n ? '<span class="b small">' + n + (x.total ? "/" + x.total : "") + '</span>' : '') + '</button>'; };
+    if (mine.length) h += '<div class="sect">I tuoi set</div><div class="card list" style="overflow:hidden">' + mine.map(row).join("") + '</div>';
+    h += '<div class="sect">' + (st.q ? "Risultati" : "Tutti i set") + '</div>';
+    h += list.length ? '<div class="card list" style="overflow:hidden">' + list.slice(0, st.q ? 200 : 80).map(row).join("") + '</div>' : '<div class="card empty">Nessun set trovato.</div>';
+  }
+  h += '</div>';
+  return h;
+}
+function vSetDetail() {
+  const v = S.view; const c = cat(v.catId); const src = catalogOf(v.catId);
+  const st = S.setState = S.setState && S.setState.key === v.catId + ":" + v.setId ? S.setState : { key: v.catId + ":" + v.setId, lang: (S.setsState && S.setsState.lang) || "it", data: null, err: null, loading: false, sel: new Set(), show: "all" };
+  let h = '<div class="wrap stack">';
+  if (!st.data && !st.err && !st.loading) {
+    st.loading = true;
+    loadSetCards(src, v.setId, st.lang).then(d => { st.data = d; st.loading = false; const own = ownedMap(v.catId); st.sel = new Set(d.cards.filter(x => !own[x.id] || !own[x.id].qty).map(x => x.id)); render(); }).catch(e => { st.err = e.message; st.loading = false; render(); });
+  }
+  h += topBar(st.data ? st.data.name : "Set", st.data ? (st.data.usedLang !== st.lang ? "Non disponibile in italiano: elenco in inglese" : (st.lang === "it" ? "Edizione italiana" : "Edizione inglese")) : "");
+  if (st.err) return h + '<div class="notice warn">Non riesco a scaricare il set (' + esc(st.err) + ').</div></div>';
+  if (!st.data) return h + '<div class="card empty">Scarico le carte del set…</div></div>';
+  const own = ownedMap(v.catId);
+  const cards = st.data.cards;
+  const have = cards.filter(x => own[x.id] && own[x.id].qty).length;
+  const pct = Math.round(have / Math.max(1, cards.length) * 100);
+  h += '<div class="card pad stack" style="gap:8px"><div class="between"><span class="b">' + have + ' di ' + cards.length + ' carte</span><span class="small muted">' + pct + '% completo</span></div><div class="progress"><div style="width:' + pct + '%"></div></div></div>';
+  h += '<div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Mostra">' + [["all", "Tutte"], ["miss", "Mancanti"], ["have", "Possedute"]].map(([k, l]) => '<button type="button" class="' + (st.show === k ? "on" : "") + '" data-act="setShow" data-v="' + k + '">' + l + '</button>').join("") + '</div>';
+  const shown = cards.filter(x => st.show === "all" || (st.show === "miss" ? !(own[x.id] && own[x.id].qty) : (own[x.id] && own[x.id].qty)));
+  h += '<div class="between"><span class="small muted">' + st.sel.size + ' selezionate</span><span class="row" style="gap:6px"><button type="button" class="btn sm" data-act="setSelMiss">Mancanti</button><button type="button" class="btn sm" data-act="setSelAll">Tutte</button><button type="button" class="btn sm" data-act="setSelNone">Nessuna</button></span></div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">';
+  shown.forEach(x => {
+    const o = own[x.id]; const sel = st.sel.has(x.id);
+    h += '<button type="button" data-act="setToggle" data-id="' + esc(x.id) + '" aria-pressed="' + sel + '" style="position:relative;padding:4px;border-radius:10px;border:2px solid ' + (sel ? "var(--acc)" : "transparent") + ';background:#fff;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px"><span style="display:block;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:#E9ECE9' + (o && o.qty ? "" : ";opacity:.55") + '">' + (x.img ? '<img alt="" loading="lazy" src="' + esc(x.img) + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</span><span class="xs b ellip" style="display:block">' + esc(x.name) + '</span><span class="xs muted">#' + esc(x.numFull) + (x.eur != null ? " · " + eur(x.eur) : "") + '</span>' + (o && o.qty ? '<span class="badge" style="position:absolute;top:8px;left:8px">×' + o.qty + '</span>' : o && o.wish ? '<span class="badge grey" style="position:absolute;top:8px;left:8px">desiderio</span>' : '') + (sel ? '<span style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:11px;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center">' + ic("check", 14, 2.5) + '</span>' : '') + '</button>';
+  });
+  h += '</div>';
+  h += '<div style="height:70px"></div><div style="position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom))"><div class="grid2" style="max-width:560px;margin:0 auto"><button type="button" class="btn" data-act="setAddWish"' + (st.sel.size ? "" : " disabled") + '>Desideri (' + st.sel.size + ')</button><button type="button" class="btn pri" data-act="setAdd"' + (st.sel.size ? "" : " disabled") + '>Aggiungi (' + st.sel.size + ')</button></div></div>';
+  h += '</div>';
+  return h;
+}
+function openSetAdd(status) {
+  const v = S.view; const c = cat(v.catId); const st = S.setState;
+  S.setAdd = { status, cond: status === "wish" ? "" : (c.cond.includes("Near Mint") ? "Near Mint" : ""), edizione: "", foil: false };
+  const a = S.setAdd;
+  let h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Aggiungi carte"><div class="grab"></div>';
+  h += '<div class="between"><div><h1 style="font-size:20px">' + (status === "wish" ? "Metti nei desideri" : "Aggiungi alla collezione") + '</h1><div class="small muted">' + st.sel.size + ' carte · ' + esc(st.data.name) + '</div></div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
+  if (status !== "wish") h += '<label class="f"><span>Stato di conservazione (per tutte)</span><select class="in" id="sa_cond"><option value="">—</option>' + c.cond.map(o => '<option' + (o === a.cond ? " selected" : "") + '>' + esc(o) + '</option>').join("") + '</select></label>';
+  const edF = c.fields.find(f => f.k === "edizione");
+  if (edF) h += '<label class="f"><span>Edizione</span><select class="in" id="sa_ed"><option value="">—</option>' + edF.options.map(o => '<option>' + esc(o) + '</option>').join("") + '</select></label>';
+  h += '<label class="row" style="min-height:44px;cursor:pointer"><input type="checkbox" id="sa_foil" style="width:22px;height:22px;accent-color:#2F5D50"><span>Versione foil / holo</span></label>';
+  h += '<div class="small muted" id="sa_msg">Recupero anche i prezzi attuali da Cardmarket: diventano quotazione e prezzo d\'acquisto stimato.</div>';
+  h += '<button type="button" class="btn pri full" data-act="setAddGo">' + (status === "wish" ? "Aggiungi ai desideri" : "Aggiungi " + st.sel.size + " carte") + '</button></div></div>';
+  $("modal").innerHTML = h;
+}
+async function setAddGo(btn) {
+  const v = S.view; const c = cat(v.catId); const src = catalogOf(v.catId); const st = S.setState; const a = S.setAdd;
+  a.cond = $("sa_cond") ? val("sa_cond") : ""; a.edizione = $("sa_ed") ? val("sa_ed") : ""; a.foil = $("sa_foil") ? $("sa_foil").checked : false;
+  btn.disabled = true;
+  const cards = st.data.cards.filter(x => st.sel.has(x.id));
+  const msg = $("sa_msg");
+  const lang = st.lang;
+  const refs = cards.map(x => ({ src, set: src === "scryfall" ? (x.set || v.setId) : v.setId, card: x.id, num: x.num, lang }));
+  let prices = {};
+  try { prices = await fetchPrices(src, refs, (d, n) => { if (msg) msg.textContent = "Recupero i prezzi: " + d + " di " + n; }); } catch (e) { if (msg) msg.textContent = "Prezzi non disponibili ora: le carte vengono aggiunte senza quotazione."; }
+  const items = cards.map((x, k) => {
+    const it = newDraft(v.catId, a.status);
+    const p = prices[x.id] || (x.eur != null || x.eurFoil != null ? { eur: x.eur, eurFoil: x.eurFoil, rarity: x.rarity } : null);
+    it.name = x.name; it.qty = 1; it.cond = a.cond;
+    it.fields = { set: st.data.name, numero: x.numFull, lingua: lang === "it" ? "Italiano" : "Inglese" };
+    const rar = rarityLabel(src, (p && p.rarity) || x.rarity); if (rar) it.fields.rarita = rar;
+    if (a.edizione) it.fields.edizione = a.edizione;
+    if (a.foil) it.fields.foil = true;
+    it.ref = refs[k]; it.imageUrl = x.img; it.imageUrlBig = x.imgBig;
+    const val = priceFor(it, p);
+    if (val != null) { it.value = val; it.valueDate = today(); it.valueConf = "alta"; it.valueSource = src === "tcgdex" ? "Cardmarket, prezzo di tendenza (via TCGdex)" : "Cardmarket, prezzo medio (via Scryfall)"; it.valueHistory = [{ d: today(), v: val }]; if (a.status !== "wish") { it.buyPrice = val; it.buyKind = "stimato"; } }
+    it.createdAt = nowIso();
+    if (a.status === "in") it.movements = [{ type: "carico", qty: 1, date: today(), price: it.buyPrice }];
+    ["_new", "_origBuy", "_cats"].forEach(k2 => delete it[k2]);
+    return it;
+  });
+  if (msg) msg.textContent = "Salvo " + items.length + " carte…";
+  try { await saveItems(items); closeModal(); st.sel = new Set(); toast(items.length + " carte aggiunte" + (a.status === "wish" ? " ai desideri" : "")); render(); }
+  catch (e) { btn.disabled = false; toast(dbErr(e), 5000); }
+}
+async function cardPriceOne(id) {
+  const it = S.items.get(id); if (!it || !it.ref) return;
+  const src = catalogOf(it.catId);
+  toast("Cerco il prezzo…");
+  try {
+    const p = await fetchPrices(src, [it.ref]);
+    const v = priceFor(it, p[it.ref.card]);
+    if (v == null) { toast("Nessun prezzo disponibile per questa carta."); return; }
+    await saveItem(quoteFromCatalog(it, v, src)); toast("Prezzo aggiornato: " + eur(v)); render();
+  } catch (e) { toast("Non riesco a raggiungere il catalogo."); }
+}
+
+/* ================= Modalità app (PWA): archivio locale ================= */
+const LOCAL = { idb: null, urls: new Map(), loading: new Set() };
+const BLANK = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("collezioni", 1);
+    r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains("docs")) d.createObjectStore("docs"); if (!d.objectStoreNames.contains("blobs")) d.createObjectStore("blobs"); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+function idbTx(store, mode, fn) {
+  return LOCAL.idb.then(d => new Promise((res, rej) => {
+    const tx = d.transaction(store, mode); const st = tx.objectStore(store);
+    let out; const rq = fn(st); if (rq) rq.onsuccess = () => { out = rq.result; };
+    tx.oncomplete = () => res(out); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+  }));
+}
+function deepMerge(a, b) {
+  for (const k of Object.keys(b)) {
+    const v = b[k];
+    if (v && typeof v === "object" && !Array.isArray(v) && a[k] && typeof a[k] === "object" && !Array.isArray(a[k])) deepMerge(a[k], v);
+    else a[k] = v === undefined ? null : JSON.parse(JSON.stringify(v));
+  }
+  return a;
+}
+function makeLocalDb() {
+  const mem = new Map();
+  const subs = new Set();
+  const ready = idbTx("docs", "readonly", st => { const keys = st.getAllKeys(); const vals = st.getAll(); keys.onsuccess = () => { }; vals.onsuccess = () => { (keys.result || []).forEach((k, i) => mem.set(k, vals.result[i])); }; return null; });
+  const clone = v => v == null ? v : JSON.parse(JSON.stringify(v));
+  const snap = p => ({ id: p.split("/").pop(), exists: mem.has(p), data: () => clone(mem.get(p)), metadata: { fromCache: false, hasPendingWrites: false } });
+  const notify = p => setTimeout(() => subs.forEach(s => { if (s.match(p)) s.f(); }), 0);
+  const persist = p => mem.has(p) ? idbTx("docs", "readwrite", st => st.put(mem.get(p), p)) : idbTx("docs", "readwrite", st => st.delete(p));
+  const doc = p => ({
+    path: p, id: p.split("/").pop(),
+    get: async () => { await ready; return snap(p); },
+    set: async d => { await ready; mem.set(p, clone(d)); await persist(p); notify(p); },
+    update: async d => { await ready; if (!mem.has(p)) throw { code: "invalid_argument", message: "documento inesistente" }; deepMerge(mem.get(p), d); await persist(p); notify(p); },
+    delete: async () => { await ready; mem.delete(p); await persist(p); notify(p); },
+    onSnapshot: (next) => { const s = { match: q => q === p, f: () => next(snap(p)) }; subs.add(s); ready.then(s.f); return () => subs.delete(s); }
+  });
+  const collection = p => {
+    const depth = p.split("/").length + 1;
+    const list = () => [...mem.keys()].filter(k => k.startsWith(p + "/") && k.split("/").length === depth).sort().map(snap);
+    return {
+      path: p, doc: id => doc(p + "/" + id),
+      get: async () => { await ready; const d = list(); return { docs: d, size: d.length, empty: !d.length }; },
+      onSnapshot: (next) => { const s = { match: q => q.startsWith(p + "/") && q.split("/").length === depth, f: () => { const d = list(); next({ docs: d, size: d.length, empty: !d.length, docChanges: () => [] }); } }; subs.add(s); ready.then(s.f); return () => subs.delete(s); }
+    };
+  };
+  return { doc, collection };
+}
+function makeLocalAssets() {
+  return {
+    upload: async blob => { const id = uid("p"); await idbTx("blobs", "readwrite", st => st.put(blob, id)); LOCAL.urls.set(id, URL.createObjectURL(blob)); return { id, url: LOCAL.urls.get(id) }; },
+    list: async () => { const keys = await idbTx("blobs", "readonly", st => st.getAllKeys()); return { assets: (keys || []).map(id => ({ id })) }; },
+    delete: async id => idbTx("blobs", "readwrite", st => st.delete(id))
+  };
+}
+function makeLocalDownloads() {
+  return {
+    save: async ({ filename, data }) => {
+      const blob = data instanceof Blob ? data : new Blob([data], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    }
+  };
+}
+function photoSrc(id) {
+  if (S.env !== "pwa") return "/_blob/" + encodeURIComponent(id);
+  if (LOCAL.urls.has(id)) return LOCAL.urls.get(id);
+  if (!LOCAL.loading.has(id)) {
+    LOCAL.loading.add(id);
+    idbTx("blobs", "readonly", st => st.get(id)).then(b => { if (b) { LOCAL.urls.set(id, URL.createObjectURL(b)); clearTimeout(LOCAL.rt); LOCAL.rt = setTimeout(softRender, 60); } }).catch(() => { });
+  }
+  return BLANK;
+}
+async function getPhotoBlob(id) {
+  if (S.env === "pwa") return idbTx("blobs", "readonly", st => st.get(id));
+  const r = await fetch("/_blob/" + encodeURIComponent(id)); if (!r.ok) return null; return r.blob();
+}
+function remoteImg(it, big) {
+  if (S.env !== "pwa" || !it || !it.imageUrl) return "";
+  return big && it.imageUrlBig ? it.imageUrlBig : it.imageUrl;
+}
+async function bootLocal() {
+  S.env = "pwa";
+  try {
+    if (document.head) {
+      [["link", { rel: "manifest", href: "manifest.webmanifest" }], ["link", { rel: "apple-touch-icon", href: "icon-192.png" }], ["meta", { name: "theme-color", content: "#F5F5F2" }]].forEach(([t, a]) => { const e = document.createElement(t); Object.keys(a).forEach(k => e.setAttribute(k, a[k])); document.head.appendChild(e); });
+    }
+  } catch (e) { }
+  try { LOCAL.idb = idbOpen(); await LOCAL.idb; } catch (e) { S.loadErr = "Questo browser non permette di salvare i dati (IndexedDB non disponibile)."; render(); return; }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { }
+  S.db = makeLocalDb(); S.assets = makeLocalAssets(); S.downloads = makeLocalDownloads();
+  if ("serviceWorker" in navigator && location.protocol === "https:") { try { navigator.serviceWorker.register("sw.js"); } catch (e) { } }
+  S.db.doc("config/main").onSnapshot(snap => {
+    S.configLoaded = true;
+    S.config = snap.exists ? normConfig(snap.data()) : null;
+    syncSubs();
+    softRender();
+  });
+}
+
+window.addEventListener("error", e => { console.error(e.error || e.message); });
+boot();
+</script>
+</body>
+</html>
