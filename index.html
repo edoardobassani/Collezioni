@@ -1750,8 +1750,18 @@ async function importApply() {
       inc.forEach(x => { if (!m.has(x.id) || newer) m.set(x.id, x); });
       return [...m.values()];
     };
-    cfg.groups = mergeList(cfg.groups, imp.impCfg.groups);
-    cfg.cats = mergeList(cfg.cats, imp.impCfg.cats);
+    if (newer) {
+      // la configurazione più recente vince: le categorie tolte altrove spariscono, salvo quelle che qui hanno ancora pezzi
+      const keepCats = cfg.cats.filter(c => !imp.impCfg.cats.some(x => x.id === c.id) && catItems(c.id).length);
+      const newCats = JSON.parse(JSON.stringify(imp.impCfg.cats)).concat(keepCats);
+      const keepGroups = cfg.groups.filter(g => !imp.impCfg.groups.some(x => x.id === g.id) && keepCats.some(c => c.group === g.id));
+      cfg.groups = JSON.parse(JSON.stringify(imp.impCfg.groups)).concat(keepGroups);
+      cfg.cats = newCats;
+      cfg.updatedAt = imp.impCfg.updatedAt;
+    } else {
+      cfg.groups = mergeList(cfg.groups, imp.impCfg.groups);
+      cfg.cats = mergeList(cfg.cats, imp.impCfg.cats);
+    }
     if (imp.newCats || newer || !S.config) await saveConfig(cfg);
     S.config = normConfig(cfg);
     const ih = imp.data.history || {};
