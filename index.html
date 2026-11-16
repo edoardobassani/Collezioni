@@ -80,7 +80,7 @@ textarea.in{height:auto;min-height:80px;padding:12px 14px;resize:vertical}
 .grab{width:40px;height:4px;border-radius:2px;background:#C9C9C3;margin:0 auto 10px}
 .dialog{background:#fff;border-radius:16px;max-width:400px;width:calc(100% - 32px);margin:auto auto;padding:20px}
 .overlay.center{align-items:center}
-#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;max-width:90%;display:none}
+#toast{pointer-events:none;position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;max-width:90%;display:none}
 .empty{text-align:center;padding:32px 16px;color:var(--muted)}
 .spark{width:100%;height:56px;display:block}
 .progress{height:6px;background:#E9E9E4;border-radius:3px;overflow:hidden}
@@ -538,7 +538,7 @@ function vHome() {
     const cats = cfg.cats.filter(c => c.group === g.id).sort((a, b) => (a.order || 0) - (b.order || 0));
     const its = cats.flatMap(c => catItems(c.id));
     const open = !!S.open[g.id];
-    h += '<div class="card" style="overflow:hidden"><button type="button" class="li" data-act="toggleGroup" data-id="' + esc(g.id) + '" aria-expanded="' + open + '"><span class="ico solid">' + iconHtml(g.icon) + '</span><span class="grow"><span class="b" style="display:block">' + esc(g.name) + '</span><span class="small muted ellip" style="display:block">' + (open ? cats.length + " collezioni" : esc(cats.map(c => c.name).join(", ") || "vuoto")) + ' · ' + sumQty(its) + ' pezzi</span></span><span class="b">' + eur(sumVal(its)) + '</span><span class="muted">' + ic(open ? "up" : "down", 18, 2) + '</span></button>';
+    h += '<div class="card" style="overflow:hidden"><button type="button" class="li" data-act="toggleGroup" data-id="' + esc(g.id) + '" aria-expanded="' + open + '"><span class="ico solid">' + iconHtml(g.icon) + '</span><span class="grow"><span class="b" style="display:block">' + esc(g.name) + '</span><span class="small muted ellip" style="display:block">' + (open ? pl(cats.length, "collezione", "collezioni") : esc(cats.map(c => c.name).join(", ") || "vuoto")) + ' · ' + sumQty(its) + ' pezzi</span></span><span class="b">' + eur(sumVal(its)) + '</span><span class="muted">' + ic(open ? "up" : "down", 18, 2) + '</span></button>';
     if (open) {
       h += '<div style="border-top:1px solid var(--line2);padding:4px 0">';
       if (!cats.length) h += '<div class="small muted" style="padding:10px 26px">Nessuna categoria in questo gruppo.</div>';
@@ -625,7 +625,7 @@ function vItem(id) {
   h += '<div class="card pad stack" style="gap:10px"><div class="between" style="align-items:flex-end"><div><div class="small muted">Valore stimato a pezzo</div><div style="font-size:26px;font-weight:700">' + eur(it.value) + '</div>' + (it.valueLow != null && it.valueHigh != null && it.valueLow !== it.valueHigh ? '<div class="xs muted">intervallo ' + eur(it.valueLow) + ' – ' + eur(it.valueHigh) + '</div>' : '') + '</div>';
   h += '<div style="text-align:right">' + (gain != null && it.buyKind === "reale" ? '<div class="small b ' + (gain >= 0 ? "up" : "down") + '">' + signedEur(gain) + ' dall\'acquisto</div>' : '') + '<div class="xs muted">' + (it.buyPrice != null ? "pagato " + eur(it.buyPrice) + (it.buyKind === "stimato" ? " (stimato)" : "") : "prezzo d'acquisto non indicato") + '</div></div></div>';
   h += sparkline(it.valueHistory);
-  h += '<div class="between xs muted"><span>' + (it.valueSource ? "Fonte: " + esc(it.valueSource) : "Nessuna quotazione") + '</span><span>' + (it.valueDate ? fmtDate(it.valueDate) : "") + '</span></div>';
+  h += '<div class="between xs muted"><span>' + (it.valueSource ? "Fonte: " + esc(it.valueSource) : it.value != null ? "Fonte non indicata" : "Nessuna quotazione") + '</span><span>' + (it.valueDate ? fmtDate(it.valueDate) : "") + '</span></div>';
   h += '<div class="between">' + confBadge(it.valueConf) + (it.valueUrl ? '<a class="xs" href="' + esc(it.valueUrl) + '" target="_blank" rel="noopener">Apri la fonte</a>' : '<span></span>') + '</div>';
   if (it.buyKind === "stimato") h += '<div class="notice warn">Il prezzo d\'acquisto è stimato dalla quotazione. Se ricordi quanto l\'hai pagato, inseriscilo da Modifica.</div>';
   if (S.env === "pwa" && it.ref && catalogOf(it.catId)) h += '<button type="button" class="btn sm" data-act="cardPriceOne" data-id="' + esc(id) + '">' + ic("refresh", 16) + 'Aggiorna prezzo dal catalogo</button>';
@@ -1513,7 +1513,7 @@ function vQuote() {
     rows.forEach((r, i) => {
       const nv = r.n ? r.n.value : null;
       const d = nv != null && r.it.value != null ? nv - r.it.value : null;
-      h += '<label class="li" style="cursor:pointer"><input type="checkbox" data-change="qInc" data-i="' + i + '"' + (r.apply ? " checked" : "") + (r.n ? "" : " disabled") + ' aria-label="Applica" style="width:20px;height:20px;accent-color:#2F5D50"><span class="grow"><span class="b ellip" style="display:block">' + esc(r.it.name) + '</span><span class="xs muted ellip" style="display:block">' + (r.n ? esc(r.n.valueSource || "") + (r.n.valueConf ? " · affidabilità " + esc(r.n.valueConf) : "") : esc(r.err || "Nessuna quotazione trovata")) + '</span></span><span style="text-align:right;flex-shrink:0"><span class="b" style="display:block">' + (nv != null ? eur(nv) : "—") + '</span><span class="xs b ' + (d == null ? "muted" : d > 0 ? "up" : d < 0 ? "down" : "muted") + '">' + (d == null ? (r.it.value == null ? "nuovo" : "") : d === 0 ? "invariato" : (d > 0 ? "▲ " : "▼ ") + eur(Math.abs(d))) + '</span></span></label>';
+      h += '<label class="li" style="cursor:pointer"><input type="checkbox" data-change="qInc" data-i="' + i + '"' + (r.apply ? " checked" : "") + (r.n ? "" : " disabled") + ' aria-label="Applica" style="width:20px;height:20px;accent-color:#2F5D50"><span class="grow"><span class="b ellip" style="display:block">' + esc(r.it.name || "Senza nome") + '</span><span class="xs muted ellip" style="display:block">' + (r.n ? esc(r.n.valueSource || "") + (r.n.valueConf ? " · affidabilità " + esc(r.n.valueConf) : "") : esc(r.err || "Nessuna quotazione trovata")) + '</span></span><span style="text-align:right;flex-shrink:0"><span class="b" style="display:block">' + (nv != null ? eur(nv) : "—") + '</span><span class="xs b ' + (d == null ? "muted" : d > 0 ? "up" : d < 0 ? "down" : "muted") + '">' + (d == null ? (r.it.value == null ? "nuovo" : "") : d === 0 ? "invariato" : (d > 0 ? "▲ " : "▼ ") + eur(Math.abs(d))) + '</span></span></label>';
     });
     h += '</div><div class="grid2"><button type="button" class="btn" data-act="back">Annulla</button><button type="button" class="btn pri" data-act="qApply">Applica ' + rows.filter(r => r.apply).length + '</button></div>';
   }
@@ -1524,8 +1524,8 @@ function quoteSummary() {
   const q = S.quote;
   const list = quoteCandidates();
   const st = quoteStats();
-  let h = '<div class="b">' + list.length + ' pezzi da aggiornare</div>';
-  if (list.length) h += '<div class="small muted">Circa ' + Math.ceil(list.length / 3) + ' richieste a Claude. Ogni richiesta usa un po\' dei limiti del tuo piano.</div>';
+  let h = '<div class="b">' + pl(list.length, "pezzo", "pezzi") + ' da aggiornare</div>';
+  if (list.length) h += '<div class="small muted">Circa ' + pl(Math.ceil(list.length / 3), "richiesta", "richieste") + ' a Claude. Ogni richiesta usa un po\' dei limiti del tuo piano.</div>';
   const why = [];
   if (st.recent) why.push(st.recent + " già aggiornati negli ultimi " + parseInt(q.days, 10) + " giorni");
   if (st.cheap) why.push(st.cheap + " sotto la soglia di valore");
@@ -1580,7 +1580,7 @@ async function quoteRun() {
 async function quoteApply() {
   const rows = S.quote.rows.filter(r => r.apply && r.n);
   if (!rows.length) { back(); return; }
-  try { await saveItems(rows.map(r => r.n)); toast(rows.length + " quotazioni aggiornate"); if (S.quote.fromApp) { S.quote.step = "sent"; render(); window.scrollTo(0, 0); prepareSend(true); } else { S.quote = null; tab("home"); } }
+  try { await saveItems(rows.map(r => r.n)); toast(pl(rows.length, "quotazione aggiornata", "quotazioni aggiornate")); if (S.quote.fromApp) { S.quote.step = "sent"; render(); window.scrollTo(0, 0); prepareSend(true); } else { S.quote = null; tab("home"); } }
   catch (e) { toast(dbErr(e), 5000); }
 }
 
@@ -1605,7 +1605,7 @@ function pmPack() {
 function vPrices() {
   const p = S.pm || (S.pm = { sel: new Set(), days: "7", wish: false });
   let h = '<div class="wrap stack">' + topBar("Aggiorna prezzi", "Scegli cosa aggiornare");
-  const row = c => { const n = pmItems(c.id).length; return '<label class="li" style="cursor:pointer"><input type="checkbox" data-change="pmSel" data-id="' + esc(c.id) + '"' + (p.sel.has(c.id) ? " checked" : "") + ' style="width:20px;height:20px;accent-color:var(--acc)"><span class="ico sm">' + iconHtml(c.icon, 18) + '</span><span class="grow"><span class="b" style="display:block;font-weight:500">' + esc(c.name) + '</span></span><span class="small muted">' + n + ' pezzi</span></label>'; };
+  const row = c => { const n = pmItems(c.id).length; return '<label class="li" style="cursor:pointer"><input type="checkbox" data-change="pmSel" data-id="' + esc(c.id) + '"' + (p.sel.has(c.id) ? " checked" : "") + ' style="width:20px;height:20px;accent-color:var(--acc)"><span class="ico sm">' + iconHtml(c.icon, 18) + '</span><span class="grow"><span class="b" style="display:block;font-weight:500">' + esc(c.name) + '</span></span><span class="small muted">' + pl(n, "pezzo", "pezzi") + '</span></label>'; };
   const cardC = S.config.cats.filter(c => catalogOf(c.id));
   const aiC = S.config.cats.filter(c => !catalogOf(c.id)).sort((a, b) => { const ga = group(a.group), gb = group(b.group); return ((ga ? ga.order : a.order) || 0) - ((gb ? gb.order : b.order) || 0) || (a.order || 0) - (b.order || 0); });
   if (cardC.length) {
@@ -1633,7 +1633,7 @@ async function pmGo(btn) {
     try { await navigator.clipboard.writeText(pack.text); }
     catch (e) { const m = $("pmMsg"); if (m) m.textContent = "Non riesco a copiare: tocca di nuovo il tasto."; return; }
     S.awaitReturn = true; lsSet("col.await", true);
-    const url = ARTIFACT_URL + "#quote"; const w = window.open(url, "_blank", "noopener"); if (!w) location.href = url;
+    const url = ARTIFACT_URL + "#quote"; openExternal(url);
     opened = true;
   }
   if (cardCats.length) await cardPricesMulti(cardCats, p.days, p.wish);
@@ -1670,7 +1670,7 @@ async function qReceive() {
   q.sel = new Set((data.cats || []).filter(id => cat(id)));
   q.wish = !!data.wish; q.days = ""; q.min = null; q.awaitApp = false; q.fromApp = true; q.step = "pick";
   S.view = { name: "quote" };
-  toast(q.ids.size + " pezzi ricevuti dall'app");
+  toast(pl(q.ids.size, "pezzo ricevuto", "pezzi ricevuti") + " dall'app");
   render();
 }
 
@@ -1682,7 +1682,7 @@ function vBackup() {
   if (S.env === "artifact") h0 = '<div class="card pad stack"><h2 style="font-size:16px">Porta nell\'app</h2><div class="small muted">Copia le novità (pezzi nuovi o modificati, con foto ridotte) e incollale nell\'app con "Ricevi da Claude".</div><div class="grid2"><button type="button" class="btn pri" data-act="sendCopy">' + ic("copy", 18) + 'Copia per l\'app</button><a class="btn" href="' + APP_URL + '" target="_blank" rel="noopener">Apri l\'app</a></div><div id="sendMsg" class="xs muted">' + esc(lastSendText()) + '</div></div>';
   if (S.env === "pwa") h0 = '<div class="card pad stack"><h2 style="font-size:16px">Ricevi da Claude</h2><div class="small muted">Nell\'artifact premi "Copia per l\'app", poi torna qui e tocca Ricevi.</div><button type="button" class="btn pri" data-act="receive">' + ic("download", 18) + 'Ricevi da Claude</button></div>';
   let h = '<div class="wrap stack"><div><h1>Backup</h1><div class="small muted" style="margin-top:4px">Scambia i dati con l\'app: ognuna fa da copia all\'altra.</div></div>' + h0;
-  h += '<div class="card pad stack"><div class="between"><h2 style="font-size:16px">Esporta</h2><span class="small muted">' + all.filter(i => !i.deleted).length + ' pezzi</span></div><div class="small muted">Il file contiene categorie, pezzi, movimenti e quotazioni.</div><label class="row" style="cursor:pointer;min-height:44px"><input type="checkbox" id="exp_photos"' + (S.expPhotos !== false ? " checked" : "") + ' data-change="expPhotos" style="width:22px;height:22px;accent-color:#2F5D50"><span class="grow"><span style="display:block">Includi le foto</span><span class="xs muted">' + photoCount() + ' foto, circa ' + Math.max(1, Math.round(photoCount() * 0.25)) + ' MB in più</span></span></label><div id="expMsg" class="small muted"></div><button type="button" class="btn pri" data-act="export">' + ic("download", 18) + 'Scarica file di backup</button><button type="button" class="btn sm" data-act="exportCopy">Copia i dati negli appunti</button></div>';
+  h += '<div class="card pad stack"><div class="between"><h2 style="font-size:16px">Esporta</h2><span class="small muted">' + all.filter(i => !i.deleted).length + ' pezzi</span></div><div class="small muted">Il file contiene categorie, pezzi, movimenti e quotazioni.</div><label class="row" style="cursor:pointer;min-height:44px"><input type="checkbox" id="exp_photos"' + (S.expPhotos !== false ? " checked" : "") + ' data-change="expPhotos" style="width:22px;height:22px;accent-color:#2F5D50"><span class="grow"><span style="display:block">Includi le foto</span><span class="xs muted">' + (photoCount() ? photoCount() + ' foto, circa ' + Math.max(1, Math.round(photoCount() * 0.25)) + ' MB in più' : 'Nessuna foto da includere') + '</span></span></label><div id="expMsg" class="small muted"></div><button type="button" class="btn pri" data-act="export">' + ic("download", 18) + 'Scarica file di backup</button><button type="button" class="btn sm" data-act="exportCopy">Copia i dati negli appunti</button></div>';
   if (S.config && S.config.cats.length) h += vReportBox();
   h += '<div class="card pad stack"><h2 style="font-size:16px">Importa</h2>';
   const imp = S.imp;
@@ -1810,11 +1810,16 @@ async function receive() {
     await importApply();
   }
 }
+/* "noopener" fa restituire sempre null a window.open: senza, si capisce se la nuova scheda si è aperta */
+function openExternal(url) {
+  let w = null;
+  try { w = window.open(url, "_blank"); } catch (e) { }
+  if (w) { try { w.opener = null; } catch (e) { } } else location.href = url;
+}
 function goArtifactScan() {
   S.awaitReturn = true; lsSet("col.await", true);
   const url = ARTIFACT_URL + "#scan";
-  const w = window.open(url, "_blank", "noopener");
-  if (!w) location.href = url;
+  openExternal(url);
   render();
 }
 function exportData() {
@@ -1946,6 +1951,7 @@ async function importApply() {
 const REV_SEV = { err: { label: "Errore", cls: "warn", sect: "Errori" }, warn: { label: "Controlla", cls: "amber", sect: "Da controllare" }, tip: { label: "Suggerimento", cls: "", sect: "Suggerimenti" } };
 const REV_ORDER = { err: 0, warn: 1, tip: 2 };
 const RAI_MAX = 60;
+function pl(n, one, many) { return n + " " + (n === 1 ? one : many); }
 function revYear() { return new Date().getFullYear(); }
 function fv(it, k) { return it.fields ? it.fields[k] : undefined; }
 function numF(it, k) { const v = fv(it, k); if (v === "" || v == null) return null; const n = typeof v === "number" ? v : parseNum(String(v)); return n == null || isNaN(n) ? null : n; }
@@ -2024,13 +2030,13 @@ function reviewAgg() {
   const out = [];
   const live = activeItems();
   const noPhoto = live.filter(i => !(i.photos || []).length && !i.imageUrl);
-  if (noPhoto.length) out.push({ agg: true, sev: "tip", uid: "agg|nophoto", title: noPhoto.length + " pezzi senza foto", text: "Con la foto la verifica con Claude è molto più precisa.", ids: noPhoto.map(i => i.id), act: "reviewList", actLabel: "Vedi" });
+  if (noPhoto.length) out.push({ agg: true, sev: "tip", uid: "agg|nophoto", title: pl(noPhoto.length, "pezzo", "pezzi") + " senza foto", text: "Con la foto la verifica con Claude è molto più precisa.", ids: noPhoto.map(i => i.id), act: "reviewList", actLabel: "Vedi" });
   const limit = new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 10);
   const old = live.filter(i => !i.value || !i.valueDate || i.valueDate < limit);
-  if (old.length) out.push({ agg: true, sev: "tip", uid: "agg|oldq", title: old.length + " pezzi senza quotazione recente", text: "Nessuna quotazione o più vecchia di 6 mesi.", ids: old.map(i => i.id), act: S.env === "artifact" ? "quoteStart" : "reviewList", actLabel: S.env === "artifact" ? "Aggiorna" : "Vedi" });
+  if (old.length) out.push({ agg: true, sev: "tip", uid: "agg|oldq", title: pl(old.length, "pezzo", "pezzi") + " senza quotazione recente", text: "Nessuna quotazione o più vecchia di 6 mesi.", ids: old.map(i => i.id), act: S.env === "artifact" ? "quoteStart" : "reviewList", actLabel: S.env === "artifact" ? "Aggiorna" : "Vedi" });
   if (S.env === "pwa") {
     const unl = catalogCats().flatMap(c => unlinked(c.id));
-    if (unl.length) out.push({ agg: true, sev: "tip", uid: "agg|unlinked", title: unl.length + " carte non collegate al catalogo", text: "Senza collegamento non contano nel completamento e non hanno prezzi automatici.", ids: unl.map(i => i.id), act: "reviewLink", actLabel: "Collega" });
+    if (unl.length) out.push({ agg: true, sev: "tip", uid: "agg|unlinked", title: pl(unl.length, "carta non collegata", "carte non collegate") + " al catalogo", text: "Senza collegamento non contano nel completamento e non hanno prezzi automatici.", ids: unl.map(i => i.id), act: "reviewLink", actLabel: "Collega" });
   }
   return out;
 }
@@ -2181,12 +2187,12 @@ function revRow(x, first) {
 }
 function vReview() {
   const R = S.review || (S.review = { f: "all" });
-  if (!R.local) reviewRefresh();
+  reviewRefresh(true);
   const k = reviewCounts();
   const list = reviewFiltered();
   const nItems = [...S.items.values()].filter(i => !i.deleted).length;
   let h = '<div class="wrap stack">';
-  h += topBar("Revisione", "Ultimo controllo: " + (R.at ? new Date(R.at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "—") + " · " + nItems + " pezzi", '<button type="button" class="iconbtn" data-act="revRefresh" aria-label="Ripeti il controllo">' + ic("refresh", 21) + '</button>');
+  h += topBar("Revisione", "Ultimo controllo: " + (R.at ? new Date(R.at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "—") + " · " + pl(nItems, "scheda", "schede"), '<button type="button" class="iconbtn" data-act="revRefresh" aria-label="Ripeti il controllo">' + ic("refresh", 21) + '</button>');
   const box = (n, l, col) => '<div class="card pad" style="padding:12px"><div style="font-size:22px;font-weight:700;color:' + col + '">' + n + '</div><div class="small muted">' + l + '</div></div>';
   h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:-6px">' + box(k.err, "Errori", "var(--down)") + box(k.warn, "Da controllare", "#7A5A00") + box(k.tip, "Suggerimenti", "var(--acc)") + '</div>';
   // livelli
@@ -2221,6 +2227,7 @@ function vReview() {
   return h;
 }
 function vReviewItem() {
+  reviewRefresh(true);
   const all = reviewAll();
   const x = all.find(y => y.uid === S.view.uid);
   if (!x) return '<div class="wrap">' + topBar("Segnalazione") + '<div class="card pad empty">Segnalazione risolta.</div></div>';
@@ -2274,6 +2281,7 @@ function raiCandidates() {
 function raiLotSize() { return S.rai.web ? 3 : 6; }
 function vReviewAi() {
   const r = S.rai || (S.rai = { mode: "flagged", catId: "", web: false, sel: new Set(), step: "pick", results: [] });
+  reviewRefresh(true);
   let h = '<div class="wrap stack">' + topBar("Verifica con Claude", "Controlla foto e dati di un gruppo di pezzi");
   if (S.env === "pwa") return h + '<div class="card pad stack"><div class="small muted">La verifica con Claude funziona solo nell\'artifact. Dalla schermata Revisione tocca "Apri l\'artifact": i pezzi da controllare vengono copiati e li ricevi di là.</div></div></div>';
   if (r.awaitApp) {
@@ -2297,7 +2305,7 @@ function vReviewAi() {
   const cand = raiCandidates();
   const n = Math.min(cand.length, RAI_MAX);
   const lots = Math.ceil(n / raiLotSize());
-  h += '<div class="notice stack" style="gap:4px"><div class="b">' + n + ' pezzi · ' + lots + (lots === 1 ? " lotto" : " lotti") + '</div><div>Consumo stimato: ' + (lots <= 1 ? "basso (un solo messaggio a Claude)" : lots <= 4 ? "medio (" + lots + " messaggi a Claude)" : "alto (" + lots + " messaggi a Claude)") + '. ' + (cand.length > RAI_MAX ? "Si controllano i primi " + RAI_MAX + " pezzi per volta. " : "") + 'I pezzi controllati ricevono la data "verificato il".</div></div>';
+  h += '<div class="notice stack" style="gap:4px"><div class="b">' + pl(n, "pezzo", "pezzi") + ' · ' + pl(lots, "lotto", "lotti") + '</div><div>' + (!n ? "Nessun pezzo da verificare con questa scelta." : 'Consumo stimato: ' + (lots <= 1 ? "basso (un solo messaggio a Claude)" : lots <= 4 ? "medio (" + lots + " messaggi a Claude)" : "alto (" + lots + " messaggi a Claude)") + '. ' + (cand.length > RAI_MAX ? "Si controllano i primi " + RAI_MAX + " pezzi per volta. " : "") + 'I pezzi controllati ricevono la data "verificato il".') + '</div></div>';
   h += '<button type="button" class="btn pri" data-act="raiRun"' + (n ? "" : " disabled") + '>Avvia verifica</button>';
   if (r.results.length) h += '<button type="button" class="btn sm" data-act="raiShow">Vedi l\'ultimo risultato</button>';
   return h + '</div>';
@@ -2425,7 +2433,7 @@ async function raiReceive() {
   r.appIds = data.ids || [];
   r.mode = "app"; r.awaitApp = false; r.fromApp = true; r.step = "pick";
   S.view = { name: "reviewAi" };
-  toast(r.appIds.length + " pezzi ricevuti dall'app");
+  toast(pl(r.appIds.length, "pezzo ricevuto", "pezzi ricevuti") + " dall'app");
   render();
 }
 
@@ -2457,7 +2465,7 @@ async function reviewToArtifact(btn) {
   const R = S.review || (S.review = {});
   const pack = R.pack;
   const say = t => { R.packMsg = t; const el = $("revPackMsg"); if (el) el.textContent = t; };
-  const open = () => { S.awaitReturn = true; lsSet("col.await", true); const url = ARTIFACT_URL + "#review"; const w = window.open(url, "_blank", "noopener"); if (!w) location.href = url; };
+  const open = () => { S.awaitReturn = true; lsSet("col.await", true); const url = ARTIFACT_URL + "#review"; openExternal(url); };
   if (pack && pack.text) {
     if (!pack.n) { say("Nessun pezzo da verificare: niente segnalazioni e tutto già verificato. Apro comunque l'artifact."); open(); return; }
     try { await navigator.clipboard.writeText(pack.text); say(pack.n + " pezzi copiati: nell'artifact tocca \"Ricevi dall'app\"."); open(); return; } catch (e) { }
@@ -3057,7 +3065,8 @@ async function loadSetCards(src, setId, lang) {
   if (CAT_CACHE.setCards[key]) return CAT_CACHE.setCards[key];
   let out = null;
   if (src === "tcgdex") {
-    let d = await getJson("https://api.tcgdex.net/v2/" + lang + "/sets/" + encodeURIComponent(setId));
+    let d = null;
+    try { d = await getJson("https://api.tcgdex.net/v2/" + lang + "/sets/" + encodeURIComponent(setId)); } catch (e) { if (lang === "en") throw e; }
     let usedLang = lang;
     if (!d && lang !== "en") { d = await getJson("https://api.tcgdex.net/v2/en/sets/" + encodeURIComponent(setId)); usedLang = "en"; }
     if (!d) throw new Error("Set non trovato");
