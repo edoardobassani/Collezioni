@@ -5097,9 +5097,2233 @@ const CX_DIV_START = { BE: 1999, ES: 1999, FI: 1999, FR: 1999, NL: 1999, MC: 200
 const CX_DIV_VALS = ["1c", "2c", "5c", "10c", "20c", "50c", "1€", "2€"];
 const CX_DIV_NOM = { "1c": "1 centesimo", "2c": "2 centesimi", "5c": "5 centesimi", "10c": "10 centesimi", "20c": "20 centesimi", "50c": "50 centesimi", "1€": "1 €", "2€": "2 €" };
 const CX_KINGS = [{ k: "ve2", n: "Vittorio Emanuele II", y: "1861–1878" }, { k: "u1", n: "Umberto I", y: "1878–1900" }, { k: "ve3", n: "Vittorio Emanuele III", y: "1900–1946" }];
-const CX_FB_SEC = [{ k: "rep", n: "Repubblica", from: 1946 }, { k: "regno", n: "Regno", from: 1861, to: 1946 }, { k: "as", n: "Antichi Stati" }];
+const CX_FB_SEC = [{ k: "rep", n: "Repubblica", from: 1945 }, { k: "regno", n: "Regno", from: 1861, to: 1946 }, { k: "as", n: "Antichi Stati" }];
 const CX_AS = ["Regno di Sardegna", "Lombardo-Veneto", "Ducato di Modena", "Ducato di Parma", "Stato Pontificio", "Romagne", "Regno di Napoli", "Sicilia", "Toscana", "Governo provvisorio di Toscana", "Province Napoletane"];
 const CX_RAR = ["R", "R2", "R3", "R4", "R5", "RR"];
+const FB_DATA = `#rep-1945
+543|Democratica: catena spezzata|10 c|o
+544|Democratica: famiglia e bilancia|20 c|o
+545|Democratica: fiaccola|25 c|o
+546|Democratica: ulivo|40 c|o
+547|Democratica: catena spezzata|50 c|o
+548|Democratica: innesto|60 c|o
+549|Democratica: catena spezzata|80 c|o
+550|Democratica: ulivo|1 L|o
+551|Democratica: fiaccola|1,20 L|o
+552|Democratica: innesto|2 L|o
+553|Democratica: fiaccola|3 L|o
+554|Democratica: fiaccola|4 L|o
+555|Democratica: famiglia e bilancia|5 L|o
+556|Democratica: ulivo|6 L|o
+557|Democratica: catena spezzata|8 L|o
+558|Democratica: catena spezzata|10 L|o
+559|Democratica: famiglia e bilancia|10 L|o
+560|Democratica: ulivo|15 L|o
+561|Democratica: fiaccola|20 L|o
+562|Democratica: albero in fiore|25 L|o
+563|Democratica: fiaccola|30 L|o
+564|Democratica: albero in fiore|50 L|o
+565|Democratica: famiglia e bilancia|100 L|o
+A126|Democratica posta aerea: Caproni-Campini|1 L|pa
+A127|Democratica posta aerea: rondini|2 L|pa
+A128|Democratica posta aerea: Caproni-Campini|3,20 L|pa
+A129|Democratica posta aerea: rondini|5 L|pa
+A130|Democratica posta aerea: Caproni-Campini|10 L|pa
+A131|Democratica posta aerea: rondini|25 L|pa
+A133|Democratica posta aerea: rondini|25 L|pa
+A132|Democratica posta aerea: Caproni-Campini|50 L|pa
+A134|Democratica posta aerea: Caproni-Campini|50 L|pa
+E25|Democratica espressi: piede alato|5 L|e
+E26|Democratica espressi: cavallo|10 L|e
+E27|Democratica espressi: cavallo|15 L|e
+E28|Democratica espressi: piede alato|25 L|e
+E29|Democratica espressi: piede alato|30 L|e
+E31|Democratica espressi: cavallo|60 L|e
+#rep-1946
+566|Avvento della Repubblica: Duomo di Amalfi|1 L|o
+567|Avvento della Repubblica: San Michele|2 L|o
+568|Avvento della Repubblica: affresco di Lorenzetti|3 L|o
+569|Avvento della Repubblica: Palazzo della Signoria|4 L|o
+570|Avvento della Repubblica: Duomo di Pisa|5 L|o
+571|Avvento della Repubblica: omaggio a Genova|10 L|o
+572|Avvento della Repubblica: Gloria di Venezia|15 L|o
+573|Avvento della Repubblica: Giuramento di Pontida|20 L|o
+#rep-1947
+A135|Democratica sovrastampato|6 L su 3,20 L|pa
+A136|50° anniv. radio: antenna sul globo|6 L|pa
+A137|50° anniv. radio: albero maestro|10 L|pa
+A138|50° anniv. radio: aeroplano|20 L|pa
+A139|50° anniv. radio: antenna sul globo|25 L|pa
+A140|50° anniv. radio: albero maestro|35 L|pa
+A141|50° anniv. radio: aeroplano|50 L|pa
+PN18|Testa di Minerva|3 L|pn
+PN19|Testa di Minerva|5 L|pn
+#rep-1948
+A142|Torre del Campidoglio|100 L|pa
+A143|Torre del Campidoglio|300 L|pa
+A144|Torre del Campidoglio|500 L|pa
+A145|Torre del Campidoglio|1000 L|pa
+574|Santa Caterina|3 L|o
+575|Santa Caterina|5 L|o
+576|Santa Caterina|10 L|o
+577|Santa Caterina|30 L|o
+A146|Santa Caterina|100 L|pa
+A147|Santa Caterina|200 L|pa
+578|Nuova Costituzione|10 L|o
+579|Nuova Costituzione|30 L|o
+580|Risorgimento: moti di Palermo|3 L|o
+581|Risorgimento: moti di Padova|4 L|o
+582|Risorgimento: Statuto|5 L|o
+583|Risorgimento: Cinque giornate di Milano|6 L|o
+584|Risorgimento: Repubblica veneta|8 L|o
+585|Risorgimento: porta di Vicenza|10 L|o
+586|Risorgimento: Curtatone|12 L|o
+587|Risorgimento: Goito|15 L|o
+588|Risorgimento: moti di Bologna|20 L|o
+589|Risorgimento: Dieci giornate di Brescia|30 L|o
+590|Risorgimento: Gianicolo|50 L|o
+591|Risorgimento: morte di Mameli|100 L|o
+E32|Risorgimento: moti di Napoli|35 L|e
+|Ponte degli Alpini, Bassano|15 L|o
+|Centenario di Donizetti|15 L|o
+#rep-1949
+594|50ª Biennale Venezia: lancia|5 L|o
+595|50ª Biennale Venezia: mori|15 L|o
+596|50ª Biennale Venezia: gonfalone|20 L|o
+597|50ª Biennale Venezia: colonna|50 L|o
+598|27ª fiera di Milano|20 L|o
+599|75° anniversario U.P.U.|50 L|o
+600|Centenario Repubblica Romana|100 L|o
+601|Ricostruzione europea|5 L|o
+602|Ricostruzione europea|15 L|o
+603|Ricostruzione europea|20 L|o
+604|Monumento a Mazzini|20 L|o
+605|Bicentenario Vittorio Alfieri|20 L|o
+606|Elezioni amministrative Trieste|20 L|o
+607|2ª assemblea mondiale Sanità|20 L|o
+609|Restauro Palazzo della Ragione|20 L|o
+608|Lorenzo il Magnifico|20 L|o
+610|13ª fiera del Levante|20 L|o
+611|Pila di Volta: pila|20 L|o
+612|Pila di Volta: busto|50 L|o
+613|Ponte Santa Trinita|20 L|o
+614|Bimillenario Catullo|20 L|o
+615|Bicentenario Cimarosa|20 L|o
+#rep-1950
+634|Italia al lavoro: Val d'Aosta|50 c|o
+635|Italia al lavoro: Piemonte|1 L|o
+636|Italia al lavoro: Lombardia|2 L|o
+637|Italia al lavoro: Toscana|5 L|o
+638|Italia al lavoro: Abruzzo e Molise|6 L|o
+639|Italia al lavoro: Calabria|10 L|o
+640|Italia al lavoro: Veneto|12 L|o
+641|Italia al lavoro: Liguria|15 L|o
+642|Italia al lavoro: Campania|20 L|o
+643|Italia al lavoro: Sicilia|25 L|o
+644|Italia al lavoro: Puglia|30 L|o
+645|Italia al lavoro: Basilicata|35 L|o
+646|Italia al lavoro: Lazio|40 L|o
+647|Italia al lavoro: Sardegna|50 L|o
+648|Italia al lavoro: Umbria|55 L|o
+649|Italia al lavoro: Marche|60 L|o
+650|Italia al lavoro: Emilia Romagna|65 L|o
+651|Italia al lavoro: Friuli Venezia Giulia|100 L|o
+652|Italia al lavoro: Trentino Alto Adige|200 L|o
+616|28ª fiera di Milano|20 L|o
+617|32° salone auto Torino|20 L|o
+618|UNESCO Firenze: Palazzo Pitti|20 L|o
+619|UNESCO Firenze: Perseo|55 L|o
+620|Anno Santo 1950|20 L|o
+621|Anno Santo 1950|55 L|o
+622|Gaudenzio Ferrari|20 L|o
+623|Radiodiffusione|20 L|o
+624|Radiodiffusione|55 L|o
+625|Bicentenario Muratori|20 L|o
+626|Guido d'Arezzo|20 L|o
+627|14ª fiera del Levante|20 L|o
+628|Industria laniera|20 L|o
+629|Conferenza tabacco: Bright|5 L|o
+630|Conferenza tabacco: Kentucky|20 L|o
+631|Conferenza tabacco: Lecce yaka|55 L|o
+633|Centenario Augusto Righi|20 L|o
+632|Accademia belle arti Venezia|20 L|o
+#rep-1951
+653|Francobolli di Toscana: 1 crazia|20 L|o
+654|Francobolli di Toscana: 6 crazie|55 L|o
+655|33° salone auto Torino|20 L|o
+656|Ara Pacis Redipuglia|20 L|o
+657|29ª fiera di Milano: elicottero|20 L|o
+658|29ª fiera di Milano: Palazzo PP.TT.|55 L|o
+659|Esposizione arte tessile e moda|20 L|o
+660|5° centenario di Colombo|20 L|o
+661|Feste ginniche|5 L|o
+662|Feste ginniche|10 L|o
+663|Feste ginniche|15 L|o
+664|Montecassino: prima|20 L|o
+665|Montecassino: dopo|55 L|o
+666|IX Triennale di Milano|20 L|o
+667|IX Triennale di Milano|55 L|o
+668|Perugino|20 L|o
+669|Mondiali di ciclismo|25 L|o
+670|15ª fiera del Levante|25 L|o
+671|Francesco Paolo Michetti|25 L|o
+672|Francobolli sardi: 5 c|10 L|o
+673|Francobolli sardi: 20 c|25 L|o
+674|Francobolli sardi: 40 c|60 L|o
+675|3° censimento: Mercurio|10 L|o
+676|3° censimento: antica Roma|25 L|o
+677|Verdi: teatro di Parma|10 L|o
+678|Verdi: organo|25 L|o
+679|Verdi: Scala|60 L|o
+680|Festa degli alberi|10 L|o
+681|Festa degli alberi|25 L|o
+E30|Democratica espressi|50 L|e
+#rep-1952
+682|Vincenzo Bellini|25 L|o
+683|Reggia di Caserta|25 L|o
+684|Francobollo sportivo|25 L|o
+685|30ª fiera di Milano|60 L|o
+686|Leonardo: autoritratto|25 L|o
+687|Leonardo: Vergine delle rocce|60 L|o
+688|Leonardo: autoritratto|80 L|o
+689|Francobolli di Modena e Parma|25 L|o
+690|Francobolli di Modena e Parma|60 L|o
+691|Mostra d'Oltremare|25 L|o
+692|Biennale di Venezia|25 L|o
+693|30ª fiera di Padova|25 L|o
+694|4ª fiera di Trieste|25 L|o
+695|16ª fiera del Levante|25 L|o
+696|Girolamo Savonarola|25 L|o
+697|ICAO diritto aeronautico|60 L|o
+698|Truppe Alpine|25 L|o
+699|Forze Armate: ala|10 L|o
+700|Forze Armate: volti|25 L|o
+701|Forze Armate: aereo|60 L|o
+702|Guglielmo Massaia|25 L|o
+703|Antonio Mancini|25 L|o
+704|Vincenzo Gemito|25 L|o
+705|Martiri di Belfiore|25 L|o
+#rep-1953
+706|Antonello da Messina|25 L|o
+707|Mille Miglia|25 L|o
+708|Ordini al merito del lavoro|25 L|o
+709|Arcangelo Corelli|25 L|o
+710|Siracusana|5 L|o
+711|Siracusana|10 L|o
+712|Siracusana|12 L|o
+713|Siracusana|13 L|o
+714|Siracusana|20 L|o
+715|Siracusana|25 L|o
+716|Siracusana|35 L|o
+717|Siracusana|60 L|o
+718|Siracusana|80 L|o
+719|Santa Chiara|25 L|o
+720|Festa della montagna|25 L|o
+721|Esposizione agricoltura|25 L|o
+722|Esposizione agricoltura|60 L|o
+723|Patto Atlantico|25 L|o
+724|Patto Atlantico|60 L|o
+725|Luca Signorelli|25 L|o
+726|Congresso microbiologia|25 L|o
+727|Turismo: Siena|10 L|o
+728|Turismo: Rapallo|12 L|o
+729|Turismo: Gardone|20 L|o
+730|Turismo: Cortina|25 L|o
+731|Turismo: Taormina|35 L|o
+732|Turismo: Capri|60 L|o
+#rep-1954
+733|Patti Lateranensi|25 L|o
+734|Patti Lateranensi|60 L|o
+735|Televisione nazionale|25 L|o
+736|Televisione nazionale|60 L|o
+737|Denuncia dei redditi|25 L|o
+738|Posta per elicottero|25 L|o
+739|10° anniversario Resistenza|25 L|o
+740|Alfredo Catalani|25 L|o
+741|Marco Polo|25 L|o
+742|Marco Polo|60 L|o
+743|Touring Club Italiano|25 L|o
+744|Interpol|25 L|o
+745|Interpol|60 L|o
+746|Carlo Collodi|25 L|o
+747|Siracusana|100 L|o
+748|Siracusana|200 L|o
+749|Amerigo Vespucci|25 L|o
+750|Amerigo Vespucci|60 L|o
+751|Anno Mariano: Perugino|25 L|o
+752|Anno Mariano: Pietà|60 L|o
+#rep-1955
+753|Silvio Pellico|25 L|o
+754|Italia al lavoro: Val d'Aosta|50 c|o
+755|Italia al lavoro: Piemonte|1 L|o
+756|Italia al lavoro: Lombardia|2 L|o
+757|Italia al lavoro: Liguria|15 L|o
+758|Italia al lavoro: Puglia|30 L|o
+759|Italia al lavoro: Sardegna|50 L|o
+760|Italia al lavoro: Emilia Romagna|65 L|o
+761|Siracusana|1 L|o
+762|Siracusana|5 L|o
+763|Siracusana|6 L|o
+764|Siracusana|10 L|o
+765|Siracusana|12 L|o
+766|Siracusana|13 L|o
+767|Siracusana|15 L|o
+768|Siracusana|20 L|o
+769|Siracusana|25 L|o
+770|Siracusana|30 L|o
+771|Siracusana|35 L|o
+772|Siracusana|40 L|o
+773|Siracusana|50 L|o
+774|Siracusana|60 L|o
+775|Siracusana|70 L|o
+776|Siracusana|80 L|o
+777|Siracusana|90 L|o
+778|Denuncia dei redditi|25 L|o
+779|Congresso petrolio|25 L|o
+780|Congresso petrolio|60 L|o
+781|Antonio Rosmini|25 L|o
+A148|Campidoglio|100 L|pa
+A149|Campidoglio|300 L|pa
+A150|Campidoglio|500 L|pa
+A151|Campidoglio|1000 L|pa
+E33|Democratica espressi|50 L|e
+782|Giornate mediche internazionali|25 L|o
+783|Basilica di Assisi|25 L|o
+784|Istruzione professionale|25 L|o
+785|Siracusana alto valore|100 L|o
+786|Istituto di agricoltura|25 L|o
+787|10° anniversario FAO|60 L|o
+788|Giacomo Matteotti|25 L|o
+789|Giovanni Battista Grassi|25 L|o
+790|Beato Angelico: Santo Stefano|10 L|o
+791|Beato Angelico: San Lorenzo|25 L|o
+792|Giovanni Pascoli|25 L|o
+A152|Giuseppe Mazzini|100 L|pa
+#rep-1956
+793|Olimpiadi Cortina: trampolino|10 L|o
+794|Olimpiadi Cortina: stadio neve|12 L|o
+795|Olimpiadi Cortina: stadio ghiaccio|25 L|o
+796|Olimpiadi Cortina: pattinaggio|60 L|o
+A153|Visita del presidente in USA e Canada|120 L|pa
+797|Traforo del Sempione|25 L|o
+798|10° anniversario Repubblica|10 L|o
+799|10° anniversario Repubblica|25 L|o
+800|10° anniversario Repubblica|60 L|o
+801|10° anniversario Repubblica|80 L|o
+802|Amedeo Avogadro|25 L|o
+803|Europa 1ª emissione|25 L|o
+804|Europa 1ª emissione|60 L|o
+805|Congresso astronautico|25 L|o
+806|Italia all'ONU|25 L|o
+807|Italia all'ONU|60 L|o
+808|80° risparmio postale|25 L|o
+#rep-1957
+809|Bimillenario Ovidio|25 L|o
+810|San Giorgio di Donatello|500 L|o
+811|San Giorgio di Donatello|1000 L|o
+816|Siracusana|200 L|o
+812|Canova: ritratto|25 L|o
+813|Canova: Ercole e Lica|60 L|o
+814|Canova: Paolina Borghese|80 L|o
+815|Educazione stradale|25 L|o
+817|Europa 2ª emissione|25 L|o
+818|Europa 2ª emissione|60 L|o
+A154|Democratica|50 L|pa
+819|Giosuè Carducci|25 L|o
+820|Filippino Lippi|25 L|o
+821|Cicerone|25 L|o
+822|Garibaldi: ritratto|15 L|o
+823|Garibaldi: statua equestre|110 L|o
+824|Domenico Savio|15 L|o
+825|San Francesco di Paola|25 L|o
+#rep-1958
+E34|Cavalli alati|75 L|e
+PN20|Testa di Minerva|10 L|pn
+826|Impianti del Flumendosa|25 L|o
+827|Apparizioni di Lourdes|15 L|o
+828|Apparizioni di Lourdes|60 L|o
+829|Costituzione: simboli del lavoro|25 L|o
+830|Costituzione: quercia|60 L|o
+831|Costituzione: Montecitorio|110 L|o
+832|Esposizione di Bruxelles|60 L|o
+833|Giacomo Puccini|25 L|o
+834|Ruggero Leoncavallo|25 L|o
+835|Giovanni Segantini|110 L|o
+836|Giovanni Fattori|110 L|o
+837|Amicizia italo-brasiliana|175 L|o
+838|Europa 3ª emissione|25 L|o
+839|Europa 3ª emissione|60 L|o
+840|Francobolli di Napoli: mezzo grano|25 L|o
+841|Francobolli di Napoli: 1 grano|60 L|o
+842|Evangelista Torricelli|25 L|o
+843|40° della Vittoria: trionfi di Cesare|15 L|o
+844|40° della Vittoria: stemmi|25 L|o
+845|40° della Vittoria: campana|60 L|o
+846|Visita dello Scià dell'Iran|25 L|o
+847|Visita dello Scià dell'Iran|60 L|o
+848|Eleonora Duse|25 L|o
+849|Premio Italia: antenna|25 L|o
+850|Premio Italia: pianoforte|60 L|o
+#rep-1959
+851|Francobolli di Sicilia: 2 grana|25 L|o
+852|Francobolli di Sicilia: 5 grana|60 L|o
+853|Patti lateranensi|25 L|o
+854|Decennale NATO|25 L|o
+855|Decennale NATO|60 L|o
+856|Gemellaggio Roma-Parigi|15 L|o
+857|Gemellaggio Roma-Parigi|25 L|o
+858|Assemblea ex combattenti|25 L|o
+859|Monumento a Byron|15 L|o
+860|Camillo Prampolini|15 L|o
+861|Preolimpica: fontana dei Dioscuri|15 L|o
+862|Preolimpica: Campidoglio|25 L|o
+863|Preolimpica: Terme di Caracalla|35 L|o
+864|Preolimpica: Arco di Costantino|60 L|o
+865|Preolimpica: Basilica di Massenzio|110 L|o
+866|II guerra d'indipendenza: ritratti|15 L|o
+867|II guerra d'indipendenza: campo|25 L|o
+868|II guerra d'indipendenza: San Fermo|35 L|o
+869|II guerra d'indipendenza: Palestro|60 L|o
+870|II guerra d'indipendenza: Magenta|110 L|o
+871|40° anniversario OIL|25 L|o
+872|40° anniversario OIL|60 L|o
+873|Siracusana|100 L|o
+874|Siracusana|200 L|o
+875|Francobolli delle Romagne: 8 baiocchi|25 L|o
+876|Francobolli delle Romagne: 20 baiocchi|60 L|o
+877|Europa 4ª emissione|25 L|o
+878|Europa 4ª emissione|60 L|o
+879|1ª giornata del francobollo|15 L|o
+#rep-1960
+880|Anno del rifugiato|25 L|o
+881|Anno del rifugiato|60 L|o
+882|Spedizione dei Mille: proclama|15 L|o
+883|Spedizione dei Mille: incontro di Teano|25 L|o
+884|Spedizione dei Mille: Quarto|60 L|o
+885|Olimpiadi di Roma: lupa|5 L|o
+886|Olimpiadi di Roma: stadio Olimpico|10 L|o
+887|Olimpiadi di Roma: senatore romano|15 L|o
+888|Olimpiadi di Roma: velodromo|25 L|o
+889|Olimpiadi di Roma: Discobolo|35 L|o
+890|Olimpiadi di Roma: Palazzo dello sport|60 L|o
+891|Olimpiadi di Roma: pugile|110 L|o
+892|Olimpiadi di Roma: Palazzetto dello sport|150 L|o
+893|Olimpiadi di Roma: Apoxyomenos|200 L|o
+894|Vittorio Bottego|30 L|o
+895|Europa 5ª emissione|30 L|o
+896|Europa 5ª emissione|70 L|o
+897|Caravaggio|25 L|o
+898|Giornata del francobollo|15 L|o
+#rep-1962
+936|Giovanni Pascoli|30 L|o
+937|Giovanni Pascoli|70 L|o
+A155|Democratica|5 L|pa
+938|Antonio Pacinotti|30 L|o
+939|Antonio Pacinotti|70 L|o
+940|Santa Caterina da Siena|30 L|o
+941|Santa Caterina da Siena|70 L|o
+942|Mostra del cinema di Venezia|30 L|o
+943|Mostra del cinema di Venezia|70 L|o
+944|Mondiali di ciclismo: dietro motori|30 L|o
+945|Mondiali di ciclismo: su strada|70 L|o
+946|Mondiali di ciclismo: su pista|300 L|o
+947|Europa 7ª emissione|30 L|o
+948|Europa 7ª emissione|70 L|o
+949|Fondazione Balzan|70 L|o
+950|Campagna contro la malaria|30 L|o
+951|Campagna contro la malaria|70 L|o
+952|4ª giornata del francobollo|15 L|o
+953|Concilio Vaticano II|30 L|o
+954|Concilio Vaticano II|70 L|o
+955|Corte dei Conti|30 L|o
+#rep-1963
+956|Pico della Mirandola|30 L|o
+957|Gabriele d'Annunzio|30 L|o
+958|Campagna contro la fame|30 L|o
+959|Campagna contro la fame|70 L|o
+960|Centenario CAI|115 L|o
+961|50° anniversario INA|30 L|o
+962|Conferenza postale di Parigi|70 L|o
+963|Croce Rossa|30 L|o
+964|Croce Rossa|70 L|o
+965|Conferenza ONU sul turismo|15 L|o
+966|Conferenza ONU sul turismo|70 L|o
+967|Europa 8ª emissione|30 L|o
+968|Europa 8ª emissione|70 L|o
+969|Giochi del Mediterraneo|15 L|o
+970|Giochi del Mediterraneo|70 L|o
+971|Giuseppe Verdi|30 L|o
+972|Giuseppe Gioachino Belli|30 L|o
+973|5ª giornata del francobollo|15 L|o
+974|Pietro Mascagni|30 L|o
+#rep-1964
+975|Galileo Galilei|30 L|o
+976|Galileo Galilei|70 L|o
+977|Michelangelo|30 L|o
+A156|Michelangelo|185 L|pa
+978|150° Carabinieri|30 L|o
+979|150° Carabinieri: Pastrengo|70 L|o
+980|Giambattista Bodoni|30 L|o
+981|Europa 9ª emissione|30 L|o
+982|Europa 9ª emissione|70 L|o
+983|Assemblea dei comuni d'Europa|30 L|o
+984|Assemblea dei comuni d'Europa|70 L|o
+985|Assemblea dei comuni d'Europa|500 L|o
+986|Pellegrinaggio ex combattenti|30 L|o
+987|Pellegrinaggio ex combattenti|70 L|o
+988|Ponte di Verrazzano|30 L|o
+A157|Ponte di Verrazzano|130 L|pa
+989|6ª giornata del francobollo|15 L|o
+#rep-1965
+990|Resistenza: campo di concentramento|10 L|o
+991|Resistenza: esercito di liberazione|15 L|o
+992|Resistenza: perseguitati|30 L|o
+993|Resistenza: in montagna|70 L|o
+994|Resistenza: nelle città|115 L|o
+995|Resistenza: città martiri|130 L|o
+996|Centenario UIT|70 L|o
+997|Mondiale di vela: Flying Dutchman|30 L|o
+998|Mondiale di vela: 5,5 m|70 L|o
+999|Mondiale di vela: Lightning|500 L|o
+1000|Traforo del Monte Bianco|30 L|o
+1001|Alessandro Tassoni|40 L|o
+1002|Europa 10ª emissione|40 L|o
+1003|Europa 10ª emissione|90 L|o
+1004|Dante: Farinata|40 L|o
+1005|Dante: settimo girone|90 L|o
+1006|Dante: Beatrice|130 L|o
+1007|Dante: ritratto|500 L|o
+1008|Giornata del risparmio|40 L|o
+1009|Rete aerea notturna|40 L|o
+1010|Rete aerea notturna|90 L|o
+1011|7ª giornata del francobollo|20 L|o
+#rep-1966
+1012|Mondiali di bob: bob a due|40 L|o
+1013|Mondiali di bob: bob a quattro|90 L|o
+1014|Universiade invernale: sciatore|40 L|o
+1015|Universiade invernale: pattinatrice|90 L|o
+1016|Universiade invernale: hockey|500 L|o
+1017|Benedetto Croce|40 L|o
+PN21|Testa di Minerva|20 L|pn
+1018|Siracusana|130 L|o
+E35|Cavalli alati|150 L|e
+1019|Unione di Veneto e Mantova|40 L|o
+1020|Flora: pino|20 L|o
+1021|Flora: garofani|40 L|o
+1022|Flora: margherite|90 L|o
+1023|Flora: olivo|170 L|o
+1024|Propaganda turistica|20 L|o
+1025|Ventennale della Repubblica|40 L|o
+1026|Ventennale della Repubblica|90 L|o
+1027|Battaglia di Bezzecca|90 L|o
+1028|Donatello|40 L|o
+1029|Europa 11ª emissione|40 L|o
+1030|Europa 11ª emissione|90 L|o
+1031|Giotto|40 L|o
+1032|Martiri irredentisti|40 L|o
+1033|Giornata del francobollo|20 L|o
+#rep-1967
+1034|Società geografica italiana|40 L|o
+1035|Arturo Toscanini|40 L|o
+1036|Trattati di Roma|40 L|o
+1037|Trattati di Roma|90 L|o
+1038|Europa 12ª emissione|40 L|o
+1039|Europa 12ª emissione|90 L|o
+1040|Parchi nazionali: stambecco|20 L|o
+1041|Parchi nazionali: orso bruno|40 L|o
+1042|Parchi nazionali: cervo|90 L|o
+1043|Parchi nazionali: daini|170 L|o
+1044|Claudio Monteverdi|40 L|o
+1045|50° Giro d'Italia: in salita|40 L|o
+1046|50° Giro d'Italia: in volata|90 L|o
+1047|50° Giro d'Italia: in pianura|500 L|o
+1048|Luigi Pirandello|40 L|o
+1049|Festival di Spoleto|20 L|o
+1050|Festival di Spoleto|40 L|o
+1051|Codice postale: cartolina|20 L|o
+1052|Codice postale: lettera|40 L|o
+1053|50° della posta aerea|40 L|pa
+1054|Francesco Borromini|90 L|o
+1055|Umberto Giordano|20 L|o
+1056|Giuramento di Pontida|20 L|o
+1057|Anno internazionale del turismo|20 L|o
+1058|Anno internazionale del turismo|50 L|o
+1059|50° Lions Club|50 L|o
+1060|Resistenza sul Piave|50 L|o
+1061|Flora: melo|25 L|o
+1062|Flora: iris|50 L|o
+1063|25° reazione nucleare|50 L|o
+1064|Giornata del francobollo|25 L|o
+#rep-1968
+1065|Codice postale: cartolina|25 L|o
+1066|Codice postale: lettera|50 L|o
+1067|Siracusana fluorescente|1 L|o
+1068|Siracusana fluorescente|5 L|o
+1069|Siracusana fluorescente|6 L|o
+1070|Siracusana fluorescente|10 L|o
+1071|Siracusana fluorescente|15 L|o
+1072|Siracusana fluorescente|20 L|o
+1073|Siracusana fluorescente|25 L|o
+1074|Siracusana fluorescente|30 L|o
+1075|Siracusana fluorescente|40 L|o
+1076|Siracusana fluorescente|50 L|o
+1077|Siracusana fluorescente|55 L|o
+1078|Siracusana fluorescente|60 L|o
+1079|Siracusana fluorescente|70 L|o
+1080|Siracusana fluorescente|80 L|o
+1081|Siracusana fluorescente|90 L|o
+1083|Siracusana fluorescente|100 L|o
+1082|Siracusana fluorescente|130 L|o
+1084|Siracusana fluorescente|200 L|o
+E36|Cavalli alati|150 L|e
+1085|Scoutismo|50 L|o
+1086|Europa 13ª emissione|50 L|o
+1087|Europa 13ª emissione|90 L|o
+1088|Luigi Gonzaga|25 L|o
+1089|Arrigo Boito|50 L|o
+1090|Francesco Baracca|25 L|o
+1091|Giambattista Vico|50 L|o
+1092|Mondiali di ciclismo: velodromo|25 L|o
+1093|Mondiali di ciclismo: Imola|90 L|o
+1094|Tommaso Campanella|50 L|o
+1095|Canaletto|50 L|o
+1096|Gioacchino Rossini|50 L|o
+1097|50° della Vittoria: mobilitazione|20 L|o
+1098|50° della Vittoria: battaglia|25 L|o
+1099|50° della Vittoria: forze di mare|40 L|o
+1100|50° della Vittoria: forze aeree|50 L|o
+1101|50° della Vittoria: Vittorio Veneto|90 L|o
+1102|50° della Vittoria: Milite ignoto|180 L|o
+1103|Conti correnti postali|50 L|o
+1104|Centro spaziale del Fucino|50 L|o
+1105|Giornata del francobollo|25 L|o
+1106|Flora: cipressi|55 L|o
+1107|Flora: ginestre|180 L|o
+#rep-1969
+810A|San Giorgio|500 L|o
+1108|Ragioneria generale dello Stato|50 L|o
+1109|Europa 14ª emissione|50 L|o
+1110|Europa 14ª emissione|90 L|o
+1111|Niccolò Machiavelli|50 L|o
+1112|Organizzazione internazionale del lavoro|50 L|o
+1113|Organizzazione internazionale del lavoro|90 L|o
+1114|Federazione filatelica|50 L|o
+1115|11ª giornata del francobollo|25 L|o
+#rep-1971
+1143|Benvenuto Cellini|50 L|o
+1144|Tempietto di Bramante|50 L|o
+1145|Ventennale CECA|50 L|o
+1146|Ventennale CECA|90 L|o
+1147|Europa 16ª emissione|50 L|o
+1148|Europa 16ª emissione|90 L|o
+1149|25° della Repubblica|50 L|o
+1150|25° della Repubblica|90 L|o
+1151|Canoa a Merano: slalom|25 L|o
+1152|Canoa a Merano: discesa|90 L|o
+1153|Giochi della gioventù: sci|20 L|o
+1154|Giochi della gioventù: ginnastica|50 L|o
+1155|25° Alitalia: stemma|50 L|o
+1156|25° Alitalia: globo|90 L|o
+1157|25° Alitalia: coda|150 L|o
+1158|Grazia Deledda|50 L|o
+1159|Risparmio postale|25 L|o
+1160|Risparmio postale|50 L|o
+1160A|Siracusana|180 L|o
+A159|Torre del Campidoglio|100 L|pa
+1161|25° UNICEF|25 L|o
+1162|25° UNICEF|90 L|o
+1163|13ª giornata del francobollo|25 L|o
+1164|Natale: Natività|25 L|o
+1165|Natale: Adorazione dei Magi|90 L|o
+#rep-1972
+1166|Giovanni Verga|25 L|o
+1167|Giovanni Verga|50 L|o
+1168|Centenario di Mazzini|25 L|o
+1169|Centenario di Mazzini|90 L|o
+1170|Centenario di Mazzini|150 L|o
+1171|50ª fiera di Milano|25 L|o
+1172|50ª fiera di Milano|50 L|o
+1173|50ª fiera di Milano|90 L|o
+1174|Europa 17ª emissione|50 L|o
+1175|Europa 17ª emissione|90 L|o
+1176|Centenario degli Alpini|25 L|o
+1177|Centenario degli Alpini|50 L|o
+1178|Centenario degli Alpini|90 L|o
+1178A|Siracusana|300 L|o
+1179|Alpinisti tridentini|25 L|o
+1180|Alpinisti tridentini|50 L|o
+1181|Alpinisti tridentini|180 L|o
+1182|Unione interparlamentare|50 L|o
+1183|Unione interparlamentare|90 L|o
+1184|San Pier Damiani|50 L|o
+1185|Antonio Canova|50 L|o
+1186|Divina Commedia|50 L|o
+1187|Divina Commedia|90 L|o
+1188|Divina Commedia|180 L|o
+1189|Natale|20 L|o
+1190|Natale|25 L|o
+1191|Natale|150 L|o
+1192|14ª giornata del francobollo|25 L|o
+1193|Leon Battista Alberti|50 L|o
+1194|Lorenzo Perosi|50 L|o
+1195|Lorenzo Perosi|90 L|o
+1196|Don Orione|50 L|o
+1197|Don Orione|90 L|o
+#rep-1973
+1198|Istituto idrografico|50 L|o
+1199|Luigi Vanvitelli|25 L|o
+1200|Salviamo Venezia: Riva degli Schiavoni|20 L|o
+1201|Salviamo Venezia: Tetrarchi|25 L|o
+1202|Salviamo Venezia: Trionfo di Venezia|50 L|o
+1203|Salviamo Venezia: cavalli|90 L|o
+1204|Salviamo Venezia: Piazzetta|300 L|o
+1205|Fiera dell'agricoltura di Verona|50 L|o
+1206|Salvator Rosa|25 L|o
+1207|50° Aeronautica: G-91|20 L|o
+1208|50° Aeronautica: SIAI S55|25 L|o
+1209|50° Aeronautica: G-91 Y|50 L|o
+1210|50° Aeronautica: Fiat CR 32|90 L|o
+1211|50° Aeronautica: Campini-Caproni|180 L|o
+A160|50° Aeronautica militare|150 L|pa
+1212|75° FIGC: campo|25 L|o
+1213|75° FIGC: parata|90 L|o
+1214|Alessandro Manzoni|25 L|o
+1215|Andrea Palladio|90 L|o
+1216|Provveditorato generale dello Stato|50 L|o
+1217|Europa 18ª emissione|50 L|o
+1218|Europa 18ª emissione|90 L|o
+1219|Coppa di baseball: ricevitore|25 L|o
+1220|Coppa di baseball: battitore|90 L|o
+1221|Carnevale di Viareggio|25 L|o
+1222|Don Minzoni|50 L|o
+1223|Gaetano Salvemini|50 L|o
+1224|Il Vignola|90 L|o
+1225|Caravaggio|25 L|o
+1226|Torre di Pisa|50 L|o
+1227|Uomini illustri: Botticelli|50 L|o
+1228|Uomini illustri: Piranesi|50 L|o
+1229|Uomini illustri: Tiepolo|50 L|o
+1230|Uomini illustri: Veronese|50 L|o
+1231|Uomini illustri: Verrocchio|50 L|o
+1232|Fontane: Immacolatella, Napoli|25 L|o
+1233|Fontane: Pretoria, Palermo|25 L|o
+1234|Fontane: Trevi, Roma|25 L|o
+1235|Natale: angeli musicanti|20 L|o
+1236|Natale: Madonna e angeli|25 L|o
+1237|Natale: angeli musicanti|150 L|o
+1238|50° Rotary italiano|50 L|o
+1239|15ª giornata del francobollo|25 L|o
+1240|Medaglie d'oro al valor militare|50 L|o
+1241|Enrico Caruso|50 L|o
+#rep-1974
+1241A|Siracusana|125 L|o
+1242|Arte normanna: Cristo|20 L|o
+1243|Arte normanna: re Guglielmo|50 L|o
+1244|Luigi Einaudi|50 L|o
+1245|Guglielmo Marconi|50 L|o
+1246|Guglielmo Marconi|90 L|o
+1247|Europa 19ª: David di Bernini|50 L|o
+1248|Europa 19ª: Genio della vittoria|90 L|o
+1249|Uomini illustri 2ª emissione|50 L|o
+1250|Uomini illustri 2ª emissione|50 L|o
+1251|Uomini illustri 2ª emissione|50 L|o
+1252|Uomini illustri 2ª emissione|50 L|o
+1253|Uomini illustri 2ª emissione|50 L|o
+1254|Guardia di Finanza|40 L|o
+1255|Guardia di Finanza|50 L|o
+1256|Guardia di Finanza|90 L|o
+1257|Guardia di Finanza|180 L|o
+1258|Bersaglieri: testa|40 L|o
+1259|Bersaglieri: stemma|50 L|o
+1260|Atletica: partenza|40 L|o
+1261|Atletica: salto con l'asta|50 L|o
+1262|Petrarca: ritratto|40 L|o
+1263|Petrarca: nello studio|50 L|o
+1264|Turismo 1ª emissione|40 L|o
+1265|Turismo 1ª emissione|40 L|o
+E37|Cavalli alati|250 L|e
+1267|Giacomo Puccini|40 L|o
+1268|Ludovico Ariosto|50 L|o
+1269|Marco Terenzio Varrone|50 L|o
+1270|Congresso della vite e del vino|50 L|o
+1271|Centenario UPU|50 L|o
+1272|Centenario UPU|90 L|o
+1273|San Tommaso d'Aquino|50 L|o
+1274|Ordine forense|50 L|o
+1276|Fontane 2ª emissione|40 L|o
+1277|Fontane 2ª emissione|40 L|o
+1275|Fontane 2ª emissione|40 L|o
+1277A|San Giorgio|1000 L|o
+1278|Natale|40 L|o
+1279|Giornata del francobollo: Pulcinella|40 L|o
+1280|Giornata del francobollo: maschere|50 L|o
+1281|Giornata del francobollo: Pantalone|90 L|o
+1282|Arte 1ª emissione|90 L|o
+1283|Arte 1ª emissione|90 L|o
+#rep-1975
+1284|Anno Santo|40 L|o
+1285|Anno Santo|50 L|o
+1286|Anno Santo|90 L|o
+1287|Anno Santo|150 L|o
+1288|Anno Santo|180 L|o
+1289|Michelangelo|40 L|o
+1290|Michelangelo|50 L|o
+1291|Michelangelo|90 L|o
+1292|30° della Resistenza|70 L|o
+1293|30° della Resistenza|100 L|o
+1294|30° della Resistenza|150 L|o
+1295|Europa 20ª emissione|100 L|o
+1296|Europa 20ª emissione|150 L|o
+1297|Anno internazionale della donna|70 L|o
+1298|Imprese spaziali italiane|70 L|o
+1299|Turismo|150 L|o
+1300|Turismo|150 L|o
+1301|Turismo|150 L|o
+1302|Arte: Guido Reni e Spadini|90 L|o
+1303|Arte: Guido Reni e Spadini|90 L|o
+1304|Palestrina|100 L|o
+1305|Emigrazione|70 L|o
+1306|Notariato|100 L|o
+1307|Ferrovie|70 L|o
+1308|Salvo d'Acquisto|100 L|o
+1309|Archivi di Stato|100 L|o
+1312|Fontane d'Italia|70 L|o
+1310|Fontane d'Italia|70 L|o
+1311|Fontane d'Italia|70 L|o
+1313|Uomini illustri|100 L|o
+1314|Uomini illustri|100 L|o
+1315|Uomini illustri|100 L|o
+1316|Uomini illustri|100 L|o
+1317|Uomini illustri|100 L|o
+1318|Uomini illustri|100 L|o
+1319|Natale|70 L|o
+1320|Natale|100 L|o
+1321|Natale|150 L|o
+1322|Giornata del francobollo|70 L|o
+1323|Giornata del francobollo|100 L|o
+1324|Giornata del francobollo|150 L|o
+1325|Giovanni Boccaccio|100 L|o
+1326|Giovanni Boccaccio|150 L|o
+#rep-1976
+1327|Avvocatura dello Stato|150 L|o
+1327A|Siracusana|150 L|o
+1327B|Siracusana|400 L|o
+1328|Esposizione filatelica: emblema|150 L|o
+1329|Esposizione filatelica: padiglione|180 L|o
+E38|Cavalli alati|300 L|e
+1330|Turismo 3ª emissione|150 L|o
+1331|Turismo 3ª emissione|150 L|o
+1332|Turismo 3ª emissione|150 L|o
+1333|Europa 21ª: piatto di maiolica|150 L|o
+1334|Europa 21ª: vaso|180 L|o
+1335|30° della Repubblica: folla|100 L|o
+1336|30° della Repubblica: presidenti|150 L|o
+1337|Arte 3ª emissione|150 L|o
+1338|Arte 3ª emissione|150 L|o
+1339|Arte 3ª emissione|150 L|o
+1340|Vittore Carpaccio|150 L|o
+1341|Vittore Carpaccio|150 L|o
+1342|Tiziano|150 L|o
+1343|San Francesco|150 L|o
+1344|Esposizione filatelica: carro postale|70 L|o
+1345|Esposizione filatelica: insegna|100 L|o
+1346|Esposizione filatelica: buca lettere|150 L|o
+1347|Esposizione filatelica: bollatrice|200 L|o
+1348|Esposizione filatelica: smistamento|400 L|o
+1349|Giornata del francobollo: bambina|40 L|o
+1350|Giornata del francobollo: sciarpa|100 L|o
+1351|Giornata del francobollo: dottore|150 L|o
+1352|Uomini illustri 4ª emissione|170 L|o
+1353|Uomini illustri 4ª emissione|170 L|o
+1354|Uomini illustri 4ª emissione|170 L|o
+1355|Uomini illustri 4ª emissione|170 L|o
+1356|Uomini illustri 4ª emissione|170 L|o
+1357|Silvestro Lega|170 L|o
+1358|Natale: Adorazione|70 L|o
+1359|Natale: Natività|120 L|o
+1360|Fontane 4ª emissione|170 L|o
+1362|Fontane 4ª emissione|170 L|o
+1361|Fontane 4ª emissione|170 L|o
+#rep-1977
+1363|Campagna contro la droga|120 L|o
+1364|Campagna contro la droga|170 L|o
+1365|Pietro Micca|170 L|o
+1366|Salesiani|70 L|o
+1367|Salesiani|120 L|o
+1368|Fedeltà contributiva|120 L|o
+1369|Fedeltà contributiva|170 L|o
+1370|Europa 22ª: Taormina|170 L|o
+1371|Europa 22ª: Castel del Monte|200 L|o
+1372|Turismo|170 L|o
+1373|Turismo|170 L|o
+1374|Turismo|170 L|o
+1375|Uomini illustri|70 L|o
+1376|Uomini illustri|70 L|o
+1377|Uomini illustri|70 L|o
+1378|Uomini illustri|70 L|o
+1379|Uomini illustri|70 L|o
+1380|Arte 4ª emissione|170 L|o
+1381|Arte 4ª emissione|170 L|o
+1382|Navi 1ª emissione|170 L|o
+1383|Navi 1ª emissione|170 L|o
+1384|Navi 1ª emissione|170 L|o
+1385|Navi 1ª emissione|170 L|o
+1386|Fontane 5ª emissione|120 L|o
+1387|Fontane 5ª emissione|120 L|o
+1388|Fontane 5ª emissione|120 L|o
+1389|Giornata del francobollo|120 L|o
+1390|Giornata del francobollo|120 L|o
+1391|Giornata del francobollo|120 L|o
+|Giornata del francobollo: blocco|120 L|f
+1392|Donatori di sangue|70 L|o
+1393|Donatori di sangue|120 L|o
+1394|Quintino Sella|170 L|o
+1395|Siracusana|120 L|o
+1396|Siracusana|170 L|o
+1397|Siracusana|350 L|o
+1398|Dina Galli|170 L|o
+1399|Natale|70 L|o
+1400|Natale|120 L|o
+#rep-1978
+1401|Teatro alla Scala: facciata|170 L|o
+1402|Teatro alla Scala: interno|200 L|o
+1403|Turismo: Gubbio|70 L|o
+1404|Turismo: Udine|200 L|o
+1405|Turismo: Paestum|600 L|o
+1406|Salvaguardia del mare|170 L|o
+1407|Salvaguardia del mare|170 L|o
+1408|Salvaguardia del mare|170 L|o
+1409|Salvaguardia del mare|170 L|o
+1410|Europa: Maschio Angioino|170 L|o
+1411|Europa: Pantheon|200 L|o
+1412|Navi|170 L|o
+1413|Navi|170 L|o
+1414|Navi|170 L|o
+1415|Navi|170 L|o
+1416|Uomini illustri|170 L|o
+1417|Uomini illustri|170 L|o
+1418|Uomini illustri|170 L|o
+1419|Uomini illustri|170 L|o
+1420|Uomini illustri|170 L|o
+1421|Uomini illustri|170 L|o
+1422|30° della Costituzione|170 L|o
+1423|Informazione fotografica|120 L|o
+1424|Arte: Edera|170 L|o
+1425|Arte: Cuciniera|520 L|o
+1426|Sacra Sindone|220 L|o
+1427|Mondiali di pallavolo: muro|80 L|o
+1428|Mondiali di pallavolo: schiacciata|120 L|o
+1429|Masaccio|170 L|o
+1430|Fontane|120 L|o
+1431|Fontane|120 L|o
+1432|Fontane|120 L|o
+1433|Natale: Madonna col Bambino|80 L|o
+1434|Natale: Adorazione dei Magi|120 L|o
+1435|Giornata del francobollo|120 L|o
+1436|Giornata del francobollo|120 L|o
+1437|Giornata del francobollo|120 L|o
+1438|Alti valori: Italia turrita|1500 L|o
+1439|Alti valori: Italia turrita|2000 L|o
+1440|Alti valori: Italia turrita|3000 L|o
+1441|Alti valori: Italia turrita|4000 L|o
+1442|Alti valori: Italia turrita|5000 L|o
+#rep-1979
+1445|Pro hanseniani|80 L|o
+1446|Mondiali di ciclocross|170 L|o
+1447|Mondiali di ciclocross|220 L|o
+1448|Arte 6ª: L'Annunciata|170 L|o
+1449|Arte 6ª: Campo con pagliaio|520 L|o
+1450|Albert Einstein|120 L|o
+1451|Turismo 6ª: Asiago|70 L|o
+1452|Turismo 6ª: Castelsardo|90 L|o
+1453|Turismo 6ª: Orvieto|170 L|o
+1454|Turismo 6ª: Scilla|220 L|o
+1457|Uomini illustri 7ª|170 L|o
+1456|Uomini illustri 7ª|170 L|o
+1455|Uomini illustri 7ª|170 L|o
+1459|Uomini illustri 7ª|170 L|o
+1458|Uomini illustri 7ª|170 L|o
+1460|Europa 24ª: telegrafo|170 L|o
+1461|Europa 24ª: colombo|220 L|o
+1462|Elezioni del Parlamento europeo|170 L|o
+1463|Elezioni del Parlamento europeo|220 L|o
+1464|Rotary|220 L|o
+1465|Europei di basket|80 L|o
+1466|Europei di basket|120 L|o
+1467|Malattie digestive|120 L|o
+1468|Macchine utensili|170 L|o
+1469|Macchine utensili|220 L|o
+1470|Ottorino Respighi|120 L|o
+1471|Telecomunicazioni: telefono|170 L|o
+1472|Telecomunicazioni: Morse|220 L|o
+1475|Fontane 7ª|120 L|o
+1473|Fontane 7ª|120 L|o
+1474|Fontane 7ª|120 L|o
+1476|Navi 3ª|170 L|o
+1477|Navi 3ª|170 L|o
+1478|Navi 3ª|170 L|o
+1479|Navi 3ª|170 L|o
+1480|Rowland Hill|220 L|o
+1481|Natale|120 L|o
+1482|Giornata del francobollo|70 L|o
+1483|Giornata del francobollo|120 L|o
+1484|Giornata del francobollo|150 L|o
+#rep-1980
+1485|Energia: pannelli solari|120 L|o
+1486|Energia: sole e petrolio|170 L|o
+1487|San Benedetto|220 L|o
+1488|Esposizione di Napoli|220 L|o
+1489|Europa: Pigafetta|170 L|o
+1490|Europa: Lo Surdo|220 L|o
+1491|Santa Caterina|170 L|o
+1492|Croce Rossa|70 L|o
+1493|Croce Rossa|80 L|o
+1494|Lavoro italiano|220 L|o
+1495|Lavoro italiano|220 L|o
+1496|Europei di calcio|80 L|o
+1497|Turismo: Erice|80 L|o
+1498|Turismo: Ravello|150 L|o
+1499|Turismo: Roseto|200 L|o
+1500|Turismo: Salsomaggiore|670 L|o
+1501|Toscana dei Medici|170 L|o
+1502|Toscana dei Medici|170 L|o
+1503|Fonte Avellana|200 L|o
+1504|Castelli: Sant'Angelo|5 L|o
+1505|Castelli: Sforzesco|10 L|o
+1506|Castelli: Castel del Monte|20 L|o
+1507|Castelli: Ursino|40 L|o
+1508|Castelli: Calascio|50 L|o
+1509|Castelli: Torre San Mauro|60 L|o
+1510|Castelli: Isola Capo Rizzuto|90 L|o
+1511|Castelli: Ischia|100 L|o
+1512|Castelli: Ferrara|120 L|o
+1513|Castelli: Miramare|150 L|o
+1514|Castelli: Ostia|170 L|o
+1515|Castelli: Finale Ligure|180 L|o
+1516|Castelli: Cerro al Volturno|200 L|o
+1517|Castelli: Mondavio|250 L|o
+1518|Castelli: Bari|300 L|o
+1519|Castelli: Mussomeli|350 L|o
+1520|Castelli: Prato|400 L|o
+1521|Castelli: Bosa|450 L|o
+1522|Castelli: Rovereto|500 L|o
+1523|Castelli: Sirmione|600 L|o
+1524|Castelli: Ivrea|700 L|o
+1525|Castelli: Assisi|800 L|o
+1526|Castelli: Aosta|900 L|o
+1527|Castelli: Montagnana|1000 L|o
+1528|Castelli: Santa Severa|30 L|o
+1529|Castelli: Enna|120 L|o
+1530|Castelli: Serralunga d'Alba|170 L|o
+1531|Navi|200 L|o
+1532|Navi|200 L|o
+1533|Navi|200 L|o
+1534|Navi|200 L|o
+1535|Filippo Mazzei|320 L|o
+1536|Ville: Foscari|80 L|o
+1537|Ville: Barbaro, Maser|150 L|o
+1538|Ville: Godi Valmarana|170 L|o
+1539|Arte|520 L|o
+1540|Arte|520 L|o
+1541|Natale|120 L|o
+1542|Giornata del francobollo|70 L|o
+1543|Giornata del francobollo|120 L|o
+1544|Giornata del francobollo|170 L|o
+#rep-1981
+|Daniele Comboni|80 L|o
+|Alcide De Gasperi|200 L|o
+|Anno dei disabili|300 L|o
+1548|Fiori 1ª emissione|200 L|o
+1549|Fiori 1ª emissione|200 L|o
+1550|Fiori 1ª emissione|200 L|o
+1551|Europa 26ª emissione|300 L|o
+1552|Europa 26ª emissione|300 L|o
+1553|Santa Rita|600 L|o
+1554|Ciro Menotti|80 L|o
+1557|Aerei 1ª emissione|200 L|o
+1558|Aerei 1ª emissione|200 L|o
+1555|Aerei 1ª emissione|200 L|o
+1556|Aerei 1ª emissione|200 L|o
+1559|Dissesto idrogeologico|80 L|o
+1560|Lavoro 2ª emissione|300 L|o
+1561|Lavoro 2ª emissione|300 L|o
+1562|Turismo 8ª: Matera|80 L|o
+1563|Turismo 8ª: Riva del Garda|150 L|o
+1564|Turismo 8ª: Santa Teresa|300 L|o
+1565|Turismo 8ª: Tarquinia|900 L|o
+1566|Accademia navale: fregio|80 L|o
+1567|Accademia navale: sede|150 L|o
+1568|Accademia navale: Vespucci|200 L|o
+1506A|Castelli: L'Aquila|30 L|o
+1509A|Castelli: Reggio Calabria|70 L|o
+1509B|Castelli: Sabbionara|80 L|o
+1569|Consiglio di Stato|200 L|o
+1570|Coppa del mondo di atletica|300 L|o
+1571|Arte 8ª emissione|200 L|o
+1572|Arte 8ª emissione|200 L|o
+1573|Bronzi di Riace|200 L|o
+1574|Bronzi di Riace|200 L|o
+1575|Bimillenario di Virgilio|600 L|o
+1530A|Castelli: Lucera|200 L|o
+1530B|Castelli: Melfi|300 L|o
+1576|Giornata dell'alimentazione|150 L|o
+1577|Ville 2ª: Campolieto|100 L|o
+1578|Ville 2ª: Cimbrone|200 L|o
+1579|Ville 2ª: Pignatelli|300 L|o
+1580|Natale|200 L|o
+1581|Papa Giovanni XXIII|200 L|o
+1582|Giornata del francobollo|120 L|o
+1583|Giornata del francobollo|200 L|o
+1584|Giornata del francobollo|300 L|o
+#rep-1982
+1585|San Francesco|300 L|o
+1586|Niccolò Paganini|900 L|o
+1587|Lotta contro il fumo|300 L|o
+1590|Aerei 2ª emissione|300 L|o
+1591|Aerei 2ª emissione|300 L|o
+1588|Aerei 2ª emissione|300 L|o
+1589|Aerei 2ª emissione|300 L|o
+1592|Vespri siciliani|120 L|o
+1595|Fiori 2ª emissione|300 L|o
+1593|Fiori 2ª emissione|300 L|o
+1594|Fiori 2ª emissione|300 L|o
+1596|Europa 27ª: Carlo Magno|200 L|o
+1597|Europa 27ª: Trattati di Roma|450 L|o
+1598|Lavoro 3ª emissione|450 L|o
+1599|Lavoro 3ª emissione|450 L|o
+1600|Centenario di Garibaldi|200 L|o
+1601|Folclore|200 L|o
+1602|Turismo 9ª: Fai della Paganella|200 L|o
+1603|Turismo 9ª: Frasassi|200 L|o
+1604|Turismo 9ª: Rodi Garganico|450 L|o
+1605|Turismo 9ª: Agrigento|450 L|o
+1606|Canottaggio juniores|200 L|o
+1607|Federico da Montefeltro|200 L|o
+1608|Italia campione del mondo|1000 L|o
+1609|Unione interparlamentare|450 L|o
+1610|Ville 3ª: Villa Borghese|150 L|o
+1611|Ville 3ª: Villa d'Este|250 L|o
+1612|Ville 3ª: Villa Lante|350 L|o
+1613|Servizio postale dei Tasso|300 L|o
+1614|Arte 9ª: Hayez|300 L|o
+1615|Arte 9ª: Piazzetta|300 L|o
+1616|Giornata del francobollo|150 L|o
+1617|Giornata del francobollo|250 L|o
+1618|Giornata del francobollo|350 L|o
+#rep-1983
+1620|Lavoro 4ª emissione|400 L|o
+1621|Lavoro 4ª emissione|400 L|o
+1619|Lotta contro il cancro|400 L|o
+1622|Accademia della Crusca|400 L|o
+1623|Mondiali di biathlon|200 L|o
+1624|Gabriele Rossetti|300 L|o
+1625|Francesco Guicciardini|450 L|o
+1626|Umberto Saba|600 L|o
+1627|Papa Pio XII|1400 L|o
+1628|Anno Santo: San Paolo|250 L|o
+1629|Anno Santo: Santa Maria Maggiore|300 L|o
+1630|Anno Santo: San Giovanni|400 L|o
+1631|Anno Santo: San Pietro|500 L|o
+1632|Aerei 3ª emissione|400 L|o
+1633|Aerei 3ª emissione|400 L|o
+1634|Aerei 3ª emissione|400 L|o
+1635|Aerei 3ª emissione|400 L|o
+1636|Festa del lavoro|1200 L|o
+1637|Fiori 3ª emissione|200 L|o
+1638|Fiori 3ª emissione|200 L|o
+1639|Fiori 3ª emissione|200 L|o
+1640|Europa: Galileo|400 L|o
+1641|Europa: Archimede|500 L|o
+1642|Teodoro Moneta|500 L|o
+1643|Informatica giuridica|500 L|o
+1644|Folclore: Corsa dei Ceri|300 L|o
+1645|Congresso eucaristico|300 L|o
+1530C|Castelli formato ridotto|400 L|o
+1442A|Alti valori ordinari|10000 L|o
+1527A|Castelli valore complementare|1400 L|o
+1646|Turismo: Alghero|250 L|o
+1647|Turismo: Bardonecchia|300 L|o
+1648|Turismo: Riccione|400 L|o
+1649|Turismo: Taranto|500 L|o
+1650|Girolamo Frescobaldi|400 L|o
+1651|Ville: Villa Fidelia|250 L|o
+1652|Ville: Villa Imperiale|300 L|o
+1653|Ville: Convento Michetti|400 L|o
+1654|Ville: Villa di Riccia|500 L|o
+1655|Francesco De Sanctis|300 L|o
+1656|Natale: Madonna della seggiola|250 L|o
+1657|Natale: Madonna Sistina|400 L|o
+1658|Natale: Madonna dei candelabri|500 L|o
+1659|Giornata del francobollo|200 L|o
+1660|Giornata del francobollo|300 L|o
+1661|Giornata del francobollo|400 L|o
+#rep-1984
+1662|Sicurezza stradale|300 L|o
+1663|Sicurezza stradale|400 L|o
+1664|Arte: De Nittis|300 L|o
+1665|Arte: Modigliani|400 L|o
+1522A|Castelli d'Italia|550 L|o
+1666|Automobili|450 L|o
+1667|Automobili|450 L|o
+1668|Automobili|450 L|o
+1669|Automobili|450 L|o
+1670|Lavoro|300 L|o
+1671|Lavoro|300 L|o
+1672|Parlamento europeo|400 L|o
+1673|Salvaguardia dei boschi|450 L|o
+1674|Salvaguardia dei boschi|450 L|o
+1675|Salvaguardia dei boschi|450 L|o
+1676|Salvaguardia dei boschi|450 L|o
+1677|Esposizione filatelica: sede|450 L|o
+1678|Esposizione filatelica: Appia|550 L|o
+1679|Patto di Roma|450 L|o
+1680|Europa 29ª emissione|450 L|o
+1681|Europa 29ª emissione|550 L|o
+1682|Simposio telecomunicazioni|550 L|o
+1683|Derby di galoppo|250 L|o
+1684|Derby di galoppo|400 L|o
+1685|Turismo: Campione d'Italia|350 L|o
+1686|Turismo: Chianciano Terme|400 L|o
+1687|Turismo: Padula|450 L|o
+1688|Turismo: Siracusa|550 L|o
+1689|Folclore|400 L|o
+1690|Civiltà contadina: stufa|250 L|o
+1691|Civiltà contadina: telaio|350 L|o
+1692|Ville: Villa Caristo|250 L|o
+1693|Ville: Doria Pamphili|350 L|o
+1694|Ville: Villa Reale|400 L|o
+1695|Ville: Villa Mellone|450 L|o
+1696|Arte etrusca|550 L|o
+1697|Arte etrusca|550 L|o
+1698|Arte etrusca|550 L|o
+#rep-1985
+1699|Emissione 1985|350 L|o
+1700|Emissione 1985|250 L|o
+1701|Expo 1985: arte rinascimentale|600 L|o
+1702|Expo 1985: arte rinascimentale|600 L|o
+1703|Expo 1985: arte rinascimentale|600 L|o
+1704|Lavoro 6ª emissione|600 L|o
+1705|Lavoro 6ª emissione|600 L|o
+1706|Automobili 2ª emissione|450 L|o
+1707|Automobili 2ª emissione|450 L|o
+1708|Automobili 2ª emissione|450 L|o
+1709|Automobili 2ª emissione|450 L|o
+1710|Expo 1985: arte barocca|250 L|o
+1711|Expo 1985: arte barocca|250 L|o
+1712|Expo 1985: arte barocca|250 L|o
+1713|Papa Sisto V|1500 L|o
+1714|Folclore: sfilata dei Turchi|250 L|o
+1715|Folclore: regata delle repubbliche marinare|350 L|o
+1716|Turismo: Bormio|350 L|o
+1717|Turismo: Castellammare|400 L|o
+1718|Turismo: Stromboli|450 L|o
+1719|Turismo: Termoli|600 L|o
+1720|Flora e fauna da salvare|500 L|o
+1721|Flora e fauna da salvare|500 L|o
+1722|Flora e fauna da salvare|500 L|o
+1723|Flora e fauna da salvare|500 L|o
+1724|Arte: Madonna orante|350 L|o
+1725|Arte: La civiltà del lavoro|400 L|o
+1726|Europa: Pertile e Martinelli|500 L|o
+1727|Europa: Bach e Bellini|600 L|o
+1728A|Castelli: Scilla|50 L|o
+1730D|Castelli: Piobbico|450 L|o
+1728|Abbazia di San Salvatore|450 L|o
+1729|Mondiali di ciclismo|400 L|o
+1730|Congresso ONU sul crimine|600 L|o
+1731|Anno internazionale della gioventù|600 L|o
+1732|Ville: Villa Nitti|300 L|o
+1733|Ville: Aldrovandi Mazzacorati|400 L|o
+1734|Ville: Villa Santa Maria|500 L|o
+1735|Ville: Villa de Mersi|600 L|o
+1736|Ratifica del Concordato|400 L|o
+BF1|Expo 1985: foglietto|4000 L|f
+1737|Expo 1985: Antichi Stati|300 L|o
+1738|Expo 1985: Antichi Stati|300 L|o
+1739|Expo 1985: Antichi Stati|300 L|o
+1740|Expo 1985: Antichi Stati|300 L|o
+1741|Expo 1985: Antichi Stati|300 L|o
+1742|Expo 1985: Antichi Stati|300 L|o
+1743|Expo 1985: Antichi Stati|300 L|o
+1744|Expo 1985: Antichi Stati|300 L|o
+1745|Expo 1985: Antichi Stati|300 L|o
+BF2|Expo 1985: foglietto Antichi Stati|300 L × 9|f
+1746|Expo 1985: cinque continenti|500 L|o
+1747|Expo 1985: cinque continenti|500 L|o
+1748|Expo 1985: cinque continenti|500 L|o
+1749|Expo 1985: cinque continenti|500 L|o
+1750|Expo 1985: cinque continenti|500 L|o
+BF3|Expo 1985: foglietto cinque continenti|500 L × 5|f
+#rep-1986
+1751|Marcialonga|450 L|o
+1752|Folclore|450 L|o
+1753|Amilcare Ponchielli|2000 L|o
+1523A|Castelli d'Italia|650 L|o
+1754|Giovan Battista Pergolesi|2000 L|o
+1755|Turismo: Acitrezza|350 L|o
+1756|Turismo: Capri|450 L|o
+1757|Turismo: Merano|550 L|o
+1758|Turismo: San Benedetto del Tronto|650 L|o
+1759|Europa 31ª emissione|650 L|o
+1760|Europa 31ª emissione|650 L|o
+1761|Europa 31ª emissione|650 L|o
+1762|Europa 31ª emissione|650 L|o
+1763|Congresso di oftalmologia|550 L|o
+1764|Polizia europea|550 L|o
+1765|Polizia europea|650 L|o
+1766|Battaglia di Bezzecca|550 L|o
+1767|Giornata dei martiri|2000 L|o
+1768|Bersaglieri|450 L|o
+1769|Mezzi di comunicazione|350 L|o
+1770|Sacro Monte di Varallo|2000 L|o
+1771|Automobili|450 L|o
+1772|Automobili|450 L|o
+1773|Automobili|450 L|o
+1774|Automobili|450 L|o
+1775|Lavoro: moda femminile|450 L|o
+1776|Lavoro: moda maschile|450 L|o
+1777|Lavoro: computer Olivetti|650 L|o
+1778|Lavoro: macchina Breda|650 L|o
+1779|Alitalia: nuvole|550 L|o
+1780|Alitalia: luci di pista|650 L|o
+1781|Ville: Villa Necker|350 L|o
+1782|Ville: Villa Borromeo|350 L|o
+1783|Ville: Villa Palagonia|450 L|o
+1784|Ville: Villa medicea|550 L|o
+1785|Ville: Castello d'Issogne|650 L|o
+1786|Natale|450 L|o
+1787|Arte: Andrea del Sarto|450 L|o
+1788|Arte: Felice Casorati|550 L|o
+1789|Pace: aereo e globo|550 L|o
+1790|Pace: eccidio di Kindu|650 L|o
+1791|Giornata della filatelia|550 L|o
+#rep-1987
+1442B|Alti valori ordinari|20000 L|o
+1519A|Castelli d'Italia|380 L|o
+1793|Lavoro italiano|700 L|o
+1792|Lavoro italiano|700 L|o
+1794|Laghi e fiumi|500 L|o
+1797|Laghi e fiumi|500 L|o
+1795|Laghi e fiumi|500 L|o
+1796|Laghi e fiumi|500 L|o
+1798|Antonio Gramsci|600 L|o
+1799|Europa: chiesa dell'autostrada|600 L|o
+1800|Europa: stazione Termini|700 L|o
+1801|Turismo: Verbania|380 L|o
+1802|Turismo: Palmi|400 L|o
+1803|Turismo: Vasto|500 L|o
+1804|Turismo: Villacidro|600 L|o
+1805|Napoli campione d'Italia|500 L|o
+1806|Lotta all'alcolismo|380 L|o
+1807|Alfonso de Liguori|400 L|o
+1808|Mondiali di atletica|700 L|o
+1809|Mondiali di atletica|700 L|o
+1810|Folclore|380 L|o
+1811|Piazze: Ascoli Piceno|380 L|o
+1812|Piazze: Palermo|500 L|o
+1813|Piazze: Torino|600 L|o
+1814|Piazze: Verona|700 L|o
+1815|Natale: presepe|500 L|o
+1816|Natale: Adorazione dei Magi|600 L|o
+1817|Battaglia di Mentana|380 L|o
+1818|Pantocratore e San Carlo|500 L|o
+1819|Pantocratore e San Carlo|500 L|o
+1820|Nunziatella|600 L|o
+1821|Giornata della filatelia|500 L|o
+#rep-1988
+1822|Homo aeserniensis|500 L|o
+1823|Scuole d'Italia|500 L|o
+1528A|Castelli: Scilla|50 L|o
+1528B|Castelli: Santa Severa|100 L|o
+1530D|Castelli: Piobbico|450 L|o
+1530E|Castelli: Melfi|500 L|o
+1530F|Castelli: Serralunga|650 L|o
+1530G|Castelli: Venafro|750 L|o
+1824|San Giovanni Bosco|500 L|o
+1825|Giorgio de Chirico|650 L|o
+1826|Bibbia ebraica|550 L|o
+1827|Lotta contro l'epilessia|500 L|o
+1828|Europa: elettrotreno|650 L|o
+1829|Europa: posta elettronica|750 L|o
+1830|Turismo: Castiglione|400 L|o
+1831|Turismo: Lignano|500 L|o
+1832|Turismo: Noto|650 L|o
+1833|Turismo: Vieste|750 L|o
+1835|Coppa del mondo Italia '90|3150 L|o
+1834|Golf|500 L|o
+1836|Milan campione d'Italia|650 L|o
+1837|Bronzi: testa di cavallo|500 L|o
+1838|Bronzi: busto di donna|650 L|o
+1839|Università di Bologna|500 L|o
+1840|Piazze: Pistoia|400 L|o
+1841|Piazze: Trieste|550 L|o
+1842|Folclore|550 L|o
+1843|Congressi di gastroenterologia|750 L|o
+1844|Cinema: Ossessione|500 L|o
+1845|Cinema: Ladri di biciclette|650 L|o
+1846|Cinema: Roma città aperta|2400 L|o
+1847|Cinema: Riso amaro|3050 L|o
+1848|Lavoro italiano|750 L|o
+1849|Lavoro italiano|750 L|o
+1850|Lavoro italiano|750 L|o
+1851|Natale|650 L|o
+1852|San Carlo Borromeo|2400 L|o
+1853|Natale|500 L|o
+1854|Giornata della filatelia|500 L|o
+#rep-1989
+1855|Lotta contro l'AIDS|650 L|o
+1856|Rievocazione Parigi-Pechino|3150 L|o
+1857|Scuole d'Italia|650 L|o
+1858|Padova-Bari: affreschi|500 L|o
+1859|Padova-Bari: basilica|650 L|o
+1860|Mondiali di vela|3050 L|o
+1862|Piazze d'Italia|400 L|o
+1861|Piazze d'Italia|400 L|o
+1863|Europa: cavallina|500 L|o
+1864|Europa: specchio|650 L|o
+1865|Europa: corsa nei sacchi|750 L|o
+1866|Folclore|400 L|o
+1867|Scuole d'Italia|500 L|o
+1868|Elezioni del Parlamento europeo|500 L|o
+1869|Turismo|500 L|o
+1870|Turismo|500 L|o
+1872|Turismo|500 L|o
+1871|Turismo|500 L|o
+1873|Ministero delle poste: 5 c|500 L|o
+1874|Ministero delle poste: globo|2400 L|o
+|Ministero delle poste: libretto|500 L|l
+1875|Inter campione d'Italia|650 L|o
+|Inter campione d'Italia: foglietto|650 L|f
+1876|Unione interparlamentare|750 L|o
+1877|Rivoluzione francese|3150 L|o
+1878|Francesco di Giorgio|500 L|o
+1879|Charlie Chaplin|750 L|o
+|Charlie Chaplin: foglietto|750 L|f
+1880|Ferrovia Napoli-Portici|550 L|o
+1881|Ferrovia Napoli-Portici|550 L|o
+1882|Lavoro italiano|450 L|o
+1883|Lavoro italiano|450 L|o
+1884|Natale|500 L|o
+1885|Natale|500 L|o
+1886|Giornata della filatelia|500 L|o
+1887|Mondiali Italia '90|450 L|o
+#rep-1990
+1888|Celebrazioni colombiane|700 L|o
+1889|Celebrazioni colombiane|700 L|o
+1890|Italia '90: Italia|450 L|o
+1891|Italia '90: USA|450 L|o
+1892|Italia '90: Austria|450 L|o
+1893|Italia '90: Cecoslovacchia|450 L|o
+1894|Italia '90: stadio Olimpico|450 L|o
+1895|Italia '90: stadio Comunale|450 L|o
+1896|Italia '90: Argentina|600 L|o
+1897|Italia '90: URSS|600 L|o
+1898|Italia '90: Camerun|600 L|o
+1899|Italia '90: Romania|600 L|o
+1900|Italia '90: stadio San Paolo|600 L|o
+1901|Italia '90: stadio di Bari|600 L|o
+1902|Italia '90: Brasile|650 L|o
+1903|Italia '90: Costa Rica|650 L|o
+1904|Italia '90: Svezia|650 L|o
+1905|Italia '90: Scozia|650 L|o
+1906|Italia '90: stadio delle Alpi|650 L|o
+1907|Italia '90: stadio Ferraris|650 L|o
+1908|Italia '90: Emirati Arabi|700 L|o
+1909|Italia '90: Germania Ovest|700 L|o
+1910|Italia '90: Colombia|700 L|o
+1911|Italia '90: Jugoslavia|700 L|o
+1912|Italia '90: stadio Dall'Ara|700 L|o
+1913|Italia '90: stadio Meazza|700 L|o
+1914|Italia '90: Belgio|800 L|o
+1915|Italia '90: Uruguay|800 L|o
+1916|Italia '90: Corea del Sud|800 L|o
+1917|Italia '90: Spagna|800 L|o
+1918|Italia '90: stadio Bentegodi|800 L|o
+1919|Italia '90: stadio Friuli|800 L|o
+1920|Italia '90: Inghilterra|1200 L|o
+1921|Italia '90: Olanda|1200 L|o
+1922|Italia '90: Irlanda|1200 L|o
+1923|Italia '90: Egitto|1200 L|o
+1924|Italia '90: stadio Sant'Elia|1200 L|o
+1925|Italia '90: stadio La Favorita|1200 L|o
+BF4|Italia '90: foglietto|450 L ×6|f
+BF5|Italia '90: foglietto|600 L ×6|f
+BF6|Italia '90: foglietto|650 L ×6|f
+BF7|Italia '90: foglietto|700 L ×6|f
+BF8|Italia '90: foglietto|800 L ×6|f
+BF9|Italia '90: foglietto|1200 L ×6|f
+1929|Turismo 17ª emissione|600 L|o
+1926|Turismo 17ª emissione|600 L|o
+1928|Turismo 17ª emissione|600 L|o
+1927|Turismo 17ª emissione|600 L|o
+1930|Folclore|600 L|o
+1931|Aurelio Saffi|700 L|o
+1932|Sistema Giorgi|600 L|o
+1933|Centenario del 1° maggio|600 L|o
+1934|Napoli campione d'Italia|700 L|o
+1935|Europa: Roma|700 L|o
+1936|Europa: Venezia|800 L|o
+1937|Giovanni Paisiello|450 L|o
+1938|Dante Alighieri|700 L|o
+1939|Arte musiva: mosaico antico|450 L|o
+1940|Arte musiva: decorazione|700 L|o
+1941|Sagra malatestiana|600 L|o
+1942|Germania campione del mondo|600 L|o
+1943|Giorgio Morandi|750 L|o
+1524A|Castelli: Urbisaglia|750 L|o
+1944|Mondiali di lotta greco-romana|3200 L|o
+1945|Natale: La vita nuova|600 L|o
+1946|Natale: Adorazione dei pastori|750 L|o
+1947|Scuole: Liceo Telesio|600 L|o
+1948|Scuole: Università di Catania|750 L|o
+1949|Giornata della filatelia|600 L|o
+#rep-1991
+1950|Presepe di Rivisondoli|600 L|o
+1951|Euroflora '91|750 L|o
+1952|Scuole d'Italia|750 L|o
+1956|Turismo: Sanremo|600 L|o
+1953|Turismo: Cagli|600 L|o
+1955|Turismo: Roccaraso|600 L|o
+1954|Turismo: La Maddalena|600 L|o
+1957|I giovani incontrano l'Europa|750 L|o
+1958|Celebrazioni colombiane: veliero|750 L|o
+1959|Celebrazioni colombiane: ritratto|750 L|o
+1530EA|Castelli: Castello scaligero|600 L|o
+1530H|Castelli: Rocca maggiore|800 L|o
+1960|Giuseppe Gioachino Belli|600 L|o
+1961|Centro storico di Roma|3200 L|o
+1962|Europa: satellite DRS|750 L|o
+1963|Europa: Hermes|800 L|o
+1964|Chiesa di Lanciano|600 L|o
+1965|Scuole d'Italia|600 L|o
+1966|Sampdoria campione d'Italia|3000 L|o
+1967|Pallacanestro|500 L|o
+1968|Diritti dell'infanzia: farfalle|600 L|o
+1969|Diritti dell'infanzia: palloncino|750 L|o
+1970|Fazzini e Nervi: gabbiani|600 L|o
+1971|Fazzini e Nervi: Torino|3200 L|o
+1972|Museo egizio di Torino|750 L|o
+1973|Centenario della radio|750 L|o
+1508I|Castelli d'Italia|50 L|o
+1974|Mozart|800 L|o
+1975|Salvaguardia: posidonia|500 L|o
+1976|Salvaguardia: cervo sardo|500 L|o
+1977|Salvaguardia: orso marsicano|500 L|o
+1978|Salvaguardia: falco|500 L|o
+1979|Natale|600 L|o
+1980|Giornata della filatelia|750 L|o
+1981|Pietro Nenni|750 L|o
+#rep-1992
+|Atletica indoor|600 L|o
+1983|Fontana del Nettuno|750 L|o
+1984|Scuole d'Italia|750 L|o
+1525A|Castelli d'Italia|850 L|o
+1985|Scuole d'Italia|750 L|o
+1986|Centenario della radio|750 L|o
+1987|Filatelia tematica|750 L|o
+1988|Lorenzo de' Medici|750 L|o
+1989|Celebrazioni colombiane|500 L|o
+1990|Celebrazioni colombiane|500 L|o
+1991|Celebrazioni colombiane|500 L|o
+1992|Celebrazioni colombiane|500 L|o
+1993|Europa: monumento a Colombo|750 L|o
+1994|Europa: globo di Genova|850 L|o
+1995|Maestre Pie Filippini|750 L|o
+1996|Scoperta dell'America: nativi|50 L|o
+1997|Scoperta dell'America: Barcellona|100 L|o
+1998|Scoperta dell'America: terra|200 L|o
+1999|Scoperta dell'America: scoperta|300 L|o
+2000|Scoperta dell'America: richiesta|400 L|o
+2001|Scoperta dell'America: sbarco|500 L|o
+2002|Scoperta dell'America: bandiera|600 L|o
+2003|Scoperta dell'America: La Rabida|700 L|o
+2004|Scoperta dell'America: udienza|800 L|o
+2005|Scoperta dell'America: flotta|900 L|o
+2006|Scoperta dell'America: richiamo|1000 L|o
+2007|Scoperta dell'America: tesori|1500 L|o
+2008|Scoperta dell'America: Isabella|2000 L|o
+2009|Scoperta dell'America: 3° viaggio|3000 L|o
+2010|Scoperta dell'America: catene|4000 L|o
+2011|Scoperta dell'America: ritratto|5000 L|o
+BF10|Scoperta dell'America: foglietto|400+700+1000 L|f
+BF11|Scoperta dell'America: foglietto|200+900+1500 L|f
+BF12|Scoperta dell'America: foglietto|500+600+2000 L|f
+BF13|Scoperta dell'America: foglietto|100+800+3000 L|f
+BF14|Scoperta dell'America: foglietto|50+300+4000 L|f
+BF15|Scoperta dell'America: foglietto|5000 L|f
+2012|75° Giro d'Italia|750 L|o
+2013|75° Giro d'Italia|750 L|o
+2014|Milan campione d'Italia|750 L|o
+2015|Antichi stabilimenti|750 L|o
+2016|Tazio Nuvolari|3200 L|o
+2017|Antichi stabilimenti|750 L|o
+2019|Turismo|600 L|o
+2018|Turismo|600 L|o
+2020|Turismo|600 L|o
+2021|Turismo|600 L|o
+2022|Adorazione dei pastori|750 L|o
+2023|Colombiane: casa|500 L|o
+2024|Colombiane: Palos|600 L|o
+2025|Colombiane: carta geografica|750 L|o
+2026|Colombiane: avvistamento|850 L|o
+2027|Colombiane: sbarco|1200 L|o
+2028|Colombiane: ritratto|3200 L|o
+2029|Giornata della filatelia|750 L|o
+2030|Forum dei Lions Club|3000 L|o
+2031|Mercato unico europeo|600 L|o
+2032|Conferenza sulla nutrizione|500 L|o
+2033|Natale|600 L|o
+#rep-1993
+2034|Europa unita: Italia|750 L|o
+2035|Europa unita: Belgio|750 L|o
+2036|Europa unita: Danimarca|750 L|o
+2037|Europa unita: Francia|750 L|o
+2038|Europa unita: Germania|750 L|o
+2039|Europa unita: Grecia|750 L|o
+2040|Europa unita: Irlanda|750 L|o
+2041|Europa unita: Lussemburgo|750 L|o
+2042|Europa unita: Paesi Bassi|750 L|o
+2043|Europa unita: Portogallo|750 L|o
+2044|Europa unita: Gran Bretagna|750 L|o
+2045|Europa unita: Spagna|750 L|o
+BF16|Europa unita: foglietto|750 L ×12|f
+2046|Battaglia di Nikolajewka|600 L|o
+2047|Carlo Goldoni: maschere|500 L|o
+2048|Carlo Goldoni: ritratto|500 L|o
+2049|Mosaici di piazza Armerina|750 L|o
+2050|Lotta contro l'infarto|750 L|o
+2051|Gatti: europeo|600 L|o
+2052|Gatti: persiano|600 L|o
+2053|Gatti: devon rex|600 L|o
+2054|Gatti: Maine Coon|600 L|o
+2055|Centenario della radio: Calzecchi Onesti|750 L|o
+2056|Francesco Guardi|3200 L|o
+2057|Orazio|600 L|o
+2058|Cottolengo|750 L|o
+2059|Europa 38ª: cavalli|750 L|o
+2060|Europa 38ª: dinamismo|850 L|o
+2061|Accademia di San Luca|750 L|o
+2062|Family fest 1993|750 L|o
+2063|Milan campione d'Italia|750 L|o
+2064|Turismo: Carloforte|600 L|o
+2065|Turismo: Palmanova|600 L|o
+2066|Turismo: Senigallia|600 L|o
+2067|Turismo: Sorrento|600 L|o
+2068|Mondiali di canoa e kayak|750 L|o
+2069|Capanna Regina Margherita|500 L|o
+2070|II guerra mondiale: Quattro giornate di Napoli|750 L|o
+2071|II guerra mondiale: ebrei romani|750 L|o
+2072|II guerra mondiale: fratelli Cervi|750 L|o
+2073|Scala Santa di Veroli|750 L|o
+2074|I Tasso: diligenza|750 L|o
+2075|I Tasso: corno di posta|750 L|o
+2076|I Tasso: calesse|750 L|o
+2077|I Tasso: corriere a cavallo|750 L|o
+2078|I Tasso: corriere a cavallo|750 L|o
+2074I|I Tasso: diligenza (libretto)|750 L|l
+2075I|I Tasso: corno di posta (libretto)|750 L|l
+2076I|I Tasso: calesse (libretto)|750 L|l
+2077I|I Tasso: corriere (libretto)|750 L|l
+2078I|I Tasso: corriere (libretto)|750 L|l
+2079|Banca d'Italia: sede|750 L|o
+2080|Banca d'Italia: banconota|1000 L|o
+2081|Giornata della filatelia|600 L|o
+2082|Natale: presepe|600 L|o
+2083|Natale: Annunciazione|750 L|o
+2084|Uffizi: Concerto|600 L|o
+2085|Uffizi: morte di Adone|850 L|o
+2086|Archivi di Stato: Foggia|600 L|o
+2087|Archivi di Stato: Siena|750 L|o
+#rep-1994
+2088|Il circo: prestigiatore|600 L|o
+2089|Il circo: clown|750 L|o
+2090|Lavoro casalingo|750 L|o
+1516II|Castelli: Cerro al Volturno|200 L|o
+1517II|Castelli: Mondavio|250 L|o
+1518II|Castelli: Bari|300 L|o
+1521II|Castelli: Bosa|450 L|o
+2091|Cibi italiani: pane|500 L|o
+2092|Cibi italiani: pasta|600 L|o
+2093|Centenario della radio|750 L|o
+2094|Cani|600 L|o
+2095|Cani|600 L|o
+2096|Cani|600 L|o
+2097|Cani|600 L|o
+2098|Processione del Cristo risorto|750 L|o
+2099|Luca Pacioli|750 L|o
+2100|Turismo|600 L|o
+2101|Turismo|600 L|o
+2102|Turismo|600 L|o
+2103|Turismo|600 L|o
+2104|Lajos Kossuth|3750 L|o
+2105|Milan campione d'Italia|750 L|o
+2106|Europa: Camillo Golgi|750 L|o
+2107|Europa: Giulio Natta|850 L|o
+2108|Mondiali di nuoto: tuffo|600 L|o
+2109|Mondiali di nuoto: pallanuoto|750 L|o
+2110|Mostra archeologica di Rimini|750 L|o
+2111|II guerra mondiale 2ª emissione|750 L|o
+2112|II guerra mondiale 2ª emissione|750 L|o
+2113|II guerra mondiale 2ª emissione|750 L|o
+2114|Congresso eucaristico|600 L|o
+2115|Tintoretto|750 L|o
+2116|Misericordia di Firenze|750 L|o
+2117|Elezioni europee|600 L|o
+2120|Musei: cratere attico|600 L|o
+2119|Musei: Galata suicida|750 L|o
+2118|Archivi: registro notarile|600 L|o
+2121|Archivi: sigillo civico|850 L|o
+2122|Centenario del CIO|850 L|o
+2123|Vertice G7 a Napoli|600 L|o
+2124|Celebrazioni lauretane|500 L|o
+2125|Filatelia: Pietro Miliani|600 L|o
+2126|Filatelia: museo della carta|750 L|o
+2127|Federico II|750 L|o
+2128|Basilica di San Marco|750 L|o
+2128I|Basilica di San Marco|750 L|o
+BF17|Basilica di San Marco: foglietto|750 L ×2|f
+2129|Natale: Annunziata|600 L|o
+2130|Natale: Sacra conversazione|750 L|o
+2131|Centenario del Touring Club|600 L|o
+2132|75° CREDIOP|750 L|o
+2133|Poste: Palazzo Querini|600 L|o
+2134|Poste: simbolo multicolore|750 L|o
+2135|Poste: simbolo rosso|750 L|o
+2136|Giovanni Gentile|750 L|o
+#rep-1995
+2137|Pro alluvionati|750+2250 L|o
+2138|Mondiali di pattinaggio|750 L|o
+2139|Achille Beltrame|500 L|o
+2140|Cibi italiani: riso|500 L|o
+2141|Cibi italiani: olio|750 L|o
+2142|Uccelli: airone cenerino|600 L|o
+2143|Uccelli: aquila reale|600 L|o
+2144|Uccelli: fringuello alpino|600 L|o
+2145|Uccelli: grifone|600 L|o
+2146|50° ONU|850 L|o
+2147|Cinque giornate di Milano|750 L|o
+2148|II guerra: campi di concentramento|750 L|o
+2149|II guerra: Anzio e Nettuno|750 L|o
+2150|II guerra: Teresa Gullace|750 L|o
+2151|II guerra: Firenze|750 L|o
+2152|II guerra: Vittorio Veneto|750 L|o
+2153|II guerra: Cagliari|750 L|o
+2154|II guerra: Monte Lungo|750 L|o
+2155|II guerra: Balcani|750 L|o
+2156|II guerra: Atlantico|750 L|o
+BF18|II guerra: foglietto|750 L ×9|f
+2157|Archivi: Santo Spirito|500 L|o
+2160|Archivi: Mantova|750 L|o
+2159|Musei: Tavola Strozzi|500 L|o
+2158|Musei: Amor sacro|850 L|o
+2161|Biennale di Venezia|750 L|o
+2162|Santa Croce, Firenze|750 L|o
+2163|Europa: Liberazione|750 L|o
+2164|Europa: ponte di Mostar|850 L|o
+2165|Centenario della pallavolo|750 L|o
+2166|Turismo: Alatri|750 L|o
+2167|Turismo: Nuoro|750 L|o
+2168|Turismo: Susa|750 L|o
+2169|Turismo: Venosa|750 L|o
+2170|Raggi X|750 L|o
+2171|Juventus campione d'Italia|750 L|o
+2172|Radio: Villa Griffone|750 L|o
+2173|Radio: Marconi|850 L|o
+2174|Sant'Antonio: ritratto|750 L|o
+2175|Sant'Antonio col Bambino|850 L|o
+2176|Giardini: Boboli|750 L|o
+2177|Giardini: Durazzo|750 L|o
+2178|Giardini: Ninfa|750 L|o
+2179|Giardini: Caserta|750 L|o
+2180|Congresso di oftalmologia|750 L|o
+2181|Massimo Campigli|750 L|o
+2182|Relatività generale|750 L|o
+2183|Cinema: Il figlio dello sceicco|750 L|o
+2184|Cinema: L'oro di Napoli|750 L|o
+2185|Cinema: Cabiria|750 L|o
+2186|Cinema: Cinecittà|750 L|o
+2187|50° FAO|850 L|o
+2188|Pontida|1000 L|o
+2189|Giochi mondiali militari|850 L|o
+2190|ANSA|750 L|o
+2191|Natale: presepe|750 L|o
+2192|Natale: Adorazione dei Magi|850 L|o
+2193|Giornata della filatelia|750 L|o
+2194|Poste Italiane: simbolo|750 L|o
+2195|Poste Italiane: simbolo|850 L|o
+2194I|Poste Italiane: libretto|750 L|l
+2194II|Poste Italiane: libretto|750 L|l
+2195I|Poste Italiane: libretto|850 L|l
+2195II|Poste Italiane: libretto|850 L|l
+#rep-1996
+2196|Filippo Tommaso Marinetti|750 L|o
+2197|Georgofili: stemma|750 L|o
+2198|Georgofili: D'Annunzio|850 L|o
+2199|Archivi: Lucca|750 L|o
+2200|Archivi: codice miniato|850 L|o
+2201|Tiepolo|1000 L|o
+2202|Cibi italiani: vino bianco|500 L|o
+2203|Cibi italiani: vino rosso|750 L|o
+2204|Marco Polo|1250 L|o
+2205|Esposizione di Milano|750 L|o
+2206|Esposizione di Milano|750 L|o
+2207|La Stampa e Gazzetta|750 L|o
+2208|La Stampa e Gazzetta|750 L|o
+2209|Guardia di Finanza|750 L|o
+2210|Museo dell'immagine postale|500 L|o
+2211|Traversata transcontinentale|4650 L|o
+2212|Europa: Carina Negrone|750 L|o
+2213|Europa: Adelaide Ristori|850 L|o
+2214|20° RA.MO.GE|750 L|o
+2215|Abbazia di Farfa|1000 L|o
+2216|Celestino V|750 L|o
+2217|Turismo|750 L|o
+2218|Turismo|750 L|o
+2219|Turismo|750 L|o
+2220|Turismo|750 L|o
+2221|Fiera di Palermo|750 L|o
+2222|50° della Repubblica|750 L|o
+2223|Vespa|750 L|o
+2224|40° CEE|750 L|o
+2225|Olimpiadi: corridori|500 L|o
+2226|Olimpiadi: discobolo|750 L|o
+2227|Olimpiadi: ginnasta|850 L|o
+2228|Olimpiadi: stadi|1250 L|o
+2229|Farfalle|750 L|o
+2230|Farfalle|750 L|o
+2231|Farfalle|750 L|o
+2232|Farfalle|750 L|o
+2233|Cinema italiano|750 L|o
+2234|Cinema italiano|750 L|o
+2235|Cinema italiano|750 L|o
+2236|Milan campione d'Italia|750 L|o
+2237|Duomo di Firenze|750 L|o
+2238|Preistoria|850 L|o
+2239|Fiera di Bari|750 L|o
+2240|Giochi del Mediterraneo|750 L|o
+2241|Juventus campione|750 L|o
+2242|Sandro Pertini|750 L|o
+2243|Eugenio Montale|750 L|o
+2244|Cortona|500 L|o
+2245|Fumetti: Tex|750 L|o
+2246|Fumetti: Corto Maltese|850 L|o
+2247|Giornata della filatelia|750 L|o
+2248|Scuole italiane|750 L|o
+2249|Scuole italiane|750 L|o
+2250|Scuole italiane|750 L|o
+2251|Vertice sull'alimentazione|850 L|o
+2252|Natale: Madonna|750 L|o
+2253|Natale: Babbo Natale|850 L|o
+2254|UNESCO|750 L|o
+2255|UNICEF|850 L|o
+2256|70° ISTAT|750 L|o
+2257|Premio Strega|3400 L|o
+#rep-1997
+2258|Primo tricolore|750 L|o
+2259|Mondiali di sci alpino|750 L|o
+2260|Mondiali di sci alpino|850 L|o
+2261|Galileo Ferraris|750 L|o
+2262|Pari opportunità|750 L|o
+2263|Esposizione filatelica|750 L|o
+2264|Esposizione filatelica|750 L|o
+2265|Esposizione filatelica|750 L|o
+2266|Esposizione filatelica|750 L|o
+BF19|Esposizione filatelica: foglietto|750 L ×4|f
+2267|Trattati di Roma|750 L|o
+2268|San Geminiano|750 L|o
+2269|Sant'Ambrogio|1000 L|o
+2271|Università di Roma e Padova|750 L|o
+2270|Università di Roma e Padova|750 L|o
+2272|2750 anni di Roma|850 L|o
+2273|Mura di Gela|750 L|o
+2274|Antonio Gramsci|850 L|o
+2275|Certosa di Pavia|1000 L|o
+2276|Europa: ciabattino|800 L|o
+2277|Europa: cantastorie|900 L|o
+2278|Teatro Massimo di Palermo|800 L|o
+2279|Turismo|800 L|o
+2280|Turismo|800 L|o
+2281|Turismo|800 L|o
+2282|Turismo|800 L|o
+2283|Salone del libro|800 L|o
+2284|Paola Ruffo di Calabria|750 L|o
+2285|Fiera di Roma|800 L|o
+2286|Duomo di Orvieto|450 L|o
+2287|Don Giuseppe Morosini|800 L|o
+2288|Juventus campione|800 L|o
+2289|Fiera di Bologna|800 L|o
+2290|Parco nazionale d'Abruzzo|800 L|o
+2291|Lega navale italiana|800 L|o
+2292|Giochi del Mediterraneo|900 L|o
+2294|Giardini storici|800 L|o
+2293|Giardini storici|800 L|o
+2296|Giardini storici|800 L|o
+2295|Giardini storici|800 L|o
+2297|Lavoro: braccio robotico|800 L|o
+2298|Lavoro: Italia|900 L|o
+2299|Giovanni Caboto|1300 L|o
+2300|Pietro Verri|3600 L|o
+2301|Pomarancio|450 L|o
+2302|Paolo Uccello|650 L|o
+2303|Varia di Palmi|800 L|o
+2304|Universiade: pallacanestro|450 L|o
+2305|Universiade: salto in alto|800 L|o
+2306|Antonio Rosmini|800 L|o
+2307|Cinema italiano|800 L|o
+2308|Cinema italiano|800 L|o
+2309|Cinema italiano|800 L|o
+2310|Premio Viareggio-Repaci|4000 L|o
+2311|Fiera di Bolzano|800 L|o
+2312|Musei: Reggio Calabria|450 L|o
+2313|Musei: Ferrara|650 L|o
+2314|Musei: Palazzo d'Arco|800 L|o
+2315|Musei: Bologna|900 L|o
+2316|Paolo VI|4000 L|o
+2317|Fiera di Milano|800 L|o
+2318|Piano Marshall|800 L|o
+2319|Natale: presepe di Leonessa|800 L|o
+2320|Natale: Natività|900 L|o
+2321|Aristide Merloni|800 L|o
+2322|Cavalcaselle|800 L|o
+2323|Giornata della filatelia|800 L|o
+2324|Esodo istriano|800 L|o
+#rep-1999
+2393|Donne nell'arte: donna etrusca|100 L|o
+2394|Donne nell'arte: Filippino Lippi|450 L|o
+2395|Donne nell'arte: Pollaiolo|650 L|o
+2396|Donne nell'arte: Raffaello|800 L|o
+2397|Donne nell'arte: Costanza Bonarelli|1000 L|o
+2398|Lucio Fontana|450 L|o
+2399|Europa: Parco della Sila|800 L|o
+2400|Europa: Arcipelago toscano|900 L|o
+2401|Giubileo 2000: Porta Santa|1400 L|o
+2402|Sant'Egidio a Cellere|800 L|o
+2403|Musei: campane di Agnone|800 L|o
+2404|Musei: ceramiche di Faenza|800 L|o
+2405|Musei: Casina delle Civette|800 L|o
+2406|Turismo: Lecce|800 L|o
+2407|Turismo: Lipari|800 L|o
+2408|Turismo: Segonzano|800 L|o
+2409|Turismo: Terni|800 L|o
+2410|Corte costituzionale|800 L|o
+2411|Vigili del fuoco|800 L|o
+2412|Accademia militare di Modena|800 L|o
+2413|Torino calcio|800 L|o
+2414|Torino calcio: Superga|900 L|o
+2415|Consiglio d'Europa|800 L|o
+2416|Milan campione d'Italia|800 L|o
+2417|Elezioni del Parlamento europeo|800 L|o
+2418|Fausto Coppi|800 L|o
+2419|Posta prioritaria|1200 L|o
+2420|Centenario Fiat|4800 L|o
+2421|Rocciamelone|800 L|o
+2422|Eleonora Pimentel|800 L|o
+2423|Mondiali di canoa|900 L|o
+2424|Goethe|4000 L|o
+2425|Mondiali di ciclismo|1400 L|o
+2426|Basilica di San Francesco|800 L|o
+2427|Giornata della filatelia|800 L|o
+2428|Giuseppe Parini|800 L|o
+2429|Alessandro Volta|3000 L|o
+2430|125° UPU|900 L|o
+2431|Goffredo Mameli|1500 L|o
+2432|Orientamento filatelico|450 L|o
+2433|Orientamento filatelico|650 L|o
+2434|Orientamento filatelico|800 L|o
+2435|Orientamento filatelico|1000 L|o
+BF23|Orientamento filatelico: foglietto|450+650+800+1000 L|f
+2436|Ragazzi del '99|900 L|o
+2437|Natale: Babbo Natale|800 L|o
+2438|Natale: Natività|1000 L|o
+2439|Giubileo: Tabula peutingeriana|1000 L|o
+2440|Giubileo: stampa del XVIII secolo|1000 L|o
+2441|Giubileo: duomo di Fidenza|1000 L|o
+2442|Verso il 2000: mano robotica|4800 L|o
+2443|Antonio Ligabue|1000 L|o
+2444|Istituto d'arte di Urbino|450 L|o
+2445|Scuola Normale di Pisa|650 L|o
+#rep-2000
+2446|Avvento del 2000: bambino e globo|2000 L|o
+2447|Avvento del 2000: astronauta|2000 L|o
+BF24|Avvento del 2000: foglietto|2000 L ×2|f
+2448|Posta prioritaria|1200 L|o
+2449|Tosca|800 L|o
+2450|Giubileo: San Paolo|1000 L|o
+2451|Rugby|800 L|o
+2452|Prevenzione del tumore al seno|800 L|o
+2453|Prevenzione del tumore al seno|1000 L|o
+2454|Arte: de Chirico|800 L|o
+2455|Arte: Il tempio fatale|800 L|o
+BF25|Avvento del 2000: arte e scienza|800 L ×2|f
+2456|Coppa del mondo di sci|4800 L|o
+2457|Design italiano|800 L|o
+2458|Design italiano|800 L|o
+2459|Design italiano|800 L|o
+2460|Design italiano|800 L|o
+2461|Design italiano|800 L|o
+2462|Design italiano|800 L|o
+BF26|Design italiano: foglietto|800 L ×6|f
+2463|Giubileo: Natività|450 L|o
+2464|Giubileo: Battesimo|650 L|o
+2465|Giubileo: Ultima cena|800 L|o
+2466|Giubileo: Compianto|1000 L|o
+2467|Giubileo: Resurrezione|1200 L|o
+2468|La Civiltà Cattolica|800 L|o
+2469|Collegio San Giuseppe|800 L|o
+2474|Ciclismo UCI|1500 L|o
+2470|Turismo: Franciacorta|800 L|o
+2471|Turismo: foresta di Dunarobba|800 L|o
+2472|Turismo: Ercolano|800 L|o
+2473|Turismo: Isola Bella|800 L|o
+2475|Via Crucis di Caltanissetta|800 L|o
+2476|Avvento del 2000: natura|800 L|o
+2477|Avvento del 2000: città ideale|800 L|o
+BF27|Avvento del 2000: natura, foglietto|800 L ×2|f
+2478|Niccolò Piccinni|4000 L|o
+2479|Europa: stelle e bambini|800 L|o
+2480|Museo delle poste: Sardegna|800 L|o
+2481|Museo delle poste: apparati radio|800 L|o
+2482|Lazio campione d'Italia|800 L|o
+2483|Duomo di Monza|800 L|o
+2484|Agroalimentare|1000 L|o
+2485|Redentore|800 L|o
+2486|Società per le condotte d'acqua|800 L|o
+2487|Avvento del 2000: generazioni|800 L|o
+2488|Avvento del 2000: profilo|800 L|o
+BF29|Avvento del 2000: generazioni, foglietto|800 L ×2|f
+2489|Concorso "Il futuro"|1000 L|o
+2490|Tiro con l'arco|1500 L|o
+2491|Ciclismo juniores|800 L|o
+2492|Carlo Crivelli|800 L|o
+2493|Fiera di Sant'Orso|1000 L|o
+2494|Trapianti|1000 L|o
+2495|Olimpiadi di Sydney: atleta|800 L|o
+2496|Olimpiadi di Sydney: discobolo|1000 L|o
+2497|Guerra e pace: battaglia|800 L|o
+2498|Guerra e pace: donna|800 L|o
+BF30|Guerra e pace: foglietto|800 L ×2|f
+2499|Battaglia di Marengo|800 L|o
+2500|Federico Fellini|800 L|o
+2501|Giornata della filatelia|800 L|o
+2503|Antonio Salieri|4800 L|o
+2502|Vincenzo Monti|800 L|o
+2504|Paralimpiadi|1500 L|o
+2505|Anno della matematica|800 L|o
+2506|Volontariato|800 L|o
+#rep-2001
+2518|Snowboard|0,52 €|o
+2519|Italia in Giappone: Annunciazione|0,52 €|o
+2520|Melodramma: Bellini|0,41 €|o
+2521|Melodramma: Cimarosa|0,41 €|o
+2522|Melodramma: Spontini|0,41 €|o
+2523|Melodramma: Verdi|0,41 €|o
+BF32|Melodramma: foglietto|0,41 € ×4|f
+2524|Santa Rosa|0,41 €|o
+2525|Ferrari campione del mondo|2,58 €|o
+BF33|Ferrari: foglietto|2,58 €|f
+2526|Abbazia di Sylvis|0,41 €|o
+2527|Primi francobolli: Lombardo-Veneto|0,41 €|o
+2528|Primi francobolli: Sardegna|0,41 €|o
+2529|Primi francobolli: Toscana|0,41 €|o
+2530|Posta prioritaria|0,62 €|o
+2531|Turismo: Comacchio|0,41 €|o
+2532|Turismo: Pioraco|0,41 €|o
+2533|Turismo: Diamante|0,41 €|o
+2534|Turismo: Stintino|0,41 €|o
+2535|Natura: campanula|0,23 €|o
+2536|Natura: marmotta|0,34 €|o
+2537|Natura: cicogna|0,41 €|o
+2538|Natura: deserto|0,52 €|o
+2539|Confagricoltura|0,41 €|o
+2540|Millenario di Gorizia|0,41 €|o
+2541|Europa: acqua|0,41 €|o
+2542|Carta dei diritti|0,41 €|o
+2543|Ordine al merito del lavoro|0,41 €|o
+2544|Incidenti sul lavoro|0,41 €|o
+2545|Disegni degli studenti|0,41 €|o
+2546|Disegni degli studenti|0,41 €|o
+2547|Disegni degli studenti|0,41 €|o
+2548|Disegni degli studenti|0,41 €|o
+2549|Masaccio|0,41 €|o
+2550|Piero della Francesca|0,41 €|o
+2551|Panathlon|0,41 €|o
+2553|San Marino|0,41 €|o
+2552|Roma campione d'Italia|0,41 €|o
+2554|Capitanerie di porto|0,41 €|o
+2555|Salvatore Quasimodo|0,77 €|o
+2556|Domus Aurea|0,52 €|o
+2557|Design italiano|0,41 €|o
+2558|Design italiano|0,41 €|o
+2559|Design italiano|0,41 €|o
+2560|Design italiano|0,41 €|o
+2561|Design italiano|0,41 €|o
+2562|Design italiano|0,41 €|o
+BF34|Design italiano: foglietto|0,41 € ×6|f
+2563|Il Quarto Stato|0,52 €|o
+2564|Museo di Bolzano|0,41 €|o
+2565|Giornata della filatelia|0,41 €|o
+2566|Enrico Fermi|0,41 €|o
+2569|Scuole: Università di Pavia|0,41 €|o
+2568|Scuole: Università di Bari|0,41 €|o
+2567|Scuole: Liceo Cavour|0,41 €|o
+2570|Museo di Taranto|0,52 €|o
+2571|Unione latina|0,41 €|o
+2573|FAO: IFAD|0,41 €|o
+2572|FAO|0,41 €|o
+2574|FAO: PAM|0,41 €|o
+2575|Sancta Sanctorum|0,41 €|o
+2576|Macrino d'Alba|0,41 €|o
+2577|Natale: peschereccio|0,41 €|o
+2578|Natale: Natività|0,52 €|o
+|Seta di Como|2,58 €|o
+#rep-2002
+2592|Euro: ducato|0,41 €|o
+2593|Euro: genovino e fiorino|0,41 €|o
+2594|Euro: simbolo|0,41 €|o
+2595|Euro: moneta da 1 euro|0,41 €|o
+2585|Donne nell'arte: moneta siracusana|0,02 €|o
+2586|Donne nell'arte: arte etrusca|0,05 €|o
+2587|Donne nell'arte: statua|0,10 €|o
+2588|Donne nell'arte: Filippino Lippi|0,23 €|o
+2589|Donne nell'arte: Raffaello|0,41 €|o
+2590|Donne nell'arte: Parmigianino|0,50 €|o
+2591|Donne nell'arte: Botticelli|0,77 €|o
+2596|Posta prioritaria|0,62 €|o
+2597|Posta prioritaria|0,77 €|o
+2598|Posta prioritaria|1 €|o
+2599|Posta prioritaria|1,24 €|o
+2600|Posta prioritaria|1,86 €|o
+2601|Posta prioritaria|4,13 €|o
+2579|Alti valori: Italia turrita|1 €|o
+2580|Alti valori: Italia turrita|1,24 €|o
+2581|Alti valori: Italia turrita|1,55 €|o
+2582|Alti valori: Italia turrita|2,17 €|o
+2583|Alti valori: Italia turrita|2,58 €|o
+2584|Alti valori: Italia turrita|3,62 €|o
+2602|Josemaría Escrivá|0,41 €|o
+2603|Luigi Bocconi|0,41 €|o
+2604|Ducato di Parma|0,41 €|o
+2605|Montagne: Monviso|0,41 €|o
+2606|Olimpiadi di Torino 2006|0,41 €|o
+2584A|Alti valori: Italia turrita|6,20 €|o
+2584B|Donne nell'arte: Canova|0,01 €|o
+2585A|Donne nell'arte: Piero della Francesca|0,03 €|o
+2587A|Donne nell'arte: Correggio|0,20 €|o
+2611|Regina Elena|0,41+0,21 €|o
+2612|Arnolfo di Cambio|0,41 €|o
+2614|Turismo: San Gimignano|0,41 €|o
+2613|Turismo: Venaria Reale|0,41 €|o
+2616|Turismo: Capo d'Orlando|0,41 €|o
+2615|Turismo: Sannicandro di Bari|0,41 €|o
+2617|Santuario di Spezzano|0,41 €|o
+2618|Polizia di Stato|0,41 €|o
+2619|Matteo Ricci|0,41 €|o
+2620|Europa: circo|0,41 €|o
+2621|Scuole: Amerigo Vespucci|0,41 €|o
+2622|Cinema: Umberto D.|0,41 €|o
+2623|Cinema: Miracolo a Milano|0,41 €|o
+2624|Juventus campione d'Italia|0,41 €|o
+2625|Falcone e Borsellino|0,62 €|o
+2626|NATO|0,41 €|o
+2627|Mondiali di kayak|0,52 €|o
+2629|Primi francobolli di Modena|0,41 €|o
+2628|Militari in missione di pace|0,41 €|o
+2630|Alfredo Binda|0,41 €|o
+2631|Padre Pio|0,41 €|o
+2632|Eccidio di Cefalonia|0,41 €|o
+2633|Cimabue|2,58 €|o
+2634|Ministero dell'Interno|0,41 €|o
+2635|Maria Goretti|0,41 €|o
+2636|Cardinale Mazzarino|0,41 €|o
+2637|Italiani nel mondo|0,52 €|o
+2638|Sant'Anna di Stazzema|0,41 €|o
+2639|Moda: Krizia|0,41 €|o
+2640|Moda: Dolce & Gabbana|0,41 €|o
+2641|Moda: Ferrè|0,41 €|o
+2642|Moda: Giorgio Armani|0,41 €|o
+2643|Moda: Laura Biagiotti|0,41 €|o
+2644|Moda: Prada|0,41 €|o
+BF35|Moda italiana: foglietto|0,41 € ×6|f
+2645|UNESCO: Piazza dei Miracoli|0,41 €|o
+2646|UNESCO: Isole Eolie|0,52 €|o
+2647|Carlo Alberto dalla Chiesa|0,41 €|o
+#rep-2003
+2721|Donne nell'arte: Canova|0,01 €|o
+2722|Donne nell'arte: Siracusa|0,02 €|o
+2723|Donne nell'arte: Piero della Francesca|0,03 €|o
+2724|Donne nell'arte: arte etrusca|0,05 €|o
+2725|Donne nell'arte: Raffaello|0,41 €|o
+2727|Donne nell'arte: Parmigianino|0,50 €|o
+2673A|Posta prioritaria|0,62 €|o
+2673B|Posta prioritaria|0,77 €|o
+2673C|Posta prioritaria|1 €|o
+2673D|Posta prioritaria|1,24 €|o
+2673E|Posta prioritaria|1,86 €|o
+2673F|Posta prioritaria|4,13 €|o
+2667|Mostra filatelica: serie Democratica|0,62 €|o
+2668|Universiadi|0,52 €|o
+2670|Fratelli Alinari|0,77 €|o
+2669|Mondiali di ciclocross|0,41 €|o
+2671|Anno della disabilità|0,41 €|o
+2672|Mondiali di sci nordico|0,41 €|o
+2673|Servizio civile|0,62 €|o
+2674|Disfida di Barletta|0,41 €|o
+2675|Liceo Tasso|0,41 €|o
+2676|Cappella degli Scrovegni|0,41 €|o
+2677|Liceo Carli|0,41 €|o
+2678|Accademia dei Lincei|0,41 €|o
+2679|Scherma|0,41 €|o
+2680|Golf|0,77 €|o
+2682|Turismo: Lanciano|0,41 €|o
+2683|Turismo: Procida|0,41 €|o
+2681|Turismo: Sestri Levante|0,41 €|o
+2684|Università La Sapienza|0,41 €|o
+2685|Museo delle paste alimentari|0,41 €|o
+2686|Luiss Guido Carli|2,58 €|o
+2687|Europa: donna in azzurro|0,41 €|o
+2688|Europa: donna in bianco|0,52 €|o
+2689|Archivio centrale dello Stato|0,41 €|o
+2691|Veronafil|0,41 €|o
+2690|Aldo Moro|0,62 €|o
+2692|Antonio Meucci|0,52 €|o
+BF36|Telefono: foglietto|0,52 €|f
+2693|Motore a scoppio: Barsanti|0,52 €|o
+2694|Latina: Palazzo delle Poste|0,41 €|o
+2695|Presidenza italiana UE|0,41 €|o
+2696|Ezio Vanoni|2,58 €|o
+2697|Corrado Giaquinto|0,77 €|o
+2698|Eugenio Balzan|0,41 €|o
+2699|Parmigianino|0,41 €|o
+2700|Juventus campione d'Italia|0,41 €|o
+2701|Abbazia di Nonantola|0,41 €|o
+2702|Pionieri dell'aviazione: Calderara|0,52 €|o
+2703|Pionieri dell'aviazione: Cobianchi|0,52 €|o
+2704|Pionieri dell'aviazione: Caproni|0,52 €|o
+2705|Pionieri dell'aviazione: Marchetti|0,52 €|o
+BF37|Pionieri dell'aviazione: foglietto|0,52 €|f
+2706|Europalia: natura morta|0,41 €|o
+2707|Europalia: Cisitalia 202|0,52 €|o
+2708|Giovanni Giolitti|0,41 €|o
+2709|Vallecchi|0,41 €|o
+2710|Anno della famiglia|0,77 €|o
+2711|Duccio di Buoninsegna|0,41 €|o
+2712|Vittorio Alfieri|0,41 €|o
+2713|Ugo La Malfa|0,62 €|o
+2714|Confedilizia|2,58 €|o
+2715|Bernardino Ramazzini|0,41 €|o
+2716|Natale: Natività|0,41 €|o
+2717|Natale: stella di Natale|0,62 €|o
+2718|Futurismo: Balla|0,41 €|o
+2719|Futurismo: linee-forza|0,52 €|o
+2720|Giornata della filatelia|0,41 €|o`;
+const FB_TIPI = { o: "ordinario", pa: "posta aerea", e: "espresso", pn: "posta pneumatica", f: "foglietto", l: "libretto", s: "segnatasse", p: "pacchi postali", sv: "servizio" };
+let FB_MEMO = null;
+function fbBase() {
+  if (FB_MEMO) return FB_MEMO;
+  const m = {}; let cur = null;
+  FB_DATA.split("\n").forEach(l => { if (!l) return; if (l[0] === "#") { cur = m[l.slice(1)] = []; return; } if (!cur) return; const p = l.split("|"); cur.push([p[0], p[1], p[2], FB_TIPI[p[3]] || "ordinario", p[4] ? Number(p[4]) : null]); });
+  return FB_MEMO = m;
+}
 function cxSlug(s) { return eur2Norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "x"; }
 function cxStore(def) { return (S.config && S.config.cx && S.config.cx[def]) || {}; }
 function cxCatBy(test) { return S.config ? S.config.cats.find(test) || null : null; }
@@ -5197,7 +7421,8 @@ const CX = {
     },
     groups(sec) {
       const units = cxStore("fb").units || {};
-      return this.unitKeys(sec).map(u => { const d = units[u.key]; return { key: u.key, name: u.label, sub: d ? pl(d.rows.length, "emissione", "emissioni") : "Da preparare con Claude", icon: sec === "as" ? u.label.split(" ").pop().slice(0, 3) : "'" + String(u.y).slice(2), pending: !d, items: d ? d.rows.map((r, i) => ({ id: "fb-" + u.key + "-" + (r[0] ? cxSlug(r[0]) : i + 1), g: u.key, n: r[0], t: r[1], val: r[2], tipo: r[3] || "", y: r[4] || u.y || null, sec, stato: sec === "as" ? u.label : "" })) : [] }; });
+      const base = fbBase();
+      return this.unitKeys(sec).map(u => { const d = units[u.key] || (base[u.key] ? { rows: base[u.key] } : null); return { key: u.key, name: u.label, sub: d ? pl(d.rows.length, "emissione", "emissioni") : "Da preparare con Claude", icon: sec === "as" ? u.label.split(" ").pop().slice(0, 3) : "'" + String(u.y).slice(2), pending: !d, items: d ? d.rows.map((r, i) => ({ id: "fb-" + u.key + "-" + (r[0] ? cxSlug(r[0]) : i + 1), g: u.key, n: r[0], t: r[1], val: r[2], tipo: r[3] || "", y: r[4] || u.y || null, sec, stato: sec === "as" ? u.label : "" })) : [] }; });
     },
     low() { return false; }, badge(x) { return x.tipo && x.tipo !== "ordinario" ? x.tipo : ""; },
     tileTitle(x) { return x.t; }, tileMeta(x) { return (x.n ? "n. " + x.n : "") + (x.val ? (x.n ? " · " : "") + x.val : ""); },
@@ -5206,7 +7431,7 @@ const CX = {
     name(x) { return x.t + (x.y ? " (" + x.y + ")" : ""); },
     fields(x) { return { paese: "Italia", periodo: x.sec === "rep" ? "Repubblica" : x.sec === "regno" ? "Regno" : "", stato: x.stato, anno: x.y, serie: x.t, catalogo: x.n ? "Sassone " + x.n : "", valore_facciale: x.val, tipo: x.tipo }; },
     fill: {
-      units(sec) { const units = cxStore("fb").units || {}; return CX.fb.unitKeys(sec || "rep").map(u => ({ key: u.key, label: u.label, done: !!units[u.key], y: u.y })); },
+      units(sec) { const units = cxStore("fb").units || {}; const base = fbBase(); return CX.fb.unitKeys(sec || "rep").map(u => ({ key: u.key, label: u.label, done: !!(units[u.key] || base[u.key]), y: u.y })); },
       prompt(u) {
         const sec = u.key.split("-")[0];
         const what = sec === "as" ? "tutti i francobolli emessi dall'antico Stato italiano \"" + u.label + "\"" : "tutti i francobolli emessi " + (sec === "rep" ? "dalla Repubblica Italiana" : "dal Regno d'Italia") + " nell'anno " + u.label;
