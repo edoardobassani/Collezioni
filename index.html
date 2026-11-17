@@ -246,6 +246,7 @@ async function boot() {
     syncSubs();
     if (first && String(location.hash || "") === "#quote" && S.config && S.config.cats.length) { S.fromApp = true; S.quote = { step: "pick", sel: new Set(), min: null, days: "", wish: false, awaitApp: true }; S.stack = [{ name: "home" }]; S.view = { name: "quote" }; render(); return; }
     if (first && String(location.hash || "") === "#review" && S.config && S.config.cats.length) { S.fromApp = true; S.rai = { mode: "flagged", catId: "", web: false, sel: new Set(), step: "pick", results: [], awaitApp: true }; S.stack = [{ name: "home" }]; S.view = { name: "reviewAi" }; render(); return; }
+    if (first && /^#cx(lire|regno|fb)$/.test(String(location.hash || "")) && S.config && S.config.cats.length) { const d = String(location.hash).slice(3); S.fromApp = true; S.stack = [{ name: "home" }, { name: "cx", def: d }]; S.cxf = null; S.view = { name: "cxFill", def: d }; render(); return; }
     if (first && String(location.hash || "") === "#eur2" && S.config && S.config.cats.length) { S.fromApp = true; S.stack = [{ name: "home" }, { name: "eur2" }]; S.e2u = null; S.view = { name: "eur2Upd" }; render(); return; }
     if (first && String(location.hash || "") === "#scan" && S.config && S.config.cats.length) { S.fromApp = true; S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; S.stack = [{ name: "home" }]; S.view = { name: "scan" }; render(); return; }
     softRender();
@@ -502,6 +503,9 @@ function render() {
       case "eur2": html = vEur2(); break;
       case "eur2Grid": html = vEur2Grid(); break;
       case "eur2Upd": html = vEur2Upd(); break;
+      case "cx": html = vCx(); break;
+      case "cxGrid": html = vCxGrid(); break;
+      case "cxFill": html = vCxFill(); break;
       case "review": html = vReview(); break;
       case "reviewItem": html = vReviewItem(); break;
       case "reviewList": html = vReviewList(); break;
@@ -518,7 +522,7 @@ function render() {
   } catch (e) { console.error(e); html = '<div class="wrap"><div class="empty">Errore di visualizzazione: ' + esc(e.message) + '</div></div>'; }
   const navTabs = ["home", "stats", "history", "wish", "tools"];
   const activeTab = navTabs.includes(v.name) ? v.name : ["backup", "report"].includes(v.name) ? "tools" : (S.stack[0] && navTabs.includes(S.stack[0].name) ? S.stack[0].name : "home");
-  const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail", "eur2Grid", "eur2Upd", "review", "reviewItem", "reviewList", "reviewAi", "prices", "search", "importx"].includes(v.name);
+  const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail", "eur2Grid", "eur2Upd", "cxGrid", "cxFill", "review", "reviewItem", "reviewList", "reviewAi", "prices", "search", "importx"].includes(v.name);
   app.innerHTML = html + (showNav ? navHtml(activeTab) : "");
   afterRender();
 }
@@ -605,7 +609,7 @@ function vCat(id) {
   h += topBar(c.name, sumQty(all) + " pezzi · valore " + eur(sumVal(all)), '<button type="button" class="iconbtn" style="background:var(--ink);color:#fff" data-act="newItem" data-id="' + esc(id) + '" aria-label="Aggiungi pezzo">' + ic("plus", 20, 1.8) + '</button>');
   if (Object.keys(S.hist || {}).length > 1) h += histBox(id);
   if (S.env === "pwa" && catalogOf(id)) h += '<div class="grid2"><button type="button" class="btn pri" data-act="openSets" data-id="' + esc(id) + '">' + ic("grid", 18) + 'Set e completamento</button><button type="button" class="btn" data-act="cardPrices" data-id="' + esc(id) + '">' + ic("refresh", 18) + 'Aggiorna prezzi</button></div>';
-  if (eur2Cat() && eur2Cat().id === id) h += '<button type="button" class="btn pri" data-act="openEur2">' + ic("coin", 18) + 'Catalogo 2 € commemorativi</button>';
+  { const ents = cxEntries(id); if (ents.length) h += '<div class="stack" style="gap:8px"><span class="small muted" style="font-weight:500">Cataloghi</span><div class="card list" style="overflow:hidden">' + ents.map(([d, l]) => '<button type="button" class="li" data-act="' + (d === "eur2" ? "openEur2" : "openCx") + '" data-v="' + d + '"><span class="ico">' + ic(d === "fb" ? "stamp" : "coin", 18) + '</span><span class="grow b">' + esc(l) + '</span><span class="muted">' + ic("right", 16, 2) + '</span></button>').join("") + '</div></div>'; }
   if (S.env === "pwa") h += '<button type="button" class="btn" data-act="barcode" data-id="' + esc(id) + '">' + ic("filter", 18) + 'Scansiona codice a barre / ISBN</button>';
   h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="q" type="search" placeholder="Cerca in ' + esc(c.name) + '" aria-label="Cerca" value="' + esc(st.q) + '" data-input="catSearch" data-id="' + esc(id) + '"></label>';
   h += '<div class="between"><div class="chips">' + [["in", "In collezione"], ["wish", "Desideri"], ["out", "Usciti"]].map(([k, l]) => '<button type="button" class="chip ' + (st.f === k ? "on" : "") + '" data-act="catFilter" data-id="' + esc(id) + '" data-v="' + k + '">' + l + (counts[k] ? " " + counts[k] : "") + '</button>').join("") + '</div>';
@@ -3403,6 +3407,26 @@ document.addEventListener("click", async ev => {
     case "eur2Upd": eur2UpdOpen(); break;
     case "eur2ToArtifact": closeModal(); S.awaitReturn = true; lsSet("col.await", true); openExternal(ARTIFACT_URL + "#eur2"); break;
     case "e2Run": await e2Run(); break;
+    case "openCx": { const st = cxSt(v); st.q = ""; go({ name: "cx", def: v }); break; }
+    case "cxSec": { const st = cxSt(v); st.sec = id; st.q = ""; render(); break; }
+    case "cxOpen": { const st = cxSt(v); st.chip = ""; st.chip2 = ""; st.show = "all"; go({ name: "cxGrid", def: v, key: id }); break; }
+    case "cxShow": cxSt(v).show = id; render(); break;
+    case "cxChip": cxSt(v).chip = id; render(); break;
+    case "cxChip2": cxSt(v).chip2 = id; render(); break;
+    case "cxToggle": { const st = cxSt(v); if (st.sel.has(id)) st.sel.delete(id); else st.sel.add(id); render(); break; }
+    case "cxOwn": cxOpenCopies(v, id); break;
+    case "cxCopyAdd": { closeModal(); const d = S.view.def; if (d) { cxSt(d).sel = new Set([id]); render(); toast("Selezionato: tocca Aggiungi"); } break; }
+    case "cxSel": cxSelect(v, id); render(); break;
+    case "cxAdd": openCxAdd(v, id); break;
+    case "cxAddGo": await cxAddGo(el, v, id); break;
+    case "cxLink": await cxLink(v); break;
+    case "cxFillOpen": cxFillOpen(v); break;
+    case "cxToArtifact": closeModal(); S.awaitReturn = true; lsSet("col.await", true); openExternal(ARTIFACT_URL + "#cx" + v); break;
+    case "cxfSec": S.cxf.sec = id; S.cxf.sel = new Set(); render(); break;
+    case "cxfSel": { const f = S.cxf; if (f.sel.has(id)) f.sel.delete(id); else f.sel.add(id); render(); break; }
+    case "cxfRun": await cxfRun(); break;
+    case "cxfBack": S.cxf.step = "pick"; render(); break;
+    case "cxfSave": await cxfSave(el); break;
     case "e2Sel": { const u = S.e2u; if (u.sel.has(i)) u.sel.delete(i); else u.sel.add(i); render(); break; }
     case "e2Save": await e2Save(el); break;
     case "copyOpen": closeModal(); go({ name: "item", id }); break;
@@ -3554,6 +3578,7 @@ document.addEventListener("input", ev => {
     const st = S.catState[el.dataset.id]; st.q = el.value; st.limit = 100;
     clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 200);
   }
+  if (a === "cxQ") { cxSt(el.dataset.v).q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 250); }
   if (a === "eur2Q") { eur2St().q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 250); }
   if (a === "setsSearch") { S.setsState.q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 250); }
   if (a === "gsearch") { S.srch.q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("gq"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 200); }
@@ -3571,6 +3596,7 @@ document.addEventListener("change", async ev => {
   switch (a) {
     case "catSort": S.catState[el.dataset.id].sort = el.value; render(); break;
     case "e2From": S.e2u.from = parseInt(el.value, 10); render(); break;
+    case "cxfKeep": S.cxf.res[i].keep = el.checked; render(); break;
     case "revCat": S.review.cat_f = el.value; render(); break;
     case "bkEvery": lsSet("col.bkEvery", parseInt(el.value, 10)); render(); break;
     case "bkChanges": lsSet("col.bkChanges", el.checked); render(); break;
@@ -5063,6 +5089,377 @@ async function e2Save(btn) {
     toast(pl(add.length, "moneta aggiunta", "monete aggiunte") + " al catalogo");
     if (S.fromApp) { u.step = "sent"; render(); } else back();
   } catch (e) { btn.disabled = false; toast(dbErr(e), 5000); }
+}
+
+/* ================= Cataloghi a griglia: lire, euro divisionali, Regno, francobolli ================= */
+const CX_LIRE = [{"id":"l1a","n":"1 lira Arancia","d":"1","m":"italma","r":[[1946,null],[1947,null],[1948,null],[1949,null],[1950,null]]},{"id":"l2a","n":"2 lire Spiga","d":"2","m":"italma","r":[[1946,123000],[1947,12000],[1948,7200000],[1949,1350000],[1950,2640000]]},{"id":"l5a","n":"5 lire Uva","d":"5","m":"italma","r":[[1946,81000],[1947,16500],[1948,25125000],[1949,71100000],[1950,114790000]]},{"id":"l10a","n":"10 lire Pegaso","d":"10","m":"italma","r":[[1946,null],[1947,null],[1948,null],[1949,null],[1950,null]]},{"id":"l5b","n":"5 lire Delfino","d":"5","m":"italma","r":[[1951,40260000],[1952,57400000],[1953,196200000],[1954,436400000],[1955,159000000],[1956,400000],[1966,1200000],[1967,10600000],[1968,7500000],[1969,6995000],[1970,4211000],[1971,8600000],[1972,16400000],[1973,28800000],[1974,6600000],[1975,7000000],[1976,9000000],[1977,6700000],[1978,3600000],[1979,4200000],[1980,6000000],[1981,5000000],[1982,8900000],[1983,5000000],[1984,2100000],[1985,3000000],[1986,5000000],[1987,7000000],[1988,5000000],[1989,2500000],[1990,2500000],[1991,2000000],[1992,1000000],[1993,1000000],[1994,1000000],[1995,3000000],[1996,2500000],[1997,1000000],[1998,1500000],[1999,51800,"s"],[2000,61400,"s"],[2001,100000,"s"]]},{"id":"l10b","n":"10 lire Spighe","d":"10","m":"italma","r":[[1951,96600000],[1952,105150000],[1953,151500000],[1954,95250000],[1955,274950000],[1956,76650000],[1965,1050000],[1966,16500000],[1967,29450000],[1968,32200000],[1969,23710000],[1970,14100000],[1971,23550000],[1972,61200000],[1973,145800000],[1974,85000000],[1975,76800000],[1976,82000000],[1977,80750000],[1978,43800000],[1979,98000000],[1980,89900000],[1981,91800000],[1982,64500000],[1983,15000000],[1984,11000000],[1985,15000000],[1986,16000000],[1987,13000000],[1988,13000000],[1989,16000000],[1990,14000000],[1991,5000000],[1992,1000000],[1993,1000000],[1994,1000000],[1995,2500000],[1996,3500000],[1997,1500000],[1998,1500000],[1999,1500000],[2000,61400,"s"],[2001,100000,"s"]]},{"id":"l20","n":"20 lire Ramo di quercia","d":"20","m":"bronzital","r":[[1957,60075000],[1958,80550000],[1959,4005000],[1968,100000,"s"],[1969,16735000],[1970,32511000],[1971,12375000],[1972,34400000],[1973,20000000],[1974,17000000],[1975,24750000],[1976,17325000],[1977,9900000],[1978,13521000],[1979,32000000],[1980,61795000],[1981,81500000],[1982,34500000],[1983,15110000],[1984,5122000],[1985,15000000],[1986,13000000],[1987,2766000],[1988,13000000],[1989,16000000],[1990,15500000],[1991,13000000],[1992,2500000],[1993,1000000],[1994,1000000],[1995,1000000],[1996,1000000],[1997,1000000],[1998,1000000],[1999,500000],[2000,61400,"s"],[2001,100000,"s"]]},{"id":"l50a","n":"50 lire Vulcano grande","d":"50","m":"acmonital","r":[[1954,17600000],[1955,70500000],[1956,69400000],[1957,8925000],[1958,825000],[1959,8800000],[1960,2025000],[1961,11100000],[1962,17700000],[1963,31600000],[1964,37900000],[1965,25300000],[1966,27400000],[1967,28000000],[1968,17800000],[1969,23010000],[1970,21411000],[1971,32400000],[1972,39000000],[1973,48700000],[1974,63300000],[1975,86900000],[1976,180600000],[1977,293800000],[1978,416808000],[1979,315000000],[1980,94800000],[1981,140000000],[1982,54500000],[1983,20000000],[1984,10000000],[1985,10000000],[1986,15000000],[1987,14700000],[1988,20000000],[1989,26500000]]},{"id":"l50b","n":"50 lire Vulcano piccola","d":"50","m":"acmonital","r":[[1990,45500000],[1991,60000000],[1992,90000000],[1993,160000000],[1994,95255000],[1995,82000000]]},{"id":"l50c","n":"50 lire Cornucopia","d":"50","m":"cupronichel","r":[[1996,110000000],[1997,10000000],[1998,10000000],[1999,55000000],[2000,61400,"s"],[2001,100000,"s"]]},{"id":"l100a","n":"100 lire Minerva grande","d":"100","m":"acmonital","r":[[1955,8600000],[1956,99800000],[1957,90600000],[1958,25640000],[1959,19500000],[1960,20700000],[1961,11860000],[1962,21700000],[1963,33100000],[1964,31300000],[1965,36440000],[1966,52500000],[1967,23700000],[1968,34200000],[1969,27710000],[1970,25011000],[1971,24900000],[1972,31170000],[1973,30780000],[1974,62000000],[1975,106000000],[1976,160000000],[1977,253980000],[1978,343600000],[1979,351583600],[1980,69938500],[1981,122280000],[1982,39500000],[1983,25000000],[1984,10000000],[1985,10000000],[1986,18000000],[1987,25000000],[1988,23000000],[1989,34000000]]},{"id":"l100b","n":"100 lire Minerva piccola","d":"100","m":"acmonital","r":[[1990,60000000],[1991,100000000],[1992,164000000]]},{"id":"l200","n":"200 lire Ingranaggio","d":"200","m":"bronzital","r":[[1977,15900000],[1978,461034000],[1979,487325000],[1980,105690000],[1981,72500000],[1982,9500000],[1983,20000000],[1984,10000000],[1985,15000000],[1986,15000000],[1987,26180000],[1988,37000000],[1991,70000000],[1995,170000000],[1998,120000000],[2000,61400,"s"],[2001,100000,"s"]]},{"id":"l500b","n":"500 lire Quirinale bimetallica","d":"500","m":"bimetallica","r":[[1982,162026000],[1983,138000000],[1984,162000000],[1985,162000000],[1986,165000000],[1987,200000000],[1988,142000000],[1989,155000000],[1990,130000000],[1991,140000000],[1992,150000000],[1995,110000000],[2000,61400,"s"],[2001,100000,"s"]]},{"id":"l1000","n":"1000 lire Italia turrita","d":"1000","m":"bimetallica","r":[[1997,80000000],[1998,180000000],[1999,51800,"s"],[2000,61400,"s"],[2001,100000,"s"]]},{"id":"l1000e","n":"1000 lire cartina errata","d":"1000","m":"bimetallica","r":[[1997,null]]},{"id":"l1b","n":"1 lira Bilancia","d":"1","m":"italma","r":[],"p":"1951-2001"},{"id":"l2b","n":"2 lire Ape","d":"2","m":"italma","r":[],"p":"1953-2001"},{"id":"l100c","n":"100 lire Turrita","d":"100","m":"cupronichel","r":[],"p":"1993-2001"},{"id":"l500a","n":"500 lire Caravelle","d":"500","m":"argento","r":[],"p":"1958-2001"}];
+const CX_DIV_START = { BE: 1999, ES: 1999, FI: 1999, FR: 1999, NL: 1999, MC: 2001, LU: 2002, AT: 2002, DE: 2002, IE: 2002, IT: 2002, PT: 2002, GR: 2002, SM: 2002, VA: 2002, SI: 2007, CY: 2008, MT: 2008, SK: 2009, EE: 2011, AD: 2014, LV: 2014, LT: 2015, HR: 2023, BG: 2026 };
+const CX_DIV_VALS = ["1c", "2c", "5c", "10c", "20c", "50c", "1€", "2€"];
+const CX_DIV_NOM = { "1c": "1 centesimo", "2c": "2 centesimi", "5c": "5 centesimi", "10c": "10 centesimi", "20c": "20 centesimi", "50c": "50 centesimi", "1€": "1 €", "2€": "2 €" };
+const CX_KINGS = [{ k: "ve2", n: "Vittorio Emanuele II", y: "1861–1878" }, { k: "u1", n: "Umberto I", y: "1878–1900" }, { k: "ve3", n: "Vittorio Emanuele III", y: "1900–1946" }];
+const CX_FB_SEC = [{ k: "rep", n: "Repubblica", from: 1946 }, { k: "regno", n: "Regno", from: 1861, to: 1946 }, { k: "as", n: "Antichi Stati" }];
+const CX_AS = ["Regno di Sardegna", "Lombardo-Veneto", "Ducato di Modena", "Ducato di Parma", "Stato Pontificio", "Romagne", "Regno di Napoli", "Sicilia", "Toscana", "Governo provvisorio di Toscana", "Province Napoletane"];
+const CX_RAR = ["R", "R2", "R3", "R4", "R5", "RR"];
+function cxSlug(s) { return eur2Norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "x"; }
+function cxStore(def) { return (S.config && S.config.cx && S.config.cx[def]) || {}; }
+function cxCatBy(test) { return S.config ? S.config.cats.find(test) || null : null; }
+function cxModernCat() { return eur2Cat(); }
+function cxHistCat() { return cxCatBy(c => c.id === "monete-storiche") || cxCatBy(c => /storic/i.test(c.name + " " + c.id) && /monet/i.test(c.name + " " + c.id)) || null; }
+function cxStampCat(sec) {
+  if (sec === "as") { const a = cxCatBy(c => c.id === "francobolli-antichi") || cxCatBy(c => /antichi/i.test(c.name) && /franc|stati/i.test(c.name + c.id)); if (a) return a; }
+  return cxCatBy(c => c.id === "francobolli") || cxCatBy(c => /francobol/i.test(c.name + " " + c.id) && !/antichi|estero|storia/i.test(c.name + " " + c.id)) || null;
+}
+/* --- definizioni dei cataloghi --- */
+const CX = {
+  lire: {
+    title: "Lire della Repubblica", sub: "1946–2001", src: "lire", tile: "coin", fillUnit: "tipo",
+    cat: () => cxModernCat(),
+    sections: () => null,
+    types() { const add = cxStore("lire").units || {}; return CX_LIRE.map(t => { const u = add[t.id]; return Object.assign({}, t, u && u.rows && u.rows.length ? { r: u.rows, p: null } : {}); }); },
+    groups() {
+      return this.types().map(t => ({ key: t.id, name: t.n, sub: t.p ? "Annate " + t.p + " da completare" : t.r.length ? Math.min(...t.r.map(r => r[0])) + "–" + Math.max(...t.r.map(r => r[0])) + " · " + t.m : t.m, icon: t.d, pending: !!t.p, items: t.r.map(r => this.entry(t, r)) }));
+    },
+    entry(t, r) { return { id: "lire-" + t.id + "-" + r[0], g: t.id, y: r[0], t: t.n, v: r[1], set: r[2] === "s", lbl: t.d, d: t.d, m: t.m }; },
+    low(x) { return x.set || (x.v != null && x.v < 1000000); },
+    badge(x) { return x.set ? "solo serie" : x.v != null && x.v < 1000000 ? "tir. bassa" : ""; },
+    tileTitle(x) { return String(x.y); },
+    tileMeta(x) { return x.v != null ? cxMint(x.v) : ""; },
+    chips(items) { const ch = [["", "Tutte"]]; if (items.some(x => this.low(x))) ch.push(["low", "Rare o solo serie"]); const decs = [...new Set(items.map(x => Math.floor(x.y / 10) * 10))]; if (decs.length > 1) decs.forEach(d => ch.push(["d" + d, "Anni '" + String(d).slice(2)])); return ch; },
+    chipOk(x, c) { return c === "low" ? this.low(x) : c[0] === "d" ? Math.floor(x.y / 10) * 10 === Number(c.slice(1)) : true; },
+    name(x) { return x.t + " " + x.y; },
+    fields(x) { return { paese: "Italia", anno: x.y, valore_nominale: x.d + " lire", metallo: cxMetal(x.m), tiratura: x.v, catalogo: "Repubblica Italiana, " + x.t, nominale: x.d + " lire", stato: "Italia" }; },
+    fill: {
+      units() { return CX.lire.types().filter(t => t.p).map(t => ({ key: t.id, label: t.n + " (" + t.p + ")", done: false })); },
+      prompt(u) { const t = CX_LIRE.find(x => x.id === u.key); return "Per la moneta italiana \"" + t.n + "\" (Repubblica Italiana, " + t.m + ", anni " + t.p + ") elenca TUTTE le annate coniate, una riga per anno, con la tiratura ufficiale (pezzi) e se l'annata esiste solo nelle serie divisionali della Zecca. Usa la ricerca web (cataloghi Gigante, Numista, Zecca dello Stato). Non inventare annate: se un anno non è stato coniato, non metterlo.\n" + 'Rispondi solo con JSON: [{"anno":1951,"tiratura":numero o null,"solo_serie":false}]'; },
+      parse(out, u) { const t = CX_LIRE.find(x => x.id === u.key); const [a, b] = t.p.split("-").map(Number); const seen = new Set(); return (Array.isArray(out) ? out : []).map(r => { const y = Number(r && r.anno); if (!(y >= a && y <= b) || seen.has(y)) return null; seen.add(y); const v = Number(r.tiratura); return [y, v > 0 && v < 1e10 ? Math.round(v) : null].concat(r.solo_serie ? ["s"] : []); }).filter(Boolean).sort((p, q) => p[0] - q[0]); },
+      preview(rows) { return rows.map(r => ({ t: String(r[0]), s: (r[1] != null ? cxMint(r[1]) : "tiratura n.d.") + (r[2] ? " · solo serie" : "") })); },
+      save(st, u, rows) { st.units = st.units || {}; st.units[u.key] = { upd: today(), rows }; }
+    }
+  },
+  div: {
+    title: "Euro divisionali", sub: "Monete da 1 cent a 2 €", src: "div", tile: "coin",
+    cat: () => cxModernCat(),
+    sections: () => null,
+    groups() {
+      const yNow = new Date().getFullYear();
+      return Object.keys(CX_DIV_START).sort((a, b) => EUR2_C[a].localeCompare(EUR2_C[b], "it")).map(cc => {
+        const items = []; for (let y = yNow; y >= CX_DIV_START[cc]; y--) CX_DIV_VALS.forEach(v => items.push({ id: "div-" + cc + "-" + y + "-" + v, g: cc, y, t: CX_DIV_NOM[v], lbl: v, dv: v, cc }));
+        return { key: cc, name: EUR2_C[cc], sub: CX_DIV_START[cc] + "–" + yNow + " · 8 valori l'anno", icon: cc, items, micro: EUR2_MICRO.includes(cc) };
+      });
+    },
+    low() { return false; }, badge() { return ""; },
+    tileTitle(x) { return x.dv; }, tileMeta(x) { return String(x.y); },
+    chips(items) { const ys = [...new Set(items.map(x => x.y))]; return [["", "Tutti gli anni"]].concat(ys.map(y => ["y" + y, String(y)])); },
+    chips2() { return [["", "Tutti i valori"]].concat(CX_DIV_VALS.map(v => ["v" + v, v])); },
+    chipOk(x, c) { return c[0] === "y" ? x.y === Number(c.slice(1)) : c[0] === "v" ? x.dv === c.slice(1) : true; },
+    name(x) { return x.t + " " + EUR2_C[x.cc] + " " + x.y; },
+    fields(x) { return { paese: EUR2_C[x.cc], anno: x.y, valore_nominale: x.t, metallo: /c$/.test(x.dv) ? (["1c", "2c", "5c"].includes(x.dv) ? "Acciaio" : "Altro") : "Bimetallica", catalogo: "Euro, serie ordinaria " + EUR2_C[x.cc] }; }
+  },
+  regno: {
+    title: "Monete del Regno d'Italia", sub: "1861–1946", src: "regno", tile: "coin", fillUnit: "re",
+    cat: () => cxHistCat(),
+    sections: () => CX_KINGS.map(k => ({ k: k.k, n: k.n })),
+    types(sec) { const u = (cxStore("regno").units || {})[sec]; return u && Array.isArray(u.types) ? u.types : []; },
+    groups(sec) {
+      return this.types(sec).map(t => ({ key: sec + "|" + t.id, name: t.n, sub: (t.m ? t.m + " · " : "") + (t.rows.length ? Math.min(...t.rows.map(r => r[0])) + "–" + Math.max(...t.rows.map(r => r[0])) : ""), icon: t.d || "", items: t.rows.map(r => ({ id: "regno-" + t.id + "-" + r[0] + "-" + (r[1] || "x") + (r[4] ? "-" + cxSlug(r[4]) : ""), g: sec + "|" + t.id, y: r[0], z: r[1] || "", v: r[2], rar: r[3] || "", var: r[4] || "", t: t.n, lbl: t.d || "", m: t.m, king: sec })) }));
+    },
+    low(x) { return CX_RAR.includes(x.rar); },
+    badge(x) { return x.rar && x.rar !== "C" ? x.rar : ""; },
+    tileTitle(x) { return String(x.y) + (x.var ? " " + x.var : ""); },
+    tileMeta(x) { return (x.z ? "zecca " + x.z : "") + (x.v != null ? (x.z ? " · " : "") + cxMint(x.v) : ""); },
+    chips(items) { const ch = [["", "Tutte"]]; if (items.some(x => this.low(x))) ch.push(["low", "Rare (R e oltre)"]); const zs = [...new Set(items.map(x => x.z).filter(Boolean))]; if (zs.length > 1) zs.forEach(z => ch.push(["z" + z, "Zecca " + z])); return ch; },
+    chipOk(x, c) { return c === "low" ? this.low(x) : c[0] === "z" ? x.z === c.slice(1) : true; },
+    name(x) { return x.t + " " + x.y + (x.z ? " " + x.z : "") + (x.var ? " " + x.var : ""); },
+    fields(x) { const k = CX_KINGS.find(q => q.k === x.king); return { stato: "Regno d'Italia", paese: "Italia", nominale: x.t, valore_nominale: x.t, anno: x.y, metallo: cxMetal(x.m), zecca: x.z, tiratura: x.v, catalogo: (k ? k.n + ", " : "") + x.t + (x.rar ? " · rarità " + x.rar : ""), autorita: k ? k.n : "" }; },
+    fill: {
+      units(sec) { return CX_KINGS.filter(k => !sec || k.k === sec).map(k => ({ key: k.k, label: k.n + " (" + k.y + ")", done: CX.regno.types(k.k).length > 0 })); },
+      prompt(u) { const k = CX_KINGS.find(x => x.k === u.key); return "Elenca le monete di circolazione del Regno d'Italia emesse sotto " + k.n + " (" + k.y + "), come nei cataloghi numismatici italiani (Gigante, Montenegro). Per ogni tipo di moneta dai TUTTE le annate e zecche coniate, con tiratura e grado di rarità (C, NC, R, R2, R3, R4, R5). Usa la ricerca web. Escludi prove, progetti e monete da collezione in oro non circolate. Non inventare annate.\n" + 'Rispondi solo con JSON: [{"tipo":"5 lire Aquilotto","valore":"5L","metallo":"argento","annate":[{"anno":1926,"zecca":"R","tiratura":numero o null,"rarita":"C","variante":""}]}]'; },
+      parse(out) {
+        return (Array.isArray(out) ? out : []).map(t => {
+          const n = String(t && t.tipo || "").trim().slice(0, 60); if (!n) return null;
+          const seen = new Set();
+          const rows = (Array.isArray(t.annate) ? t.annate : []).map(r => { const y = Number(r && r.anno); if (!(y >= 1861 && y <= 1946)) return null; const z = String(r.zecca || "").trim().slice(0, 4); const va = String(r.variante || "").trim().slice(0, 30); const key = y + z + va; if (seen.has(key)) return null; seen.add(key); const v = Number(r.tiratura); const rar = String(r.rarita || "").toUpperCase().replace(/\s/g, "").slice(0, 3); return [y, z, v > 0 && v < 1e10 ? Math.round(v) : null, rar, va]; }).filter(Boolean).sort((a, b) => a[0] - b[0] || a[1].localeCompare(b[1]));
+          return rows.length ? { id: cxSlug(n), n, d: String(t.valore || "").slice(0, 5), m: String(t.metallo || "").slice(0, 20), rows } : null;
+        }).filter(Boolean);
+      },
+      preview(types) { return types.map(t => ({ t: t.n, s: pl(t.rows.length, "annata", "annate") + (t.m ? " · " + t.m : "") })); },
+      save(st, u, types) { st.units = st.units || {}; const ids = new Set(); types.forEach(t => { let id = t.id, k = 2; while (ids.has(id)) id = t.id + "-" + k++; ids.add(id); t.id = u.key + "-" + id; }); st.units[u.key] = { upd: today(), types }; }
+    }
+  },
+  fb: {
+    title: "Francobolli", sub: "Completamento per annata", src: "fb", tile: "stamp", fillUnit: "annata",
+    cat: sec => cxStampCat(sec || "rep"),
+    sections: () => CX_FB_SEC.map(s => ({ k: s.k, n: s.n })),
+    unitKeys(sec) {
+      const s = CX_FB_SEC.find(x => x.k === sec);
+      if (sec === "as") return CX_AS.map(n => ({ key: "as-" + cxSlug(n), label: n }));
+      const out = []; const to = s.to || new Date().getFullYear(); for (let y = to; y >= s.from; y--) out.push({ key: sec + "-" + y, label: String(y), y }); return out;
+    },
+    groups(sec) {
+      const units = cxStore("fb").units || {};
+      return this.unitKeys(sec).map(u => { const d = units[u.key]; return { key: u.key, name: u.label, sub: d ? pl(d.rows.length, "emissione", "emissioni") : "Da preparare con Claude", icon: sec === "as" ? u.label.split(" ").pop().slice(0, 3) : "'" + String(u.y).slice(2), pending: !d, items: d ? d.rows.map((r, i) => ({ id: "fb-" + u.key + "-" + (r[0] ? cxSlug(r[0]) : i + 1), g: u.key, n: r[0], t: r[1], val: r[2], tipo: r[3] || "", y: r[4] || u.y || null, sec, stato: sec === "as" ? u.label : "" })) : [] }; });
+    },
+    low() { return false; }, badge(x) { return x.tipo && x.tipo !== "ordinario" ? x.tipo : ""; },
+    tileTitle(x) { return x.t; }, tileMeta(x) { return (x.n ? "n. " + x.n : "") + (x.val ? (x.n ? " · " : "") + x.val : ""); },
+    chips(items) { const ch = [["", "Tutti i tipi"]]; [...new Set(items.map(x => x.tipo).filter(Boolean))].forEach(t => ch.push(["t" + t, t.charAt(0).toUpperCase() + t.slice(1)])); return ch; },
+    chipOk(x, c) { return c[0] === "t" ? x.tipo === c.slice(1) : true; },
+    name(x) { return x.t + (x.y ? " (" + x.y + ")" : ""); },
+    fields(x) { return { paese: "Italia", periodo: x.sec === "rep" ? "Repubblica" : x.sec === "regno" ? "Regno" : "", stato: x.stato, anno: x.y, serie: x.t, catalogo: x.n ? "Sassone " + x.n : "", valore_facciale: x.val, tipo: x.tipo }; },
+    fill: {
+      units(sec) { const units = cxStore("fb").units || {}; return CX.fb.unitKeys(sec || "rep").map(u => ({ key: u.key, label: u.label, done: !!units[u.key], y: u.y })); },
+      prompt(u) {
+        const sec = u.key.split("-")[0];
+        const what = sec === "as" ? "tutti i francobolli emessi dall'antico Stato italiano \"" + u.label + "\"" : "tutti i francobolli emessi " + (sec === "rep" ? "dalla Repubblica Italiana" : "dal Regno d'Italia") + " nell'anno " + u.label;
+        return "Elenca " + what + ", come nel catalogo Sassone (francobolli ordinari, commemorativi, posta aerea, espressi, foglietti e libretti). Una riga per ogni francobollo (ogni valore di una serie è una riga). Usa la ricerca web. Non inventare numeri di catalogo: se non sei sicuro, lascia il numero vuoto.\n" + 'Rispondi solo con JSON: [{"numero":"catalogo Sassone o vuoto","titolo":"serie e soggetto, breve","valore":"valore facciale (es. 25 c, L. 100, B)","tipo":"ordinario|posta aerea|espresso|foglietto|libretto|segnatasse","anno":' + (sec === "as" ? "anno di emissione" : u.label) + '}]';
+      },
+      parse(out, u) {
+        const seen = new Set();
+        return (Array.isArray(out) ? out : []).map(r => { const t = String(r && r.titolo || "").trim().slice(0, 80); if (!t) return null; let n = String(r.numero || "").trim().slice(0, 12); if (n && seen.has(n)) n = ""; if (n) seen.add(n); const y = Number(r.anno); return [n, t, String(r.valore || "").trim().slice(0, 16), String(r.tipo || "").toLowerCase().trim().slice(0, 16), y >= 1840 && y <= 2100 ? y : null]; }).filter(Boolean);
+      },
+      preview(rows) { return rows.map(r => ({ t: r[1], s: [r[0] ? "n. " + r[0] : "", r[2], r[3]].filter(Boolean).join(" · ") })); },
+      save(st, u, rows) { st.units = st.units || {}; st.units[u.key] = { upd: today(), rows }; }
+    }
+  }
+};
+function cxMint(v) { return v >= 1e6 ? (Math.round(v / 1e5) / 10).toLocaleString("it-IT") + " mln" : v.toLocaleString("it-IT") + " pz"; }
+function cxMetal(m) { const s = eur2Norm(m); if (/argento/.test(s)) return "Argento"; if (/\boro\b/.test(s)) return "Oro"; if (/bronzital|bronzo/.test(s)) return "Bronzo"; if (/rame/.test(s)) return "Rame"; if (/nichel|nickel|cupronichel/.test(s)) return "Nichel"; if (/acmonital|acciaio/.test(s)) return "Acciaio"; if (/bimetal/.test(s)) return "Bimetallica"; return m ? "Altro" : ""; }
+/* --- stato e possesso --- */
+function cxSt(def) { S.cxs = S.cxs || {}; return S.cxs[def] = S.cxs[def] || { sec: null, q: "", sel: new Set(), show: "all", chip: "", chip2: "" }; }
+function cxCatsOf(def) { const D = CX[def]; const secs = D.sections(); const set = new Set(); (secs ? secs.map(s => D.cat(s.k)) : [D.cat()]).forEach(c => { if (c) set.add(c.id); }); return set; }
+function cxOwned(def) {
+  const D = CX[def]; const cats = cxCatsOf(def); const m = {};
+  for (const it of S.items.values()) {
+    if (it.deleted || !cats.has(it.catId) || !it.ref || it.ref.src !== D.src) continue;
+    const o = m[it.ref.card] = m[it.ref.card] || { qty: 0, wish: false, photo: null };
+    if (it.status === "in") { o.qty += Number(it.qty) || 0; if (!o.photo && it.photos && it.photos[0]) o.photo = it.photos[0]; }
+    if (it.status === "wish") o.wish = true;
+  }
+  return m;
+}
+function cxSec(def) { const st = cxSt(def); const secs = CX[def].sections(); if (!secs) return null; if (!st.sec || !secs.some(s => s.k === st.sec)) st.sec = secs[0].k; return st.sec; }
+function cxGroups(def) { return CX[def].groups(cxSec(def)); }
+function cxFind(def, key) { return cxGroups(def).find(g => g.key === key) || null; }
+function cxAllItems(def) { const D = CX[def]; const secs = D.sections(); return (secs ? secs.flatMap(s => D.groups(s.k)) : D.groups()).flatMap(g => g.items); }
+/* --- viste --- */
+function cxTileCoin(D, x, has, o, sel) {
+  const fade = has ? "" : "opacity:.38;filter:grayscale(.7);";
+  const col = D.src === "div" ? (["1c", "2c", "5c"].includes(x.dv) ? "#C79A55" : /c$/.test(x.dv) ? "#C9AE5B" : "#B8BBC0") : x.m && /argento/i.test(x.m) ? "#B9BCC2" : x.m && /oro/i.test(x.m) ? "#D4B04C" : x.m && /bronz|rame/i.test(x.m) ? "#C08A5A" : "#C9C3B0";
+  return '<span style="display:block;width:100%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 35%,#F3F0E8,' + col + ');box-shadow:inset 0 0 0 2px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#4A4436;' + fade + '">' + esc(x.lbl || "") + '</span>';
+}
+function cxTileStamp(D, x, has, o) {
+  const fade = has ? "" : "opacity:.45;";
+  const ph = has && o && o.photo ? '<img alt="" src="' + esc(photoSrc(o.photo)) + '" style="width:100%;height:100%;object-fit:cover">' : '<span style="font-size:12px;font-weight:600;color:#6F706A;text-align:center;padding:4px">' + esc(x.val || "") + '</span>';
+  return '<span style="display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:5/6;border-radius:3px;overflow:hidden;background:' + (has ? "#E4EBE5" : "#F4F3EE") + ';outline:2px dashed ' + (has ? "#9DB3A2" : "#D7D6CF") + ';outline-offset:-5px;' + fade + '">' + ph + '</span>';
+}
+function cxGrid(def, list, own) {
+  const D = CX[def]; const st = cxSt(def);
+  let h = '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">';
+  list.forEach(x => {
+    const o = own[x.id]; const has = !!(o && o.qty); const sel = st.sel.has(x.id);
+    const circle = has || sel ? '<button type="button" data-act="cxToggle" data-v="' + def + '" data-id="' + esc(x.id) + '" aria-pressed="' + sel + '" aria-label="' + (sel ? "Deseleziona" : "Seleziona") + '" style="position:absolute;top:0;right:0;width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;' + (sel ? "background:var(--acc);color:#fff" : "background:rgba(255,255,255,.92);border:1.5px solid #9A9C93") + '">' + (sel ? ic("check", 14, 2.5) : "") + '</span></button>' : "";
+    const bd = D.badge(x);
+    const vis = D.tile === "stamp" ? cxTileStamp(D, x, has, o) : cxTileCoin(D, x, has, o, sel);
+    h += '<div style="position:relative;border-radius:12px;border:' + (sel ? "2px solid var(--acc)" : "1px solid var(--line)") + ';background:#fff"><button type="button" data-act="' + (has ? "cxOwn" : "cxToggle") + '" data-v="' + def + '" data-id="' + esc(x.id) + '"' + (has ? ' aria-label="Le tue copie: ' + esc(D.name(x)) + '"' : ' aria-pressed="' + sel + '" aria-label="' + esc(D.name(x)) + '"') + ' style="width:100%;padding:8px;border:none;border-radius:11px;background:none;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:5px;font:inherit;color:inherit">' + vis + '<span style="font-weight:600;font-size:12px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(D.tileTitle(x)) + '</span><span class="xs muted" style="line-height:1.25">' + esc(D.tileMeta(x)) + (bd ? (D.tileMeta(x) ? " · " : "") + '<b style="color:#7A5A00">' + esc(bd) + '</b>' : "") + '</span>' + (has ? '<span class="badge" style="position:absolute;top:8px;left:8px">×' + o.qty + '</span>' : o && o.wish ? '<span class="badge grey" style="position:absolute;top:8px;left:8px">desiderio</span>' : '') + '</button>' + circle + '</div>';
+  });
+  return h + '</div>';
+}
+function cxFoot(def) {
+  const n = cxSt(def).sel.size;
+  return '<div style="height:70px"></div><div style="position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom))"><div class="grid2" style="max-width:560px;margin:0 auto"><button type="button" class="btn" data-act="cxAdd" data-v="' + def + '" data-id="wish"' + (n ? "" : " disabled") + '>Desideri (' + n + ')</button><button type="button" class="btn pri" data-act="cxAdd" data-v="' + def + '" data-id="in"' + (n ? "" : " disabled") + '>Aggiungi (' + n + ')</button></div></div>';
+}
+function cxSummary(have, tot, label) { const p = Math.round(have / Math.max(1, tot) * 100); return '<div class="card pad stack" style="gap:8px"><div class="between"><span class="b">' + have + ' di ' + tot + ' ' + label + '</span><span class="small muted">' + p + '% completo</span></div><div class="progress"><div style="width:' + p + '%"></div></div></div>'; }
+function vCx() {
+  const def = S.view.def; const D = CX[def]; const st = cxSt(def);
+  const secs = D.sections(); const sec = cxSec(def);
+  const cat = D.cat(sec);
+  let h = '<div class="wrap stack">' + topBar(D.title, D.sub);
+  if (!cat) return h + '<div class="notice warn">Per usare questo catalogo serve una categoria adatta (' + (D.src === "fb" ? "francobolli" : D.src === "regno" ? "monete storiche" : "monete moderne") + ').</div></div>';
+  if (secs) h += '<div class="seg" style="grid-template-columns:repeat(' + secs.length + ',minmax(0,1fr))" role="group" aria-label="Sezione">' + secs.map(s => '<button type="button" class="' + (s.k === sec ? "on" : "") + '" data-act="cxSec" data-v="' + def + '" data-id="' + s.k + '">' + esc(s.n) + '</button>').join("") + '</div>';
+  const own = cxOwned(def); const groups = cxGroups(def);
+  const all = groups.flatMap(g => g.items);
+  const have = all.filter(x => own[x.id] && own[x.id].qty).length;
+  if (all.length) h += cxSummary(have, all.length, D.tile === "stamp" ? "francobolli" : "monete");
+  const lk = cxLinkable(def).length;
+  if (lk) h += '<div class="notice between"><span>' + pl(lk, "pezzo inserito a mano corrisponde", "pezzi inseriti a mano corrispondono") + ' al catalogo.</span><button type="button" class="btn sm" data-act="cxLink" data-v="' + def + '">Collega</button></div>';
+  if (all.length) h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="q" type="search" placeholder="Cerca in ' + esc(D.title.toLowerCase()) + '" aria-label="Cerca" value="' + esc(st.q) + '" data-input="cxQ" data-v="' + def + '"></label>';
+  if (st.q) {
+    const q = eur2Norm(st.q);
+    const res = all.filter(x => eur2Norm([D.name(x), D.tileMeta(x), x.n || ""].join(" ")).includes(q));
+    h += '<div class="sect">' + pl(res.length, "risultato", "risultati") + '</div>' + (res.length ? cxGrid(def, res.slice(0, 120), own) : '<div class="card empty">Nessun risultato.</div>');
+    if (st.sel.size) h += cxFoot(def);
+    return h + '</div>';
+  }
+  const ready = groups.filter(g => g.items.length), pend = groups.filter(g => !g.items.length);
+  const row = g => { const n = g.items.filter(x => own[x.id] && own[x.id].qty).length; return '<button type="button" class="li" data-act="cxOpen" data-v="' + def + '" data-id="' + esc(g.key) + '"><span class="ico" style="background:#F2EEDF;color:#5A4A1E;font-weight:700;font-size:' + (String(g.icon).length > 3 ? 10 : 12) + 'px">' + esc(g.icon) + '</span><span class="grow" style="min-width:0"><span class="b ellip" style="display:block">' + esc(g.name) + (g.micro ? ' <span class="badge amber" style="margin-left:4px">tirature basse</span>' : '') + '</span><span class="xs muted">' + esc(g.sub) + '</span>' + (n ? eur2Prog(n, g.items.length) : '') + '</span>' + (g.items.length ? '<span class="b small">' + n + '/' + g.items.length + '</span>' : '<span class="muted">' + ic("right", 16, 2) + '</span>') + '</button>'; };
+  if (ready.length) h += '<div class="card list" style="overflow:hidden">' + ready.map(row).join("") + '</div>';
+  if (D.fill) {
+    const unitWord = D.fillUnit === "re" ? "re" : D.fillUnit === "tipo" ? "tipi" : (sec === "as" ? "Stati" : "annate");
+    if (pend.length && D.src !== "regno") h += '<div class="sect">Da preparare</div><div class="card list" style="overflow:hidden">' + pend.slice(0, 30).map(row).join("") + (pend.length > 30 ? '<div class="xs muted" style="padding:10px 14px">e altre ' + (pend.length - 30) + '…</div>' : '') + '</div>';
+    if (!ready.length && D.src === "regno") h += '<div class="card empty">Il catalogo di ' + esc((CX_KINGS.find(k => k.k === sec) || {}).n || "") + ' non è ancora pronto: lo prepara Claude.</div>';
+    h += '<div class="card pad stack" style="gap:8px"><div class="between"><span><span class="b" style="display:block">' + (pend.length || !ready.length ? "Prepara con Claude" : "Aggiorna con Claude") + '</span><span class="xs muted">' + (D.src === "lire" ? "Annate e tirature dei tipi ancora da completare." : D.src === "regno" ? "Tipi, annate, zecche e rarità per ogni re." : "Elenco delle emissioni, " + unitWord + " per " + (sec === "as" ? "Stato" : "anno") + ".") + ' Tu confermi prima di salvare.</span></span><button type="button" class="btn sm" data-act="cxFillOpen" data-v="' + def + '">' + ic("refresh", 16) + (S.env === "artifact" ? "Prepara" : "Apri") + '</button></div></div>';
+  }
+  if (D.src === "div") h += '<div class="xs muted">Elenco teorico: tutte le annate con gli 8 valori. Alcune annate esistono solo nelle serie divisionali della zecca.</div>';
+  return h + '</div>';
+}
+function cxFiltered(def) {
+  const D = CX[def]; const st = cxSt(def); const own = cxOwned(def);
+  const g = cxFind(def, S.view.key); if (!g) return { g: null, base: [], shown: [], own };
+  const shown = g.items.filter(x => { const has = own[x.id] && own[x.id].qty; if (st.show === "miss" && has) return false; if (st.show === "have" && !has) return false; return D.chipOk(x, st.chip) && D.chipOk(x, st.chip2 || ""); });
+  return { g, base: g.items, shown, own };
+}
+function vCxGrid() {
+  const def = S.view.def; const D = CX[def]; const st = cxSt(def);
+  const { g, base, shown, own } = cxFiltered(def);
+  let h = '<div class="wrap stack">' + topBar(g ? g.name : "Catalogo", D.title);
+  if (!g) return h + '<div class="card empty">Elenco non trovato.</div></div>';
+  if (!base.length) { h += '<div class="card empty">Questo elenco non è ancora pronto: lo prepara Claude.</div><button type="button" class="btn pri full" data-act="cxFillOpen" data-v="' + def + '">Prepara con Claude</button>'; return h + '</div>'; }
+  h += cxSummary(base.filter(x => own[x.id] && own[x.id].qty).length, base.length, D.tile === "stamp" ? "francobolli" : "monete");
+  h += '<div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Mostra">' + [["all", "Tutte"], ["miss", "Mancanti"], ["have", "Possedute"]].map(([k, l]) => '<button type="button" class="' + (st.show === k ? "on" : "") + '" data-act="cxShow" data-v="' + def + '" data-id="' + k + '">' + l + '</button>').join("") + '</div>';
+  const chips = D.chips(base);
+  const crow = (list, cur, act) => '<div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px">' + list.map(([k, l]) => '<button type="button" class="chip ' + (cur === k ? "on" : "") + '" style="white-space:nowrap" data-act="' + act + '" data-v="' + def + '" data-id="' + esc(k) + '">' + esc(l) + '</button>').join("") + '</div>';
+  if (chips.length > 1) h += crow(chips, st.chip, "cxChip");
+  if (D.chips2) h += crow(D.chips2(base), st.chip2 || "", "cxChip2");
+  h += '<div class="between"><span class="small muted">' + st.sel.size + ' selezionate</span><span class="row" style="gap:6px"><button type="button" class="btn sm" data-act="cxSel" data-v="' + def + '" data-id="miss">Mancanti</button><button type="button" class="btn sm" data-act="cxSel" data-v="' + def + '" data-id="all">Tutte</button><button type="button" class="btn sm" data-act="cxSel" data-v="' + def + '" data-id="none">Nessuna</button></span></div>';
+  h += shown.length ? cxGrid(def, shown, own) : '<div class="card empty">Nessun elemento con questi filtri.</div>';
+  h += cxFoot(def);
+  return h + '</div>';
+}
+function cxById(def, id) { return cxAllItems(def).find(x => x.id === id) || null; }
+function cxOpenCopies(def, id) {
+  const D = CX[def]; const x = cxById(def, id); if (!x) return;
+  const it = [...S.items.values()].find(i => !i.deleted && i.ref && i.ref.src === D.src && i.ref.card === id && i.status === "in");
+  if (!it) return;
+  openCopies(it.catId, id, { title: D.name(x), sub: D.title, addAct: "cxCopyAdd" });
+}
+function cxSelect(def, mode) {
+  const st = cxSt(def); const { shown, own } = S.view.name === "cxGrid" ? cxFiltered(def) : { shown: [], own: {} };
+  if (mode === "none") st.sel = new Set();
+  else if (mode === "all") shown.forEach(x => st.sel.add(x.id));
+  else st.sel = new Set(shown.filter(x => !(own[x.id] && own[x.id].qty)).map(x => x.id));
+}
+function openCxAdd(def, status) {
+  const D = CX[def]; const st = cxSt(def); const cat = D.cat(cxSec(def)); if (!cat || !st.sel.size) return;
+  let h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Aggiungi"><div class="grab"></div>';
+  h += '<div class="between"><div><h1 style="font-size:20px">' + (status === "wish" ? "Metti nei desideri" : "Aggiungi alla collezione") + '</h1><div class="small muted">' + pl(st.sel.size, "pezzo", "pezzi") + ' · ' + esc(cat.name) + '</div></div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
+  if (status !== "wish") h += '<label class="f"><span>Stato di conservazione (per tutti)</span><select class="in" id="cx_cond"><option value="">—</option>' + cat.cond.map(o => '<option>' + esc(o) + '</option>').join("") + '</select></label><label class="f"><span>Dove li tieni</span><input class="in" id="cx_loc" placeholder="Es. Album"></label>';
+  h += '<div class="small muted">I dati vengono compilati dal catalogo. Il valore puoi farlo stimare dopo con Aggiorna prezzi.</div>';
+  h += '<button type="button" class="btn pri full" data-act="cxAddGo" data-v="' + def + '" data-id="' + status + '">' + (status === "wish" ? "Aggiungi ai desideri" : "Aggiungi " + pl(st.sel.size, "pezzo", "pezzi")) + '</button></div></div>';
+  $("modal").innerHTML = h;
+}
+async function cxAddGo(btn, def, status) {
+  const D = CX[def]; const st = cxSt(def); const sec = cxSec(def); const cat = D.cat(sec); if (!cat) return;
+  const cond = $("cx_cond") ? val("cx_cond") : ""; const loc = $("cx_loc") ? val("cx_loc").trim() : "";
+  btn.disabled = true;
+  const keys = new Set(cat.fields.map(f => f.k));
+  const byId = {}; cxAllItems(def).forEach(x => { byId[x.id] = x; });
+  const items = [...st.sel].map(id => byId[id]).filter(Boolean).map(x => {
+    const it = newDraft(cat.id, status);
+    it.name = D.name(x); it.qty = 1; it.cond = cond; it.location = loc;
+    const f = D.fields(x);
+    Object.keys(f).forEach(k => { if (keys.has(k) && f[k] != null && f[k] !== "") it.fields[k] = f[k]; });
+    it.ref = { src: D.src, set: def, card: x.id };
+    it.createdAt = nowIso();
+    if (status === "in") it.movements = [{ type: "carico", qty: 1, date: today(), price: null }];
+    ["_new", "_origBuy", "_cats"].forEach(k => delete it[k]);
+    return it;
+  });
+  try { await saveItems(items); closeModal(); st.sel = new Set(); toast(pl(items.length, "pezzo aggiunto", "pezzi aggiunti") + (status === "wish" ? " ai desideri" : "")); render(); }
+  catch (e) { btn.disabled = false; toast(dbErr(e), 5000); }
+}
+/* --- preparazione con Claude (artifact) --- */
+function cxFillOpen(def) {
+  const D = CX[def];
+  if (S.env === "artifact") { S.cxf = { def, sec: cxSec(def), step: "pick", sel: new Set(), res: [], msg: "" }; go({ name: "cxFill", def }); return; }
+  const h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Prepara con Claude"><div class="grab"></div><div class="between"><h1 style="font-size:20px">' + esc(D.title) + '</h1><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>' +
+    '<div class="small">Gli elenchi li prepara Claude nell\'artifact, con la ricerca web. Lì scegli cosa preparare, controlli il risultato e tocchi <b>Copia per l\'app</b>; tornato qui, tocca <b>Ricevi da Claude</b>.</div>' +
+    '<button type="button" class="btn pri full" data-act="cxToArtifact" data-v="' + def + '">Apri Claude</button></div></div>';
+  $("modal").innerHTML = h;
+}
+function vCxFill() {
+  const f = S.cxf || (S.cxf = { def: S.view.def, sec: cxSec(S.view.def), step: "pick", sel: new Set(), res: [], msg: "" });
+  const D = CX[f.def];
+  let h = '<div class="wrap stack">' + topBar("Prepara con Claude", D.title);
+  if (!S.sample) return h + '<div class="notice warn">Claude non è disponibile in questa vista.</div></div>';
+  if (f.step === "sent") return h + '<div class="card pad stack"><h2 style="font-size:16px">Riporta nell\'app</h2><div class="small muted">Catalogo salvato. Copialo e nell\'app tocca "Ricevi da Claude".</div><div class="grid2"><button type="button" class="btn pri" data-act="sendCopy">' + ic("copy", 18) + 'Copia per l\'app</button><a class="btn" href="' + APP_URL + '" target="_blank" rel="noopener">Apri l\'app</a></div><div id="sendMsg" class="xs muted"></div></div></div>';
+  const secs = D.sections();
+  if (f.step === "pick" || f.step === "run") {
+    if (secs) h += '<div class="seg" style="grid-template-columns:repeat(' + secs.length + ',minmax(0,1fr))" role="group" aria-label="Sezione">' + secs.map(s => '<button type="button" class="' + (s.k === f.sec ? "on" : "") + '" data-act="cxfSec" data-id="' + s.k + '"' + (f.step === "run" ? " disabled" : "") + '>' + esc(s.n) + '</button>').join("") + '</div>';
+    const units = D.fill.units(f.sec);
+    h += '<div class="small muted">Scegli cosa preparare' + (D.src === "fb" ? " (al massimo 5 alla volta: ogni " + (f.sec === "as" ? "Stato" : "annata") + " è una ricerca)" : "") + '. Quelli già pronti vengono sostituiti.</div>';
+    if (!units.length) h += '<div class="card empty">Niente da preparare: il catalogo è completo.</div>';
+    else h += '<div class="card list" style="overflow:hidden;max-height:55vh;overflow-y:auto">' + units.map(u => { const on = f.sel.has(u.key); return '<button type="button" class="li" data-act="cxfSel" data-id="' + esc(u.key) + '" aria-pressed="' + on + '"' + (f.step === "run" ? " disabled" : "") + '><span style="width:24px;height:24px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;' + (on ? "background:var(--acc);color:#fff" : "border:1.5px solid #9A9C93") + '">' + (on ? ic("check", 14, 2.5) : "") + '</span><span class="grow">' + esc(u.label) + '</span>' + (u.done ? '<span class="badge">pronto</span>' : '') + '</button>'; }).join("") + '</div>';
+    h += '<button type="button" class="btn pri full" data-act="cxfRun"' + (f.sel.size && f.step !== "run" ? "" : " disabled") + '>' + ic("search", 18) + (f.step === "run" ? esc(f.msg || "Cerco…") : "Prepara " + (f.sel.size || "")) + '</button>';
+    if (f.err) h += '<div class="notice warn">' + esc(f.err) + '</div>';
+    return h + '</div>';
+  }
+  // revisione
+  if (f.err) h += '<div class="notice warn">' + esc(f.err) + '</div>';
+  if (!f.res.length) return h + '<div class="card empty">Claude non ha trovato dati affidabili.</div><button type="button" class="btn full" data-act="cxfBack">Indietro</button></div>';
+  f.res.forEach((r, i) => {
+    const pv = D.fill.preview(r.data);
+    h += '<div class="card pad stack" style="gap:6px"><label class="between" style="cursor:pointer"><span class="b">' + esc(r.unit.label) + '</span><input type="checkbox" data-change="cxfKeep" data-i="' + i + '"' + (r.keep ? " checked" : "") + ' style="width:22px;height:22px;accent-color:var(--acc)"></label><div class="xs muted">' + pl(pv.length, "voce", "voci") + '</div><div style="max-height:220px;overflow:auto">' + pv.slice(0, 80).map(p => '<div style="padding:5px 0;border-top:1px solid var(--line2)"><span class="small b">' + esc(p.t) + '</span> <span class="xs muted">' + esc(p.s) + '</span></div>').join("") + (pv.length > 80 ? '<div class="xs muted">…</div>' : '') + '</div></div>';
+  });
+  h += '<button type="button" class="btn pri full" data-act="cxfSave"' + (f.res.some(r => r.keep) ? "" : " disabled") + '>Salva nel catalogo</button>';
+  return h + '</div>';
+}
+async function cxfRun() {
+  const f = S.cxf; const D = CX[f.def];
+  const units = D.fill.units(f.sec).filter(u => f.sel.has(u.key));
+  if (D.src === "fb" && units.length > 5) { f.err = "Scegline al massimo 5 alla volta."; render(); return; }
+  f.step = "run"; f.err = null; f.res = []; render();
+  const say = t => { f.msg = t; const b = document.querySelector('[data-act="cxfRun"]'); if (b) b.textContent = t; };
+  try {
+    const st = await getSearchTools(() => { });
+    if (st.status !== "ok") { f.step = "pick"; f.err = "Serve la ricerca web per preparare il catalogo. " + (webStatusMsg(st.status) || ""); render(); return; }
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i]; say("Preparo " + u.label + " (" + (i + 1) + " di " + units.length + ")…");
+      try { const out = await S.sample.json(D.fill.prompt(u), { cache: false, tools: st.tools }); const data = D.fill.parse(out, u); if (data.length) f.res.push({ unit: u, data, keep: true }); else f.err = (f.err ? f.err + " " : "") + "Nessun dato per " + u.label + "."; }
+      catch (e) { f.err = (f.err ? f.err + " " : "") + u.label + ": " + sampleErr(e); }
+    }
+    f.step = "review";
+  } catch (e) { f.step = "pick"; f.err = sampleErr(e); }
+  render();
+}
+async function cxfSave(btn) {
+  const f = S.cxf; const D = CX[f.def]; btn.disabled = true;
+  const cfg = JSON.parse(JSON.stringify(S.config));
+  cfg.cx = cfg.cx || {}; const st = cfg.cx[f.def] = cfg.cx[f.def] || {};
+  let n = 0; f.res.filter(r => r.keep).forEach(r => { D.fill.save(st, r.unit, r.data); n++; });
+  st.upd = today();
+  try { await saveConfig(cfg); toast(pl(n, "elenco salvato", "elenchi salvati")); f.sel = new Set(); if (S.fromApp) { f.step = "sent"; render(); } else { f.step = "pick"; back(); } }
+  catch (e) { btn.disabled = false; toast(dbErr(e), 5000); }
+}
+/* collega i pezzi inseriti a mano (lire e Regno) */
+function cxNomKey(x) { return eur2Norm(x.t).split(" ").slice(0, 2).join(" "); }
+function cxLinkable(def) {
+  const D = CX[def]; if (def !== "lire" && def !== "regno") return [];
+  const cat = D.cat(cxSec(def)); if (!cat) return [];
+  const all = def === "lire" ? cxAllItems(def) : CX_KINGS.flatMap(k => D.groups(k.k)).flatMap(g => g.items);
+  if (!all.length) return [];
+  const out = [];
+  for (const it of S.items.values()) {
+    if (it.deleted || it.catId !== cat.id || it.ref) continue;
+    const f = it.fields || {}; const y = Number(f.anno); if (!y) continue;
+    const txt = eur2Norm([it.name, f.valore_nominale, f.nominale, f.catalogo].join(" "));
+    const cand = all.filter(x => x.y === y && txt.includes(cxNomKey(x)) && (!x.z || !f.zecca || eur2Norm(f.zecca) === eur2Norm(x.z)));
+    if (!cand.length) continue;
+    const extra = x => eur2Norm(x.t).split(/[^a-z0-9]+/).slice(2).filter(w => w.length >= 4).filter(w => txt.includes(w)).length;
+    const sc = cand.map(x => ({ x, s: extra(x) })).sort((p, q) => q.s - p.s);
+    const pick = sc.length === 1 ? sc[0].x : sc[0].s > sc[1].s ? sc[0].x : null;
+    if (pick) out.push({ it, x: pick });
+  }
+  return out;
+}
+async function cxLink(def) {
+  const D = CX[def]; const l = cxLinkable(def); if (!l.length) return;
+  try { await saveItems(l.map(({ it, x }) => Object.assign({}, it, { ref: { src: D.src, set: def, card: x.id } }))); toast(pl(l.length, "pezzo collegato", "pezzi collegati") + " al catalogo"); render(); } catch (e) { toast(dbErr(e), 5000); }
+}
+function cxEntries(catId) {
+  const out = [];
+  if (eur2Cat() && eur2Cat().id === catId) out.push(["eur2", "2 € commemorativi"], ["lire", "Lire della Repubblica"], ["div", "Euro divisionali"]);
+  if (cxHistCat() && cxHistCat().id === catId) out.push(["regno", "Monete del Regno d'Italia"]);
+  if (["rep", "regno", "as"].some(s => cxStampCat(s) && cxStampCat(s).id === catId)) out.push(["fb", "Francobolli per annata"]);
+  return out;
 }
 
 /* ================= Modalità app (PWA): archivio locale ================= */
