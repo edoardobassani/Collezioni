@@ -562,6 +562,27 @@ document.addEventListener("change", () => saveSessionSoon(), true);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveSessionNow(); });
 window.addEventListener("pagehide", () => saveSessionNow());
 
+/* campi di testo: un ridisegno in sottofondo non deve cancellare quello che stai scrivendo né toglierti il cursore.
+   Ricordo i campi modificati nella schermata attuale; le azioni dell'utente (pulsanti, menu) leggono già i moduli, quindi azzerano l'elenco */
+const S_ED = { view: null, ids: new Set() };
+function isTextField(el) { return !!(el && el.id && (el.tagName === "TEXTAREA" || (el.tagName === "INPUT" && !/^(checkbox|radio|file|button|submit|range|color)$/i.test(el.type || "")))); }
+document.addEventListener("input", e => { const el = e.target; if (!isTextField(el)) return; const app = $("app"); if (!app || !app.contains || !app.contains(el)) return; if (S_ED.view !== S.view) { S_ED.view = S.view; S_ED.ids = new Set(); } S_ED.ids.add(el.id); }, true);
+document.addEventListener("click", e => { if (e.target && e.target.closest && e.target.closest("[data-act]")) S_ED.ids = new Set(); }, true);
+document.addEventListener("change", e => { const el = e.target; if (el && !isTextField(el)) S_ED.ids = new Set(); }, true);
+function keepFieldsBefore(app) {
+  if (!app || !app.querySelectorAll) return null;
+  const a = document.activeElement;
+  const focus = isTextField(a) && app.contains(a) ? { id: a.id, s: null, e: null } : null;
+  if (focus) { try { focus.s = a.selectionStart; focus.e = a.selectionEnd; } catch (e) { } }
+  const vals = {};
+  if (S_ED.view === S.view) S_ED.ids.forEach(id => { const el = $(id); if (el && app.contains(el)) vals[id] = el.value; });
+  return { view: S.view, focus, vals };
+}
+function keepFieldsAfter(k) {
+  if (!k || k.view !== S.view) return;
+  Object.keys(k.vals).forEach(id => { const el = $(id); if (el && el.value !== k.vals[id]) el.value = k.vals[id]; });
+  if (k.focus) { const el = $(k.focus.id); if (el && document.activeElement !== el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } try { if (k.focus.s != null) el.setSelectionRange(k.focus.s, k.focus.e); } catch (e) { } } }
+}
 /* un aggiornamento in sottofondo non deve chiudere un menu a tendina aperto:
    se l'utente ha un select aperto (a fuoco e non ancora scelto) il disegno aspetta */
 let _rDefer = null, _rSince = 0;
@@ -626,8 +647,10 @@ function render() {
   const navTabs = ["home", "stats", "history", "wish", "tools"];
   const activeTab = navTabs.includes(v.name) ? v.name : ["backup", "report"].includes(v.name) ? "tools" : (S.stack[0] && navTabs.includes(S.stack[0].name) ? S.stack[0].name : "home");
   const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail", "eur2Grid", "eur2Upd", "cxGrid", "cxFill", "review", "reviewItem", "reviewList", "reviewAi", "prices", "search", "importx"].includes(v.name);
+  const kept = keepFieldsBefore(app);
   app.innerHTML = html + (showNav ? navHtml(activeTab) : "");
   afterRender();
+  keepFieldsAfter(kept);
   applySessionFields();
   saveSessionSoon();
 }
@@ -656,6 +679,7 @@ function vHome() {
   if (cfg && cfg.cats.length) {
     h += '<div style="display:grid;grid-template-columns:1fr auto;gap:10px"><button type="button" class="btn pri" style="min-height:50px" data-act="' + (S.env === "pwa" ? "goArtifactScan" : "scan") + '">' + ic("camera") + 'Aggiungi da foto</button><button type="button" class="btn" style="min-height:50px" data-act="addMore">' + ic("plus", 18, 2) + 'Altro</button></div>';
     h += bkBanner();
+    h += wishBanner();
     if (S.env === "pwa" && S.awaitReturn) h += '<div class="notice between" style="padding:8px 8px 8px 14px"><span class="small">Hai copiato dati da Claude?</span><span class="row" style="gap:4px"><button type="button" class="btn sm acc" data-act="receive">' + ic("download", 16) + 'Ricevi</button><button type="button" class="iconbtn" style="width:36px;height:36px" data-act="awaitOff" aria-label="Nascondi">' + ic("close", 16, 1.8) + '</button></span></div>';
   }
   if (!cfg || !cfg.cats.length) {
@@ -733,7 +757,7 @@ function vCat(id) {
 function itemRow(it, c, showCat) {
   const thumb = it.photos && it.photos[0] ? '<img alt="" src="' + photoSrc(it.photos[0]) + '">' : remoteImg(it) ? '<img alt="" loading="lazy" src="' + esc(remoteImg(it)) + '">' : iconHtml(c && c.icon);
   const sub = showCat && c ? esc(c.name) + (itemSubtitle(it, c) ? " · " + esc(itemSubtitle(it, c)) : "") : esc(itemSubtitle(it, c));
-  return '<button type="button" class="li" data-act="openItem" data-id="' + esc(it.id) + '"><span class="ico" style="width:42px;height:50px;border-radius:8px">' + thumb + '</span><span class="grow"><span class="b ellip" style="display:block">' + esc(it.name || "Senza nome") + '</span><span class="small muted ellip" style="display:block">' + (sub || "&nbsp;") + '</span>' + (it.cond ? '<span class="xs muted">' + esc(it.cond) + '</span>' : '') + '</span><span style="text-align:right;flex-shrink:0"><span class="b" style="display:block">' + eur(it.value) + '</span><span class="xs muted">' + (it.status === "in" ? "× " + (it.qty || 0) : it.status === "wish" ? "desiderio" : "uscito") + '</span></span></button>';
+  return '<button type="button" class="li" data-act="openItem" data-id="' + esc(it.id) + '"><span class="ico" style="width:42px;height:50px;border-radius:8px">' + thumb + '</span><span class="grow"><span class="b ellip" style="display:block">' + esc(it.name || "Senza nome") + '</span><span class="small muted ellip" style="display:block">' + (sub || "&nbsp;") + '</span>' + (it.cond ? '<span class="xs muted">' + esc(it.cond) + '</span>' : '') + '</span><span style="text-align:right;flex-shrink:0"><span class="b" style="display:block">' + eur(it.value) + '</span><span class="xs muted">' + (it.status === "in" ? "× " + (it.qty || 0) : it.status === "wish" ? (it.target ? "obiettivo " + eur(it.target) : "desiderio") : "uscito") + '</span></span></button>';
 }
 
 /* ================= Scheda pezzo ================= */
@@ -797,6 +821,7 @@ function vItem(id) {
     h += '</div>';
   }
   // azioni
+  if (it.status === "wish" && Number(it.target) > 0) { const hit = it.value != null && Number(it.value) <= Number(it.target); h += '<div class="notice' + (hit ? '" style="background:#E5F2EA;color:#1D6B47"' : '"') + '>' + (hit ? '<b>Sotto il tuo obiettivo.</b> ' : '') + 'Avviso sotto ' + eur(it.target) + ' · quotazione attuale ' + eur(it.value) + '</div>'; }
   h += '<div class="grid2" style="margin-top:6px">';
   if (it.status === "in") h += '<button type="button" class="btn pri" data-act="exit" data-id="' + esc(id) + '">Scarica / vendi</button>';
   else if (it.status === "wish") h += '<button type="button" class="btn pri" data-act="gotIt" data-id="' + esc(id) + '">L\'ho preso</button>';
@@ -838,6 +863,7 @@ function vItemForm() {
   h += '<div class="grid2"><label class="f"><span>Prezzo d\'acquisto (a pezzo)</span><input class="in" id="f_buy" inputmode="decimal" value="' + esc(numIn(d.buyPrice)) + '" placeholder="se vuoto = quotazione"></label><label class="f"><span>Data d\'acquisto</span><input class="in" id="f_buyDate" type="date" value="' + esc(d.buyDate || "") + '"></label></div>';
   if (d.buyKind === "stimato") h += '<div class="xs muted">Il prezzo d\'acquisto attuale è stimato: se lo cambi diventa il prezzo reale.</div>';
   h += '<label class="f"><span>Acquistato da</span><input class="in" id="f_buyFrom" value="' + esc(d.buyFrom || "") + '" placeholder="Negozio, asta, privato…"></label>';
+  if (d.status === "wish") h += '<label class="f"><span>Avvisami se il prezzo scende sotto (€)</span><input class="in" id="f_target" inputmode="decimal" value="' + esc(numIn(d.target)) + '" placeholder="facoltativo"></label><div class="xs muted" style="margin-top:-6px">Per le carte collegate al catalogo controllo il prezzo da solo, gratis, quando apri l\'app. Per gli altri pezzi vale la quotazione che aggiorni tu.</div>';
   h += '<div class="sect">Altro</div>';
   h += '<label class="f"><span>Codice a barre / ISBN</span><input class="in" id="f_barcode" inputmode="numeric" value="' + esc(d.barcode || "") + '" placeholder="facoltativo"></label>';
   h += '<label class="f"><span>Collocazione</span><input class="in" id="f_loc" value="' + esc(d.location || "") + '" placeholder="Es. cantina, scaffale B3"></label>';
@@ -868,6 +894,7 @@ function readDraftForm() {
   d.buyFrom = val("f_buyFrom").trim();
   d.location = val("f_loc").trim();
   if ($("f_barcode")) d.barcode = val("f_barcode").trim() || null;
+  if ($("f_target")) d.target = parseNum(val("f_target"));
   d.tags = val("f_tags").trim();
   d.notes = val("f_notes");
   if (c) c.fields.forEach(f => {
@@ -1120,11 +1147,55 @@ function vWish() {
   const list = [...S.items.values()].filter(i => !i.deleted && i.status === "wish").sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
   let h = '<div class="wrap stack"><h1>Lista desideri</h1>';
   h += '<div class="small muted">' + list.length + ' pezzi · costo stimato ' + eur(list.reduce((a, i) => a + (Number(i.value) || 0) * (Number(i.qty) || 1), 0)) + '</div>';
+  const hits = wishHits();
+  if (hits.length) {
+    h += '<div class="sect" style="color:#1D6B47">Sotto il tuo prezzo</div><div class="card list" style="overflow:hidden;border:1px solid #BFDCCB">' + hits.map(it => itemRow(it, cat(it.catId), true)).join("") + '</div>';
+    setTimeout(() => wishMarkSeen(hits), 0);
+  }
+  const chk = lsGet("col.wishCheck", null);
+  if (S.env === "pwa" && list.some(i => i.target && i.ref && catalogOf(i.catId))) h += '<div class="xs muted">Prezzi delle carte controllati ' + (chk ? fmtDate(chk.slice(0, 10)) : "mai") + '. Il controllo è automatico, al massimo ogni 12 ore.</div>';
   if (!list.length) h += '<div class="card empty">Nessun desiderio. Aggiungi un pezzo e scegli "Lista desideri".</div>';
   else { h += '<div class="card list" style="overflow:hidden">'; list.forEach(it => { h += itemRow(it, cat(it.catId), true); }); h += '</div>'; }
   if (S.config && S.config.cats.length) h += '<label class="f"><span>Aggiungi un desiderio in</span><select class="in" data-change="wishAdd"><option value="">Scegli la categoria…</option>' + S.config.cats.map(c => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join("") + '</select></label>';
   h += '</div>';
   return h;
+}
+
+/* ================= Avvisi di prezzo sui desideri =================
+   un desiderio con "obiettivo" segnala quando la quotazione scende fino a lì.
+   Nella PWA le carte collegate al catalogo vengono ricontrollate da sole (gratis), al massimo ogni 12 ore */
+function wishHits() { return [...S.items.values()].filter(i => !i.deleted && i.status === "wish" && Number(i.target) > 0 && i.value != null && Number(i.value) <= Number(i.target)).sort((a, b) => (Number(a.value) / Number(a.target)) - (Number(b.value) / Number(b.target))); }
+function wishNewHits() { const seen = lsGet("col.wishSeen", {}); return wishHits().filter(i => seen[i.id] == null || Number(i.value) < Number(seen[i.id])); }
+function wishMarkSeen(hits) { const seen = lsGet("col.wishSeen", {}); let ch = false; hits.forEach(i => { if (seen[i.id] == null || Number(i.value) < Number(seen[i.id])) { seen[i.id] = Number(i.value); ch = true; } }); if (ch) lsSet("col.wishSeen", seen); }
+function wishBanner() {
+  setTimeout(wishAutoCheck, 0);
+  const n = wishNewHits();
+  if (!n.length) return "";
+  const t = n.length === 1 ? "<b>" + esc(n[0].name) + "</b> è sceso a " + eur(n[0].value) + ", sotto il tuo obiettivo di " + eur(n[0].target) + "." : "<b>" + n.length + " desideri</b> sono scesi sotto il prezzo che hai fissato.";
+  return '<div class="row" style="padding:10px 8px 10px 14px;border-radius:12px;background:#E5F2EA;color:#1D6B47;gap:8px"><span class="grow small" style="line-height:1.35">' + t + '</span><button type="button" class="btn sm" style="background:#1D6B47;color:#fff;border:none" data-act="tab" data-v="wish">Vedi</button></div>';
+}
+async function wishAutoCheck(force) {
+  if (S._wishChecking || (S._wishDone && !force) || S.env !== "pwa") return;
+  const its = [...S.items.values()].filter(i => !i.deleted && i.status === "wish" && Number(i.target) > 0 && i.ref && catalogOf(i.catId));
+  if (!its.length) return;
+  if (!catalogCats().every(c => S.loadedCats && S.loadedCats.has(c.id))) return; /* aspetto che tutte le carte siano caricate */
+  const last = lsGet("col.wishCheck", null);
+  if (!force && last && Date.now() - new Date(last).getTime() < 12 * 36e5) return;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+  S._wishChecking = true;
+  try {
+    const updated = [];
+    for (const catId of [...new Set(its.map(i => i.catId))]) {
+      const src = catalogOf(catId); const group = its.filter(i => i.catId === catId);
+      const refs = []; const seenRef = new Set(); group.forEach(i => { if (!seenRef.has(i.ref.card)) { seenRef.add(i.ref.card); refs.push(i.ref); } });
+      let prices = {};
+      try { prices = await fetchPrices(src, refs); } catch (e) { continue; }
+      group.forEach(i => { const v = priceFor(i, prices[i.ref.card]); if (v != null && v !== i.value) { const n = quoteFromCatalog(i, v, src); if (n) updated.push(n); } });
+    }
+    lsSet("col.wishCheck", nowIso()); S._wishDone = true;
+    if (updated.length) { try { await saveItems(updated); } catch (e) { } }
+    render();
+  } finally { S._wishChecking = false; }
 }
 
 /* ================= Gestione categorie ================= */
