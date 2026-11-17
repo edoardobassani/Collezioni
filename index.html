@@ -486,8 +486,23 @@ function go(view) { S.stack.push(S.view); S.view = view; S.dirty = false; render
 function back() { S.view = S.stack.pop() || { name: "home" }; render(); }
 function tab(name) { S.stack = []; S.view = { name }; render(); window.scrollTo(0, 0); }
 
+/* un aggiornamento in sottofondo non deve chiudere un menu a tendina aperto:
+   se l'utente ha un select aperto (a fuoco e non ancora scelto) il disegno aspetta */
+let _rDefer = null, _rSince = 0;
+function renderBlocked(app) {
+  const a = document.activeElement;
+  return !!(a && a.tagName === "SELECT" && !a._picked && app && app.contains && app.contains(a));
+}
+document.addEventListener("pointerdown", e => { if (e.target && e.target.tagName === "SELECT") e.target._picked = false; }, true);
+document.addEventListener("focusin", e => { if (e.target && e.target.tagName === "SELECT") e.target._picked = false; }, true);
+document.addEventListener("change", e => { if (e.target && e.target.tagName === "SELECT") e.target._picked = true; }, true);
 function render() {
   const app = $("app");
+  if (renderBlocked(app)) {
+    if (!_rSince) _rSince = Date.now();
+    if (Date.now() - _rSince < 30000) { if (!_rDefer) _rDefer = setTimeout(() => { _rDefer = null; render(); }, 400); return; }
+  }
+  _rSince = 0; if (_rDefer) { clearTimeout(_rDefer); _rDefer = null; }
   if (S.loadErr) { app.innerHTML = '<div class="wrap"><div class="empty">' + esc(S.loadErr) + '</div></div>'; return; }
   if (!S.configLoaded) {
     app.innerHTML = '<div class="wrap"><div class="empty">' + (S.slow ? "L'archivio non risponde ancora. Controlla la connessione: i dati arriveranno appena possibile." : "Caricamento della collezione…") + '</div></div>';
