@@ -2580,6 +2580,104 @@ function vReportBox() {
   h += '<div id="repMsg" class="small muted"></div><button type="button" class="btn pri" data-act="makeReport">' + ic("download", 18) + 'Crea report PDF</button></div>';
   return h;
 }
+/* --- generatore PDF interno (sostituisce jsPDF: niente librerie esterne, funziona anche nell'artifact) --- */
+const PDF_W_N = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const PDF_W_B = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+class MiniPDF {
+  constructor() { this.pages = []; this.cur = null; this.font = "N"; this.size = 12; this.tc = [0, 0, 0]; this.fc = [0, 0, 0]; this.dc = [0, 0, 0]; this.images = []; this.addPage(); }
+  k(v) { return (v * 72 / 25.4).toFixed(2); }
+  Y(v) { return ((297 - v) * 72 / 25.4).toFixed(2); }
+  col(c) { return c.map(x => (x / 255).toFixed(3)).join(" "); }
+  addPage() { this.pages.push([]); this.cur = this.pages.length - 1; }
+  setPage(n) { this.cur = n - 1; }
+  getNumberOfPages() { return this.pages.length; }
+  out(s) { this.pages[this.cur].push(s); }
+  setFont(name, style) { this.font = style === "bold" ? "B" : "N"; }
+  setFontSize(s) { this.size = s; }
+  setTextColor(r, g, b) { this.tc = [r, g == null ? r : g, b == null ? r : b]; }
+  setFillColor(r, g, b) { this.fc = [r, g == null ? r : g, b == null ? r : b]; }
+  setDrawColor(r, g, b) { this.dc = [r, g == null ? r : g, b == null ? r : b]; }
+  charW(ch, tab) {
+    const c = ch.charCodeAt(0);
+    if (c >= 32 && c <= 126) return tab[c - 32];
+    const base = ch.normalize("NFD")[0];
+    const b = base.charCodeAt(0);
+    return b >= 32 && b <= 126 && base !== ch ? tab[b - 32] : 556;
+  }
+  getTextWidth(t) { const tab = this.font === "B" ? PDF_W_B : PDF_W_N; let w = 0; for (const ch of String(t)) w += this.charW(ch, tab); return w / 1000 * this.size * 25.4 / 72; }
+  esc(t) { return String(t).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/[\r\n]/g, " "); }
+  text(t, x, y, o) {
+    const lines = Array.isArray(t) ? t : String(t).split("\n");
+    const lh = this.size * 1.15 * 25.4 / 72;
+    lines.forEach((ln, i) => {
+      let xx = x;
+      const al = o && o.align;
+      if (al === "right") xx = x - this.getTextWidth(ln); else if (al === "center") xx = x - this.getTextWidth(ln) / 2;
+      this.out("BT /F" + this.font + " " + this.size + " Tf " + this.col(this.tc) + " rg " + this.k(xx) + " " + this.Y(y + i * lh) + " Td (" + this.esc(ln) + ") Tj ET");
+    });
+  }
+  splitTextToSize(t, maxW) {
+    const res = [];
+    String(t).split("\n").forEach(par => {
+      let line = "";
+      par.split(" ").forEach(w => {
+        const cand = line ? line + " " + w : w;
+        if (this.getTextWidth(cand) <= maxW || !line) line = cand; else { res.push(line); line = w; }
+        while (this.getTextWidth(line) > maxW && line.length > 1) { let n = line.length - 1; while (n > 1 && this.getTextWidth(line.slice(0, n)) > maxW) n--; res.push(line.slice(0, n)); line = line.slice(n); }
+      });
+      res.push(line);
+    });
+    return res;
+  }
+  rect(x, y, w, h, style) { this.out(this.col(this.fc) + " rg " + this.col(this.dc) + " RG " + this.k(x) + " " + this.Y(y + h) + " " + this.k(w) + " " + this.k(h) + " re " + (style === "F" ? "f" : style === "FD" || style === "DF" ? "B" : "S")); }
+  roundedRect(x, y, w, h, r, r2, style) {
+    const K = 0.5523 * r, P = (a, b) => this.k(a) + " " + this.Y(b);
+    let s = this.col(this.fc) + " rg " + this.col(this.dc) + " RG " + P(x + r, y) + " m " + P(x + w - r, y) + " l " + P(x + w - r + K, y) + " " + P(x + w, y + r - K) + " " + P(x + w, y + r) + " c " + P(x + w, y + h - r) + " l " + P(x + w, y + h - r + K) + " " + P(x + w - r + K, y + h) + " " + P(x + w - r, y + h) + " c " + P(x + r, y + h) + " l " + P(x + r - K, y + h) + " " + P(x, y + h - r + K) + " " + P(x, y + h - r) + " c " + P(x, y + r) + " l " + P(x, y + r - K) + " " + P(x + r - K, y) + " " + P(x + r, y) + " c h ";
+    this.out(s + (style === "F" ? "f" : "S"));
+  }
+  line(x1, y1, x2, y2) { this.out("0.57 w " + this.col(this.dc) + " RG " + this.k(x1) + " " + this.Y(y1) + " m " + this.k(x2) + " " + this.Y(y2) + " l S"); }
+  addImage(dataUrl, fmt, x, y, w, h) {
+    const bin = atob(String(dataUrl).split(",")[1] || "");
+    const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    let i = 2, pw = 0, ph = 0, comp = 3;
+    while (i < bytes.length) {
+      if (bytes[i] !== 0xFF) { i++; continue; }
+      const m = bytes[i + 1], len = (bytes[i + 2] << 8) + bytes[i + 3];
+      if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) { ph = (bytes[i + 5] << 8) + bytes[i + 6]; pw = (bytes[i + 7] << 8) + bytes[i + 8]; comp = bytes[i + 9]; break; }
+      i += 2 + len;
+    }
+    if (!pw || !ph) throw new Error("jpeg");
+    const n = this.images.length;
+    this.images.push({ bytes, pw, ph, comp });
+    this.out("q " + this.k(w) + " 0 0 " + this.k(h) + " " + this.k(x) + " " + this.Y(y + h) + " cm /Im" + n + " Do Q");
+  }
+  output() {
+    const enc = s => { const a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i) & 255; return a; };
+    const chunks = []; let len = 0; const offs = [];
+    const push = d => { const b = typeof d === "string" ? enc(d) : d; chunks.push(b); len += b.length; };
+    const obj = (id, body) => { offs[id] = len; push(id + " 0 obj\n"); body.forEach(push); push("\nendobj\n"); };
+    push("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+    const nP = this.pages.length, imgBase = 5, pageBase = imgBase + this.images.length;
+    const xobj = this.images.map((_, i) => "/Im" + i + " " + (imgBase + i) + " 0 R").join(" ");
+    obj(1, ["<< /Type /Catalog /Pages 2 0 R >>"]);
+    obj(2, ["<< /Type /Pages /Count " + nP + " /Kids [" + this.pages.map((_, i) => (pageBase + i * 2) + " 0 R").join(" ") + "] >>"]);
+    obj(3, ["<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"]);
+    obj(4, ["<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"]);
+    this.images.forEach((im, i) => obj(imgBase + i, ["<< /Type /XObject /Subtype /Image /Width " + im.pw + " /Height " + im.ph + " /ColorSpace /" + (im.comp === 1 ? "DeviceGray" : im.comp === 4 ? "DeviceCMYK" : "DeviceRGB") + " /BitsPerComponent 8 /Filter /DCTDecode /Length " + im.bytes.length + " >>\nstream\n", im.bytes, "\nendstream"]));
+    this.pages.forEach((ops, i) => {
+      const id = pageBase + i * 2;
+      const content = ops.join("\n");
+      obj(id, ["<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /FN 3 0 R /FB 4 0 R >> /XObject << " + xobj + " >> >> /Contents " + (id + 1) + " 0 R >>"]);
+      obj(id + 1, ["<< /Length " + content.length + " >>\nstream\n" + content + "\nendstream"]);
+    });
+    const total = pageBase + nP * 2;
+    const xref = len;
+    let x = "xref\n0 " + total + "\n0000000000 65535 f \n";
+    for (let i = 1; i < total; i++) x += String(offs[i]).padStart(10, "0") + " 00000 n \n";
+    push(x + "trailer\n<< /Size " + total + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF");
+    return new Blob(chunks, { type: "application/pdf" });
+  }
+}
 async function makeReport(btn) {
   const r = S.rep;
   r.min = parseNum(val("rep_min")); r.photos = $("rep_photos") ? $("rep_photos").checked : true;
@@ -2588,11 +2686,9 @@ async function makeReport(btn) {
   const cats = S.config.cats.filter(c => r.cats.has(c.id));
   const byCat = cats.map(c => ({ c, items: catItems(c.id).filter(i => i.status === "in" && (r.min == null || (Number(i.value) || 0) >= r.min)).sort((a, b) => itemTotal(b) - itemTotal(a)) })).filter(g => g.items.length);
   if (!byCat.length) { say("Nessun pezzo corrisponde ai filtri."); return; }
-  btn.disabled = true; say("Carico il generatore di PDF…");
-  try { await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"); }
-  catch (e) { say("Non riesco a caricare il generatore di PDF: serve la connessione."); btn.disabled = false; return; }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  btn.disabled = true; say("Preparo il report…");
+  try {
+  const doc = new MiniPDF();
   const W = 210, M = 14; let y = M;
   const ink = [23, 24, 28], muted = [95, 99, 107], acc = [47, 93, 80], line = [226, 226, 220];
   const T = (t, x, yy, o) => doc.text(pdfTxt(t), x, yy, o || {});
@@ -2632,7 +2728,7 @@ async function makeReport(btn) {
         x = M + 24;
       }
       doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...ink);
-      T(doc.splitTextToSize(pdfTxt(it.name), 100)[0], x, y + 4);
+      T(doc.splitTextToSize(pdfTxt(it.name || "Senza nome"), 100)[0], x, y + 4);
       doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...muted);
       const det = [itemSubtitle(it, g.c), it.cond ? "Stato: " + it.cond : "", it.location ? "Posizione: " + it.location : ""].filter(Boolean).join(" - ");
       const detL = doc.splitTextToSize(pdfTxt(det), 100).slice(0, 2); doc.text(detL, x, y + 9);
@@ -2651,12 +2747,14 @@ async function makeReport(btn) {
   say("Salvo il file…");
   const name = "collezioni-report-" + today() + ".pdf";
   const blob = doc.output("blob");
+  S.lastReport = { blob, name };
   try {
     if (!S.downloads) throw new Error("nodl");
     try { await S.downloads.save({ filename: name, data: blob }); }
     catch (e1) { await S.downloads.save({ filename: name, data: await blob.arrayBuffer() }); }
     say("Report pronto: " + totalItems + " pezzi, " + doc.getNumberOfPages() + " pagine.");
   } catch (e) { say("Il download non è riuscito o è stato annullato."); }
+  } catch (e) { console.error(e); say("Errore nella creazione del PDF: " + (e && e.message ? e.message : "sconosciuto")); }
   btn.disabled = false;
 }
 
