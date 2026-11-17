@@ -3805,7 +3805,7 @@ function cacheSet(k, d) { lsSet("col.cache." + k, { t: Date.now(), d }); }
 async function loadSets(src, lang) {
   const key = src + ":" + lang;
   if (CAT_CACHE.sets[key]) return CAT_CACHE.sets[key];
-  let sets = cacheGet("sets." + key, 3 * 864e5);
+  let sets = cacheGet("sets2." + key, 3 * 864e5);
   if (!sets) {
     if (src === "tcgdex") {
       const d = await getJson("https://api.tcgdex.net/v2/" + lang + "/sets") || [];
@@ -3813,11 +3813,13 @@ async function loadSets(src, lang) {
     } else {
       const d = await getJson("https://api.scryfall.com/sets");
       const skip = new Set(["token", "memorabilia", "alchemy", "minigame", "vanguard", "treasure_chest"]);
-      sets = ((d && d.data) || []).filter(x => !x.digital && !skip.has(x.set_type) && x.card_count > 0)
+      /* le Art Series su Scryfall sono "memorabilia": le tengo, scarto il resto di quella categoria */
+      const isArt = x => x.set_type === "memorabilia" && /art series/i.test(x.name || "");
+      sets = ((d && d.data) || []).filter(x => !x.digital && (isArt(x) || !skip.has(x.set_type)) && x.card_count > 0)
         .sort((a, b) => (b.released_at || "").localeCompare(a.released_at || ""))
         .map(x => ({ id: x.code, name: x.name, total: x.card_count, logo: x.icon_svg_uri || null, date: x.released_at || "" }));
     }
-    cacheSet("sets." + key, sets);
+    cacheSet("sets2." + key, sets);
   }
   CAT_CACHE.sets[key] = sets;
   return sets;
