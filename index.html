@@ -3379,6 +3379,9 @@ document.addEventListener("click", async ev => {
     case "setRar": S.setState.rar = S.setState.rar === v ? null : v; render(); break;
     case "setCalc": await setCalc(); break;
     case "setToggle": { const st = S.setState; if (st.sel.has(id)) st.sel.delete(id); else st.sel.add(id); render(); break; }
+    case "setOpen": openCopies(S.view.catId, id); break;
+    case "copyOpen": closeModal(); go({ name: "item", id }); break;
+    case "copyAdd": closeModal(); S.setState.sel = new Set([id]); render(); toast("Carta selezionata: tocca Aggiungi"); break;
     case "setSelAll": S.setState.sel = new Set(S.setState.data.cards.map(x => x.id)); render(); break;
     case "setSelNone": S.setState.sel = new Set(); render(); break;
     case "setSelMiss": { const own = ownedMap(S.view.catId); S.setState.sel = new Set(S.setState.data.cards.filter(x => !(own[x.id] && own[x.id].qty)).map(x => x.id)); render(); break; }
@@ -3945,7 +3948,7 @@ async function linkAll(silent) {
     if (!silent) toast("Collego le carte di " + c.name + " al catalogo…", 30000);
     try { const r = await linkCatalog(c.id, (i, n) => { if (!silent) toast("Collego " + c.name + ": " + (i + 1) + " di " + n, 30000); }); tot += r.linked; fail.push(...r.failed); } catch (e) { }
   }
-  if (tot || fail.length) toast((tot ? tot + " carte collegate al catalogo" : "") + (fail.length ? (tot ? "; " : "") + fail.length + " da collegare a mano" : ""), 6000);
+  if (tot || fail.length) toast((tot ? pl(tot, "carta collegata", "carte collegate") + " al catalogo" : "") + (fail.length ? (tot ? "; " : "") + fail.length + " da collegare a mano" : ""), 6000);
   render();
 }
 /* --- viste --- */
@@ -3959,6 +3962,26 @@ function fillCardImages(catId, d) {
     if (c && c.img) upd.push(Object.assign({}, it, { imageUrl: c.img, imageUrlBig: c.imgBig }));
   }
   if (upd.length) saveItems(upd).catch(() => { });
+}
+/* tocco su una carta posseduta: una copia apre la scheda, più copie aprono l'elenco */
+function openCopies(catId, cardId) {
+  const its = [...S.items.values()].filter(i => !i.deleted && i.catId === catId && i.ref && i.ref.card === cardId && i.status === "in")
+    .sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
+  if (!its.length) return;
+  if (its.length === 1) { go({ name: "item", id: its[0].id }); return; }
+  const card = S.setState && S.setState.data && S.setState.data.cards.find(c => c.id === cardId);
+  const nCopies = its.reduce((a, i) => a + (Number(i.qty) || 0), 0);
+  const tot = its.reduce((a, i) => a + itemTotal(i), 0);
+  const c = cat(catId);
+  let h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Le tue copie"><div class="grab"></div>';
+  h += '<div class="between"><div><h1 style="font-size:20px">' + esc(its[0].name || (card && card.name) || "") + '</h1><div class="small muted">' + (card ? "#" + esc(card.numFull) + " · " : "") + pl(nCopies, "copia", "copie") + ' · valore totale ' + eur(tot) + '</div></div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
+  h += '<div class="card list" style="max-height:55vh;overflow:auto">' + its.map(i => {
+    const ph = (i.photos || [])[0];
+    const det = [i.fields && i.fields.lingua, i.fields && i.fields.edizione, i.fields && i.fields.variante, i.location].filter(v => v && v !== "Normale").join(" · ");
+    return '<button type="button" class="li" data-act="copyOpen" data-id="' + esc(i.id) + '"><span style="width:44px;height:60px;border-radius:6px;overflow:hidden;background:#E9ECE9;flex-shrink:0;display:flex;align-items:center;justify-content:center" class="xs muted">' + (ph ? '<img alt="" src="' + esc(photoSrc(ph)) + '" style="width:100%;height:100%;object-fit:cover">' : i.imageUrl ? '<img alt="" src="' + esc(i.imageUrl) + '" style="width:100%;height:100%;object-fit:cover;opacity:.6">' : "—") + '</span><span class="grow" style="min-width:0"><span class="b" style="display:block;font-size:14px">' + esc(i.cond || "Stato non indicato") + (i.qty > 1 ? ' <span class="muted" style="font-weight:400">× ' + i.qty + '</span>' : '') + '</span><span class="xs muted ellip" style="display:block">' + esc(det || (c ? c.name : "")) + '</span></span><span class="b">' + (i.value != null ? eur(i.value) : "—") + '</span><span class="muted">' + ic("right", 16, 2) + '</span></button>';
+  }).join("") + '</div>';
+  h += '<div class="grid2"><button type="button" class="btn" data-act="copyAdd" data-id="' + esc(cardId) + '">Aggiungi una copia</button><button type="button" class="btn pri" data-act="copyOpen" data-id="' + esc(its[0].id) + '">Apri la prima</button></div></div></div>';
+  $("modal").innerHTML = h;
 }
 function ownedMap(catId) {
   const m = {};
@@ -4027,7 +4050,9 @@ function vSetDetail() {
   h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">';
   shown.forEach(x => {
     const o = own[x.id]; const sel = st.sel.has(x.id);
-    h += '<button type="button" data-act="setToggle" data-id="' + esc(x.id) + '" aria-pressed="' + sel + '" style="position:relative;padding:4px;border-radius:10px;border:2px solid ' + (sel ? "var(--acc)" : "transparent") + ';background:#fff;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px"><span style="display:block;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:#E9ECE9' + (o && o.qty ? "" : ";opacity:.55") + '">' + (x.img ? '<img alt="" loading="lazy" src="' + esc(x.img) + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</span><span class="xs b ellip" style="display:block">' + esc(x.name) + '</span><span class="xs muted">#' + esc(x.numFull) + (x.eur != null ? " · " + eur(x.eur) : "") + '</span>' + (o && o.qty ? '<span class="badge" style="position:absolute;top:8px;left:8px">×' + o.qty + '</span>' : o && o.wish ? '<span class="badge grey" style="position:absolute;top:8px;left:8px">desiderio</span>' : '') + (sel ? '<span style="position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:11px;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center">' + ic("check", 14, 2.5) + '</span>' : '') + '</button>';
+    const has = !!(o && o.qty);
+    const circle = has || sel ? '<button type="button" data-act="setToggle" data-id="' + esc(x.id) + '" aria-pressed="' + sel + '" aria-label="' + (sel ? "Deseleziona " : "Seleziona ") + esc(x.name) + '" style="position:absolute;top:2px;right:2px;width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;' + (sel ? "background:var(--acc);color:#fff" : "background:rgba(255,255,255,.92);border:1.5px solid #9A9C93") + '">' + (sel ? ic("check", 14, 2.5) : "") + '</span></button>' : "";
+    h += '<div style="position:relative;border-radius:10px;border:2px solid ' + (sel ? "var(--acc)" : "transparent") + ';background:#fff"><button type="button" data-act="' + (has ? "setOpen" : "setToggle") + '" data-id="' + esc(x.id) + '"' + (has ? ' aria-label="Le tue copie di ' + esc(x.name) + '"' : ' aria-pressed="' + sel + '"') + ' style="width:100%;padding:4px;border:none;border-radius:8px;background:none;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px;font:inherit;color:inherit"><span style="display:block;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:#E9ECE9' + (has ? "" : ";opacity:.55") + '">' + (x.img ? '<img alt="" loading="lazy" src="' + esc(x.img) + '" style="width:100%;height:100%;object-fit:cover">' : '') + '</span><span class="xs b ellip" style="display:block;max-width:100%">' + esc(x.name) + '</span><span class="xs muted">#' + esc(x.numFull) + (x.eur != null ? " · " + eur(x.eur) : "") + '</span>' + (has ? '<span class="badge" style="position:absolute;top:8px;left:8px">×' + o.qty + '</span>' : o && o.wish ? '<span class="badge grey" style="position:absolute;top:8px;left:8px">desiderio</span>' : '') + '</button>' + circle + '</div>';
   });
   h += '</div>';
   h += '<div style="height:70px"></div><div style="position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom))"><div class="grid2" style="max-width:560px;margin:0 auto"><button type="button" class="btn" data-act="setAddWish"' + (st.sel.size ? "" : " disabled") + '>Desideri (' + st.sel.size + ')</button><button type="button" class="btn pri" data-act="setAdd"' + (st.sel.size ? "" : " disabled") + '>Aggiungi (' + st.sel.size + ')</button></div></div>';
