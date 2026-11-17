@@ -120,7 +120,7 @@ const FALLBACK_SCHEMAS = {
 const SEARCH_SESSION = "col-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
 const ARTIFACT_URL = "https://claude.ai/artifact/JpkhTbPkxorNiivEPpVSJB";
 const APP_URL = "https://edoardobassani.github.io/collezioni/";
-const CHANNELS = ["Privato", "Asta", "Cardmarket", "eBay", "Subito", "Negozio", "Altro"];
+const CHANNELS = ["Privato", "Asta", "Galleria", "Cardmarket", "eBay", "Subito", "Negozio", "Altro"];
 const EXIT_TYPES = { consumato: "Consumato", venduto: "Venduto", regalato: "Regalato", scambiato: "Scambiato" };
 
 /* ================= Icone ================= */
@@ -146,6 +146,10 @@ const ICONS = {
   star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>',
   gem: '<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9.5 4 12 20l2.5-16"/>',
   comic: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M4 10h16M12 10v11"/>',
+  palette: '<path d="M12 3.5c-4.9 0-8.5 3.6-8.5 8.1 0 4.2 3.4 8.9 8 8.9 1.4 0 2-.8 2-1.7 0-1.1-1-1.5-1-2.6 0-.9.7-1.6 1.7-1.6h2.2c2.4 0 4.1-1.7 4.1-4.1 0-3.9-3.8-7-8.5-7z"/><circle cx="8" cy="11" r="1.1"/><circle cx="10.5" cy="7.5" r="1.1"/><circle cx="15" cy="8" r="1.1"/>',
+  frame: '<rect x="3" y="4" width="18" height="16" rx="1"/><rect x="6" y="7" width="12" height="10"/><path d="M6 15l3.5-3.5 2.5 2.5 2-2 4 3.5"/>',
+  statue: '<circle cx="12" cy="5" r="2"/><path d="M10 8h4l1 6h-2l-.5 3h-1l-.5-3H9z"/><path d="M7 17h10v4H7z"/>',
+  printart: '<rect x="5" y="3" width="14" height="18" rx="0.5"/><rect x="7.5" y="5.5" width="9" height="8"/><path d="M7.5 17h5M14.5 17h2"/>',
   chart: '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
   tools: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><path d="M16.5 13v7M13 16.5h7"/>',
   barcode: '<path d="M4 6v12M7 6v12M10 6v12M14 6v12M16 6v12M20 6v12"/>',
@@ -178,7 +182,7 @@ const ICONS = {
   filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
   sort: '<path d="M7 4v16M4 7l3-3 3 3M17 20V4M14 17l3 3 3-3"/>'
 };
-const CAT_ICON_KEYS = ["wine", "whisky", "drinks", "cardstar", "cardgem", "cards", "stamp", "coins", "coin", "crowncoin", "ancient", "stampold", "envelope", "globe", "book", "film", "die", "gamepad", "box", "vinyl", "watch", "star", "gem", "comic"];
+const CAT_ICON_KEYS = ["wine", "whisky", "drinks", "cardstar", "cardgem", "cards", "stamp", "coins", "coin", "crowncoin", "ancient", "stampold", "envelope", "globe", "book", "film", "die", "gamepad", "box", "vinyl", "watch", "star", "gem", "comic", "palette", "frame", "statue", "printart"];
 function ic(k, s = 20, sw = 1.7) {
   return '<svg aria-hidden="true" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[k] || ICONS.box) + '</svg>';
 }
@@ -254,11 +258,18 @@ async function boot() {
   subHistory();
 }
 
+/* categorie Arte: aggiunte una volta sola (se le elimini non tornano) */
+const ART_PRESET = {"group": {"id": "arte", "name": "Arte", "icon": "palette", "order": 70}, "cats": [{"id": "dipinti", "name": "Dipinti e disegni", "group": "arte", "icon": "frame", "consumable": false, "order": 10, "cond": ["Ottimo", "Buono", "Discreto", "Restaurato", "Da restaurare", "Danneggiato"], "fields": [{"k": "autore", "label": "Autore / artista", "type": "text", "options": []}, {"k": "attribuzione", "label": "Attribuzione", "type": "select", "options": ["Firmata e autenticata", "Firmata", "Attribuita", "Cerchia / scuola di", "Maniera di / copia da", "Anonimo"]}, {"k": "titolo_opera", "label": "Titolo dell'opera", "type": "text", "options": []}, {"k": "datazione", "label": "Anno o datazione (es. 1958, fine XIX sec.)", "type": "text", "options": []}, {"k": "tipo", "label": "Tipo", "type": "select", "options": ["Dipinto", "Disegno", "Acquerello", "Pastello", "Tecnica mista", "Collage", "Altro"]}, {"k": "tecnica", "label": "Tecnica (es. olio, acrilico, tempera, china)", "type": "text", "options": []}, {"k": "supporto", "label": "Supporto", "type": "select", "options": ["Tela", "Tavola", "Carta", "Cartone", "Masonite", "Metallo", "Altro"]}, {"k": "altezza", "label": "Altezza (cm)", "type": "number", "options": []}, {"k": "larghezza", "label": "Larghezza (cm)", "type": "number", "options": []}, {"k": "cornice", "label": "Cornice", "type": "select", "options": ["Con cornice", "Cornice d'epoca", "Senza cornice"]}, {"k": "firma", "label": "Firma (posizione, es. in basso a destra)", "type": "text", "options": []}, {"k": "autentica", "label": "Autentica", "type": "select", "options": ["Nessuna", "Certificato dell'artista", "Archivio / fondazione", "Expertise di un perito", "Certificato della galleria", "Altro"]}, {"k": "archivio", "label": "Archivio / catalogo generale (n.)", "type": "text", "options": []}, {"k": "provenienza", "label": "Provenienza (collezioni, gallerie, aste)", "type": "text", "options": []}, {"k": "esposizioni", "label": "Esposizioni e bibliografia", "type": "long", "options": []}, {"k": "restauri", "label": "Restauri e interventi", "type": "text", "options": []}]}, {"id": "sculture", "name": "Sculture", "group": "arte", "icon": "statue", "consumable": false, "order": 20, "cond": ["Ottimo", "Buono", "Discreto", "Restaurato", "Da restaurare", "Danneggiato"], "fields": [{"k": "autore", "label": "Autore / artista", "type": "text", "options": []}, {"k": "attribuzione", "label": "Attribuzione", "type": "select", "options": ["Firmata e autenticata", "Firmata", "Attribuita", "Cerchia / scuola di", "Maniera di / copia da", "Anonimo"]}, {"k": "titolo_opera", "label": "Titolo dell'opera", "type": "text", "options": []}, {"k": "datazione", "label": "Anno o datazione (es. 1958, fine XIX sec.)", "type": "text", "options": []}, {"k": "materiale", "label": "Materiale", "type": "select", "options": ["Bronzo", "Marmo", "Pietra", "Legno", "Terracotta", "Ceramica", "Gesso", "Ferro / acciaio", "Vetro", "Resina", "Altro"]}, {"k": "tecnica", "label": "Tecnica (es. fusione a cera persa, intaglio)", "type": "text", "options": []}, {"k": "altezza", "label": "Altezza (cm)", "type": "number", "options": []}, {"k": "larghezza", "label": "Larghezza (cm)", "type": "number", "options": []}, {"k": "profondita", "label": "Profondità (cm)", "type": "number", "options": []}, {"k": "peso_kg", "label": "Peso (kg)", "type": "number", "options": []}, {"k": "esemplare", "label": "Esemplare / tiratura (es. 3/8, unico)", "type": "text", "options": []}, {"k": "fonderia", "label": "Fonderia / marchio", "type": "text", "options": []}, {"k": "base", "label": "Base", "type": "select", "options": ["Con base", "Senza base"]}, {"k": "firma", "label": "Firma (posizione)", "type": "text", "options": []}, {"k": "autentica", "label": "Autentica", "type": "select", "options": ["Nessuna", "Certificato dell'artista", "Archivio / fondazione", "Expertise di un perito", "Certificato della galleria", "Altro"]}, {"k": "archivio", "label": "Archivio / catalogo generale (n.)", "type": "text", "options": []}, {"k": "provenienza", "label": "Provenienza (collezioni, gallerie, aste)", "type": "text", "options": []}, {"k": "esposizioni", "label": "Esposizioni e bibliografia", "type": "long", "options": []}, {"k": "restauri", "label": "Restauri e interventi", "type": "text", "options": []}]}, {"id": "grafica", "name": "Grafica e fotografia", "group": "arte", "icon": "printart", "consumable": false, "order": 30, "cond": ["Ottimo", "Buono", "Discreto", "Restaurato", "Da restaurare", "Danneggiato"], "fields": [{"k": "autore", "label": "Autore / artista", "type": "text", "options": []}, {"k": "titolo_opera", "label": "Titolo dell'opera", "type": "text", "options": []}, {"k": "datazione", "label": "Anno o datazione", "type": "text", "options": []}, {"k": "tecnica", "label": "Tecnica", "type": "select", "options": ["Litografia", "Serigrafia", "Acquaforte / incisione", "Xilografia", "Linoleografia", "Giclée / stampa digitale", "Fotografia", "Multiplo", "Altro"]}, {"k": "esemplare", "label": "Esemplare / tiratura (es. 25/100, P.A., H.C.)", "type": "text", "options": []}, {"k": "firmata", "label": "Firma", "type": "select", "options": ["Firmata a matita", "Firmata in lastra", "Timbro / firma stampata", "Non firmata"]}, {"k": "editore", "label": "Editore / stamperia", "type": "text", "options": []}, {"k": "supporto", "label": "Carta / supporto", "type": "text", "options": []}, {"k": "altezza", "label": "Altezza (cm)", "type": "number", "options": []}, {"k": "larghezza", "label": "Larghezza (cm)", "type": "number", "options": []}, {"k": "cornice", "label": "Cornice", "type": "select", "options": ["Con cornice", "Senza cornice"]}, {"k": "autentica", "label": "Autentica", "type": "select", "options": ["Nessuna", "Certificato dell'artista", "Archivio / fondazione", "Expertise di un perito", "Certificato della galleria", "Altro"]}, {"k": "archivio", "label": "Archivio / catalogo (n.)", "type": "text", "options": []}, {"k": "provenienza", "label": "Provenienza", "type": "text", "options": []}]}]};
 /* aggiunge peso e titolo alle categorie con il campo metallo (una volta sola) */
 function migrateConfig() {
   const cfg = S.config; if (!cfg || S._migrating) return;
   let changed = false;
   const copy = JSON.parse(JSON.stringify(cfg));
+  if (!copy.artAdded) {
+    copy.artAdded = true; changed = true;
+    if (!copy.groups.some(g => g.id === ART_PRESET.group.id)) copy.groups.push(JSON.parse(JSON.stringify(ART_PRESET.group)));
+    ART_PRESET.cats.forEach(c => { if (!copy.cats.some(x => x.id === c.id)) copy.cats.push(JSON.parse(JSON.stringify(c))); });
+  }
   copy.cats.forEach(c => {
     if (!c.fields.some(f => f.k === "metallo")) return;
     let pi = c.fields.findIndex(f => f.k === "peso");
@@ -1352,13 +1363,14 @@ function numOrNull(v) { const n = parseNum(v); return n == null ? null : n; }
 function normConf(v) { v = String(v || "").toLowerCase(); return ["alta", "media", "bassa"].includes(v) ? v : (v ? "media" : null); }
 const BINDER_NOTE = "MODALITÀ RACCOGLITORE: ogni immagine è il ritaglio di UNA sola tasca di una pagina di raccoglitore per carte. Crea al massimo una scheda per immagine, con 'foto' uguale al numero dell'immagine. Se la tasca è vuota, contiene solo il retro della carta o non si capisce, NON creare schede per quell'immagine. Leggi con attenzione nome, simbolo o sigla del set e numero della carta (di solito in basso, es. 4/102) e la lingua del testo. Se due tasche contengono la stessa carta, crea una scheda per ciascuna.\n";
 function scanPrompt(n, onlyCat, hint, forced) {
-  return "Sei l'assistente di catalogazione di una collezione personale. Ti allego " + n + " foto, numerate da 1 a " + n + " nell'ordine in cui le ricevi. In ogni foto possono esserci uno o più oggetti da collezione (bottiglie, monete, francobolli, carte collezionabili, libri, film, giochi…).\n" +
+  return "Sei l'assistente di catalogazione di una collezione personale. Ti allego " + n + " foto, numerate da 1 a " + n + " nell'ordine in cui le ricevi. In ogni foto possono esserci uno o più oggetti da collezione (bottiglie, monete, francobolli, carte collezionabili, libri, film, giochi, opere d'arte come quadri, sculture e stampe…).\n" +
     "Identifica ogni oggetto distinto e compila la sua scheda. Se due foto mostrano lo stesso oggetto (es. fronte e retro), crea una sola scheda.\n" +
     (onlyCat ? "Tutti gli oggetti appartengono a questa categoria.\n" : "Assegna a ogni oggetto la categoria più adatta tra quelle elencate.\n") +
     (forced || "") +
     (hint ? "Indicazioni del proprietario (da rispettare): " + hint + "\n" : "") +
     "Categorie disponibili (usa esattamente l'id e le chiavi dei campi):\n" + JSON.stringify(catsForPrompt(onlyCat)) + "\n" +
     "Regole: compila solo ciò che leggi o riconosci con ragionevole certezza; lascia fuori i campi incerti. Per i campi di tipo elenco usa una delle opzioni. Per lo stato usa una voce della scala della categoria solo se si vede chiaramente, altrimenti lascialo vuoto. Il nome deve essere breve e riconoscibile (es. 'Barolo Riserva 2013', 'Charizard – Set Base', '500 lire Caravelle 1961').\n" +
+    "Per le opere d'arte: l'autore va indicato solo se la firma è leggibile o l'opera è riconoscibile con certezza; non attribuirla a un artista solo per lo stile. Se la firma non si legge, lascia vuoto l'autore e scrivilo nella nota. Per stampe e grafiche leggi la tiratura a matita (es. 25/100, P.A.). Le misure vanno solo se il proprietario le indica.\n" +
     "Per le carte Pokémon aggiungi \"codice_set\" con l'identificativo del set secondo TCGdex (es. base1 per il Set Base, base2 per Jungle, sv01 per Scarlatto e Violetto); per Magic il codice Scryfall del set (es. lea, mh2). Nel campo numero usa il formato stampato sulla carta (es. 4/102). Se non sei sicuro del codice, lascialo vuoto.\n" +
     "Dai anche una stima indicativa del valore di mercato attuale in euro per UNA unità, basata sulle tue conoscenze, con un intervallo e l'affidabilità (alta, media o bassa). Se non sai stimare, metti valore null.\n" +
     'Rispondi solo con un array JSON, un oggetto per pezzo: [{"foto":1,"catId":"...","nome":"...","quantita":1,"stato":"...","fields":{"chiave":"valore"},"stima":{"valore":0,"min":0,"max":0,"affidabilita":"media"},"codice_set":"","note":"dubbi o cose da verificare, max 20 parole"}]';
@@ -1460,7 +1472,7 @@ function quotePrompt(batch, web) {
     return { id: b.id, categoria: c ? c.name : "", nome: b.name, stato: b.cond || "non indicato", dettagli: det };
   });
   return "Sei un perito di oggetti da collezione. Trova la quotazione di mercato ATTUALE, in euro, di UNA unità di ciascun pezzo qui sotto, nello stato di conservazione indicato dal proprietario (es. Near Mint, FDC, Sigillato): cerca prezzi riferiti proprio a quello stato e, se le fonti riportano stati diversi, adegua la stima. Se lo stato non è indicato, considera uno stato buono. Preferisci il mercato italiano ed europeo. Oggi è il " + today() + ".\n" +
-    (web ? "Usa la ricerca web: cerca vendite concluse, aste recenti, listini di negozi e marketplace specializzati (per esempio Cardmarket per le carte, aste ed enoteche online per vini e whisky, cataloghi e aste numismatiche o filateliche per monete e francobolli). Al massimo 2 ricerche per pezzo. Se le fonti non sono d'accordo, dai un intervallo e usa la mediana come valore. Non inventare fonti o link: se non trovi dati affidabili, metti affidabilità bassa e spiega nella nota.\n"
+    (web ? "Usa la ricerca web: cerca vendite concluse, aste recenti, listini di negozi e marketplace specializzati (per esempio Cardmarket per le carte, aste ed enoteche online per vini e whisky, cataloghi e aste numismatiche o filateliche per monete e francobolli, risultati d'asta per le opere d'arte: case italiane come Pandolfini, Cambi, Il Ponte, Wannenes, Finarte, Meeting Art, poi Christie's, Sotheby's, Dorotheum, Catawiki). Per le opere d'arte confronta opere dello stesso autore, periodo, tecnica e misure simili, e tieni conto di attribuzione e autentica: senza autentica o con attribuzione incerta il valore scende molto. Al massimo 2 ricerche per pezzo. Se le fonti non sono d'accordo, dai un intervallo e usa la mediana come valore. Non inventare fonti o link: se non trovi dati affidabili, metti affidabilità bassa e spiega nella nota.\n"
       : "Non hai accesso al web: dai una stima basata sulle tue conoscenze, con affidabilità al massimo 'media' e di solito 'bassa', e fonte 'Stima di Claude senza ricerca web'.\n") +
     "Pezzi:\n" + JSON.stringify(data) + "\n" +
     'Alla fine rispondi solo con un array JSON, un oggetto per pezzo con lo stesso id: [{"id":"...","valore":0,"min":0,"max":0,"affidabilita":"alta|media|bassa","fonte":"nome breve della fonte principale","url":"link alla fonte o null","nota":"max 15 parole"}]. Se proprio non puoi stimare, valore null.';
@@ -2063,6 +2075,75 @@ async function ixReadFile(file) {
   } catch (e) { ix.err = e.message && e.message.length > 12 ? e.message : "Non riesco a leggere il file: usa un .xlsx o un .csv."; ix.sheets = null; }
   render();
 }
+/* importazione automatica delle carte: Pokémon o Magic secondo il set */
+const IX_AUTO = "auto:carte";
+function ixAutoCats() { return Object.keys(CATALOGS).map(cat).filter(Boolean); }
+function ixTpl() {
+  const ix = S.ix; if (!ix || ix.catId !== IX_AUTO) return ix ? cat(ix.catId) : null;
+  const cs = ixAutoCats(); const fields = [];
+  cs.forEach(c => c.fields.forEach(f => { if (!fields.some(x => x.k === f.k)) fields.push(f); }));
+  return { id: IX_AUTO, name: cs.map(c => c.name).join(" e "), fields, cond: [...new Set(cs.flatMap(c => c.cond))] };
+}
+function ixColOf(k) { const e = Object.entries(S.ix.map).find(([, v]) => v === k); return e ? Number(e[0]) : -1; }
+function ixGameOf(v) { const t = ixNorm(v); if (/\bpokemon\b/.test(t)) return "pokemon"; if (/\b(magic|mtg)\b/.test(t)) return "magic"; return null; }
+async function ixDetect(onStatus) {
+  const ix = S.ix; const rows = ixRows(); const hdr = (rows[0] || []).map(ixNorm); const body = rows.slice(1);
+  const setCol = ixColOf("f:set"), numCol = ixColOf("f:numero");
+  const gameCol = hdr.findIndex(h => ["gioco", "game", "tcg", "gioco di carte", "tipo carta", "marca"].includes(h));
+  const old = ix.detect || {}; const manual = old.manual || {};
+  const sets = {};
+  body.forEach(r => {
+    const name = setCol >= 0 ? String(r[setCol] == null ? "" : r[setCol]).trim() : "";
+    const k = ixNorm(name);
+    const e = sets[k] || (sets[k] = { key: k, name: name || "(senza set)", n: 0, totals: new Set(), cat: null, how: "", code: "" });
+    e.n++;
+    const tot = numCol >= 0 ? String(r[numCol] == null ? "" : r[numCol]).split("/")[1] : "";
+    if (tot && /^\d+$/.test(tot.trim())) e.totals.add(String(Number(tot.trim())));
+  });
+  let pk = null, mg = null;
+  if (onStatus) onStatus("Leggo gli elenchi dei set Pokémon e Magic…");
+  try {
+    pk = (await loadSets("tcgdex", "en")).map(x => Object.assign({}, x));
+    try { (await loadSets("tcgdex", "it")).forEach(x => { const e = pk.find(y => y.id === x.id); if (e) e.nameIt = x.name; else pk.push(Object.assign({}, x, { nameIt: x.name })); }); } catch (e) { }
+  } catch (e) { pk = null; }
+  try { mg = await loadSets("scryfall", "en"); } catch (e) { mg = null; }
+  const names = x => [x.id, x.name, x.nameIt].filter(Boolean).map(ixNorm);
+  const exact = (list, k) => list ? list.filter(x => names(x).includes(k)) : [];
+  const partial = (list, k) => list && k.length > 3 ? list.filter(x => names(x).slice(1).some(n => n.length > 3 && (n.includes(k) || k.includes(n)))) : [];
+  const unresolved = [];
+  Object.values(sets).forEach(e => {
+    if (!e.key) return;
+    let ep = exact(pk, e.key), em = exact(mg, e.key);
+    if (!ep.length && !em.length) { ep = partial(pk, e.key); em = partial(mg, e.key); }
+    if (ep.length && em.length && e.totals.size) {
+      const tp = ep.filter(x => x.total && e.totals.has(String(x.total)));
+      if (tp.length) { ep = tp; em = []; }
+    }
+    if (ep.length && !em.length) { e.cat = "pokemon"; e.how = "catalogo"; if (ep.length === 1) e.code = ep[0].id; }
+    else if (em.length && !ep.length) { e.cat = "magic"; e.how = "catalogo"; if (em.length === 1) e.code = em[0].id; }
+    else unresolved.push(e);
+  });
+  if (unresolved.length && S.sample) {
+    if (onStatus) onStatus("Chiedo a Claude i set che non trovo nei cataloghi…");
+    try {
+      const out = await S.sample.json("Ti do un elenco di nomi o codici di espansioni di carte collezionabili, presi dal file Excel di un collezionista. Per ciascuno dimmi se è un set del gioco di carte Pokémon, di Magic: The Gathering oppure di un altro gioco. Se non lo riconosci con sicurezza rispondi \"altro\".\nElenco: " + JSON.stringify(unresolved.map(e => e.name)) + '\nRispondi solo con un oggetto JSON con gli stessi nomi come chiavi e come valore "pokemon", "magic" o "altro".', { cache: true });
+      unresolved.forEach(e => { const v = out && String(out[e.name] || "").toLowerCase(); if (v === "pokemon" || v === "magic") { e.cat = v; e.how = "Claude"; } });
+    } catch (e) { }
+  }
+  ix.detect = { sets, manual, rowCat: [], gameCol, setCol, err: !pk && !mg && !S.sample ? "Non riesco a leggere gli elenchi dei set (serve la connessione): assegna tu i set qui sotto." : (!pk && !mg ? "Cataloghi dei set non raggiungibili: ho chiesto a Claude. Controlla i set qui sotto." : "") };
+  ixApplyRows();
+}
+function ixApplyRows() {
+  const det = S.ix.detect; const body = ixRows().slice(1);
+  Object.values(det.sets).forEach(e => { if (det.manual[e.key] !== undefined) { e.cat = det.manual[e.key] || null; e.how = "scelta tua"; } });
+  det.rowCat = body.map(r => {
+    const k = ixNorm(det.setCol >= 0 ? r[det.setCol] : "");
+    const g = det.gameCol >= 0 ? ixGameOf(r[det.gameCol]) : null;
+    if (g && det.manual[k] === undefined) return g;
+    const e = det.sets[k];
+    return e && e.cat && cat(e.cat) ? e.cat : null;
+  });
+}
 function ixRows() { const ix = S.ix; const sh = ix.sheets && ix.sheets[ix.sheetIdx]; return sh ? sh.rows : []; }
 const IX_BASE = [["name", "Nome"], ["qty", "Quantità"], ["cond", "Stato di conservazione"], ["buyPrice", "Prezzo d'acquisto"], ["buyDate", "Data d'acquisto"], ["buyFrom", "Acquistato da"], ["value", "Valore / quotazione"], ["location", "Posizione"], ["notes", "Note"], ["tags", "Tag"], ["barcode", "Codice a barre"]];
 const IX_SYN = {
@@ -2092,7 +2173,7 @@ function ixTargets(c) {
   return t;
 }
 function ixAutoMap() {
-  const ix = S.ix; const c = cat(ix.catId); if (!c) return;
+  const ix = S.ix; const c = ixTpl(); if (!c) return;
   const hdr = (ixRows()[0] || []).map(ixNorm);
   const used = new Set(); const map = {};
   const score = (h, k, label) => {
@@ -2132,17 +2213,19 @@ function ixDate(s) {
   return null;
 }
 function ixBuild() {
-  const ix = S.ix; const c = cat(ix.catId);
+  const ix = S.ix; const tpl = ixTpl(); const auto = ix.catId === IX_AUTO;
   const rows = ixRows().slice(1);
-  const out = []; const problems = [];
-  const fOf = k => c.fields.find(f => f.k === k);
+  const out = []; const problems = []; let skipped = 0;
   rows.forEach((r, ri) => {
+    const c = auto ? cat(ix.detect && ix.detect.rowCat[ri]) : tpl;
+    if (!c) { skipped++; return; }
+    const fOf = k => c.fields.find(f => f.k === k);
     const d = newDraft(c.id, "in"); d.fields = {}; const notes = []; let err = null; const warns = [];
     Object.entries(ix.map).forEach(([ci, k]) => {
       if (!k) return;
       const raw = r[ci];
       if (k === "range:bere") { const m = /^(\d{4})\s*[-–\/]\s*(\d{4})$/.exec(String(raw || "").trim()); if (m) { d.fields.bere_da = Number(m[1]); d.fields.bere_entro = Number(m[2]); } else if (String(raw || "").trim()) warns.push("Intervallo \"" + raw + "\" non riconosciuto"); return; }
-      if (k.startsWith("f:")) { const f = fOf(k.slice(2)); const cv = ixConv(raw, f); if (cv.err) err = err || cv.err; if (cv.note) { notes.push(cv.note); warns.push(cv.warn); } if (cv.v !== undefined) d.fields[f.k] = cv.v; return; }
+      if (k.startsWith("f:")) { const f = fOf(k.slice(2)); if (!f) { const tf = tpl.fields.find(x => x.k === k.slice(2)); if (String(raw == null ? "" : raw).trim()) notes.push((tf ? tf.label : k.slice(2)) + ": " + String(raw).trim()); return; } const cv = ixConv(raw, f); if (cv.err) err = err || cv.err; if (cv.note) { notes.push(cv.note); warns.push(cv.warn); } if (cv.v !== undefined) d.fields[f.k] = cv.v; return; }
       const s = String(raw == null ? "" : raw).trim(); if (!s) return;
       if (k === "qty") { const n = parseNum(s.replace(/[^\d.,]/g, "")); if (n == null || isNaN(n)) err = err || "Quantità \"" + s + "\" non è un numero"; else d.qty = Math.max(0, Math.round(n)); }
       else if (k === "buyPrice" || k === "value") { const n = parseNum(s.replace(/[^\d.,\-]/g, "")); if (n == null || isNaN(n)) warns.push((k === "value" ? "Valore" : "Prezzo") + " \"" + s + "\" non riconosciuto"); else d[k] = n; }
@@ -2158,14 +2241,27 @@ function ixBuild() {
     warns.forEach(w => problems.push({ label, msg: w }));
     if (d.buyPrice != null) d.buyKind = "reale";
     if (d.value != null) { d.valueDate = today(); d.valueSource = "Importato da " + ix.fileName; }
+    if (auto && ix.detect) { const e = ix.detect.sets[ixNorm(d.fields.set || "")]; if (e && e.code && e.cat === c.id) d.setCode = e.code; }
     out.push(d);
   });
   // abbinamento con pezzi esistenti
   const keyF = ["annata", "anno", "set", "numero", "produttore", "volume", "edizione"];
   const sig = it => [normTxt(it.name), ...keyF.map(k => String((it.fields || {})[k] == null ? "" : (it.fields || {})[k]).toLowerCase())].join("|");
-  const existing = {}; catItems(c.id).forEach(i => { existing[sig(i)] = i; });
-  out.forEach(d => { const ex = existing[sig(d)]; if (ex) d._match = ex.id; });
-  return { items: out, problems };
+  const existing = {}; (auto ? ixAutoCats() : [tpl]).forEach(cc => catItems(cc.id).forEach(i => { existing[cc.id + "#" + sig(i)] = i; }));
+  out.forEach(d => { const ex = existing[d.catId + "#" + sig(d)]; if (ex) d._match = ex.id; });
+  return { items: out, problems, skipped };
+}
+function ixDetectBox() {
+  const det = S.ix.detect; const all = Object.values(det.sets).sort((a, b) => b.n - a.n);
+  const cnt = {}; det.rowCat.forEach(c => { cnt[c || ""] = (cnt[c || ""] || 0) + 1; });
+  const opts = sel => '<option value="">Salta</option>' + S.config.cats.map(c => '<option value="' + esc(c.id) + '"' + (sel === c.id ? " selected" : "") + '>' + esc(c.name) + '</option>').join("");
+  const row = e => '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid var(--line2)"><span style="min-width:0"><span class="b ellip" style="display:block;font-size:14px">' + esc(e.name) + '</span><span class="xs muted">' + pl(e.n, "riga", "righe") + (e.how ? " · " + esc(e.how) : "") + '</span></span><select class="in" style="height:40px;font-size:13px;padding:0 8px;' + (e.cat ? "background:#F4F8F5" : "background:#FDF7F3") + '" data-change="ixSetCat" data-id="' + esc(e.key) + '" aria-label="Categoria per ' + esc(e.name) + '">' + opts(e.cat) + '</select></div>';
+  let h = '<div class="card pad stack" style="gap:6px;margin-top:-6px"><div class="b">Carte riconosciute</div><div class="small">' + ixAutoCats().map(c => esc(c.name) + ": <b>" + (cnt[c.id] || 0) + "</b>").join(" · ") + (cnt[""] ? ' · <span class="down">da assegnare: <b>' + cnt[""] + '</b></span>' : "") + '</div></div>';
+  if (det.err) h += '<div class="notice warn">' + esc(det.err) + '</div>';
+  const todo = all.filter(e => !e.cat), done = all.filter(e => e.cat);
+  if (todo.length) h += '<div class="sect">Set non riconosciuti</div><div class="xs muted">Scegli tu dove vanno, oppure lasciali su Salta.</div><div class="card" style="overflow:hidden">' + todo.map(row).join("") + '</div>';
+  if (done.length) h += '<details class="card" style="overflow:hidden"' + (todo.length ? "" : " open") + '><summary class="small b" style="padding:12px 14px;cursor:pointer">Set riconosciuti (' + done.length + ')</summary>' + done.map(row).join("") + '</details>';
+  return h;
 }
 function vImport() {
   const ix = S.ix || (S.ix = { step: 1, catId: "", mode: "update", buyAsValue: true, map: {} });
@@ -2179,7 +2275,9 @@ function vImport() {
     h += '<button type="button" class="card pad row" style="border:1.5px dashed #C9C9C3;text-align:left;gap:14px" data-act="ixPick"><span class="ico">' + ic("upload", 22) + '</span><span class="grow">' + (ix.sheets ? '<span class="b" style="display:block">' + esc(ix.fileName) + '</span><span class="small muted">' + (ix.sheets.length > 1 ? 'Foglio "' + esc(ix.sheets[ix.sheetIdx].name) + '" · ' : "") + pl(Math.max(0, ixRows().length - 1), "riga", "righe") + ' · ' + pl((ixRows()[0] || []).length, "colonna", "colonne") + '</span>' : '<span class="b" style="display:block">Scegli il file</span><span class="small muted">.xlsx o .csv</span>') + '</span></button>';
     if (ix.err) h += '<div class="notice warn">' + esc(ix.err) + '</div>';
     if (ix.sheets && ix.sheets.length > 1) h += '<label class="f"><span>Foglio</span><select class="in" data-change="ixSheet">' + ix.sheets.map((s, i) => '<option value="' + i + '"' + (i === ix.sheetIdx ? " selected" : "") + '>' + esc(s.name) + ' (' + s.rows.length + ' righe)</option>').join("") + '</select></label>';
-    h += '<label class="f"><span>In quale categoria?</span><select class="in" data-change="ixCat"><option value="">Scegli…</option>' + cfg.cats.map(c => '<option value="' + esc(c.id) + '"' + (ix.catId === c.id ? " selected" : "") + '>' + esc(c.name) + '</option>').join("") + '</select></label>';
+    const canAuto = ixAutoCats().length === Object.keys(CATALOGS).length;
+    h += '<label class="f"><span>In quale categoria?</span><select class="in" data-change="ixCat"><option value="">Scegli…</option>' + (canAuto ? '<option value="' + IX_AUTO + '"' + (ix.catId === IX_AUTO ? " selected" : "") + '>Carte: riconosci Pokémon o Magic dal set</option>' : "") + cfg.cats.map(c => '<option value="' + esc(c.id) + '"' + (ix.catId === c.id ? " selected" : "") + '>' + esc(c.name) + '</option>').join("") + '</select></label>';
+    if (ix.catId === IX_AUTO) h += '<div class="xs muted" style="margin-top:-6px">Ogni riga va in Pokémon o in Magic secondo il set, cercato nei cataloghi TCGdex e Scryfall. Le righe che non riconosco le assegni tu prima di importare.</div>';
     h += '<label class="f"><span>Se un pezzo esiste già</span><select class="in" data-change="ixMode">' + [["update", "Aggiungi la quantità e completa i campi vuoti"], ["skip", "Lascialo com'è (salta la riga)"], ["new", "Crea comunque una scheda nuova"]].map(([k, l]) => '<option value="' + k + '"' + (ix.mode === k ? " selected" : "") + '>' + l + '</option>').join("") + '</select></label>';
     if (ix.sheets) {
       const rows = ixRows(); const hd = rows[0] || []; const nc = Math.min(hd.length, 4);
@@ -2187,34 +2285,38 @@ function vImport() {
     }
     h += '<button type="button" class="btn pri full" data-act="ixNext"' + (ix.sheets && ix.catId ? "" : " disabled") + '>Avanti: abbina le colonne</button>';
   } else if (step === 2) {
-    const c = cat(ix.catId); const rows = ixRows(); const hd = rows[0] || [];
+    const c = ixTpl(); const rows = ixRows(); const hd = rows[0] || [];
     const tg = ixTargets(c);
     const mapped = Object.values(ix.map).filter(Boolean).length;
     h += '<div class="notice" style="margin-top:-6px">Ho abbinato in automatico ' + mapped + ' colonne su ' + hd.length + '. Controlla e correggi dove serve.</div>';
     h += '<div class="card">' + hd.map((name, i) => { const ex = (rows.slice(1).find(r => String(r[i] || "").trim()) || [])[i] || ""; const k = ix.map[i] || ""; return '<div style="display:grid;grid-template-columns:1fr 18px 1.15fr;gap:8px;align-items:center;padding:10px 14px' + (i ? ";border-top:1px solid var(--line2)" : "") + '"><span style="min-width:0"><span class="b ellip" style="display:block;font-size:14px">' + esc(name || "Colonna " + (i + 1)) + '</span><span class="xs muted ellip" style="display:block">es. ' + esc(String(ex).slice(0, 40)) + '</span></span><span class="muted">' + ic("right", 16, 2) + '</span><select class="in" style="height:40px;font-size:13px;padding:0 8px;' + (k ? "background:#F4F8F5" : "background:#FDF7F3") + '" data-change="ixMap" data-id="' + i + '" aria-label="Campo per ' + esc(name) + '"><option value="">Non importare</option>' + tg.map(t => '<option value="' + t.k + '"' + (k === t.k ? " selected" : "") + '>' + esc(t.l) + '</option>').join("") + '</select></div>'; }).join("") + '</div>';
     if (ix.rangeCol != null && ix.map[ix.rangeCol] !== "range:bere" && tg.some(t => t.k === "range:bere")) h += '<div class="small muted">"' + esc(hd[ix.rangeCol]) + '" contiene due anni insieme: posso dividerla in "Da bere dal" e "Da bere entro".</div><button type="button" class="btn sm" data-act="ixSplit">Dividi in "dal" e "entro"</button>';
     if (!Object.values(ix.map).includes("name")) h += '<div class="notice warn">Abbina almeno una colonna a "Nome".</div>';
+    if (ix.catId === IX_AUTO && !Object.values(ix.map).includes("f:set")) h += '<div class="notice warn">Abbina la colonna del set a "Set": serve per capire se la carta è Pokémon o Magic.</div>';
+    if (ix.detecting) h += '<div class="small muted">' + esc(ix.detecting) + '</div>';
     h += '<div class="grid2"><button type="button" class="btn" data-act="ixBack">Indietro</button><button type="button" class="btn pri" data-act="ixNext"' + (Object.values(ix.map).includes("name") ? "" : " disabled") + '>Avanti: controlla</button></div>';
   } else if (step === 3) {
     const b = ix.built || (ix.built = ixBuild());
     const nNew = b.items.filter(d => !d._match || ix.mode === "new").length;
     const nUpd = ix.mode === "update" ? b.items.filter(d => d._match).length : 0;
     const nSkip = ix.mode === "skip" ? b.items.filter(d => d._match).length : 0;
+    if (ix.catId === IX_AUTO && ix.detect) h += ixDetectBox();
     const box = (n, l, col) => '<div class="card pad" style="padding:12px"><div style="font-size:22px;font-weight:700;color:' + col + '">' + n + '</div><div class="small muted">' + l + '</div></div>';
     h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:-6px">' + box(nNew, "Nuovi", "#1D6B47") + box(nUpd || nSkip, nSkip ? "Già presenti, saltati" : "Aggiornati", "var(--acc)") + box(b.problems.length, "Da sistemare", b.problems.length ? "var(--down)" : "var(--muted)") + '</div>';
     if (b.problems.length) h += '<div class="sect">Da sistemare</div><div class="card list">' + b.problems.slice(0, 30).map(p => '<div style="padding:11px 14px;border-top:1px solid var(--line2)"><div class="b" style="font-size:14px">' + esc(p.label) + '</div><div class="xs muted">' + esc(p.msg) + '</div></div>').join("") + (b.problems.length > 30 ? '<div class="xs muted" style="padding:10px 14px">… e altre ' + (b.problems.length - 30) + '</div>' : "") + '</div>';
     if (b.items.some(d => d.buyPrice != null && d.value == null)) h += '<label class="card pad row" style="cursor:pointer;gap:12px"><input type="checkbox" data-change="ixBuyVal"' + (ix.buyAsValue ? " checked" : "") + ' style="width:22px;height:22px;accent-color:var(--acc)"><span class="grow"><span class="b" style="display:block;font-size:14px">Prezzo d\'acquisto come valore iniziale</span><span class="xs muted">Finché non aggiorni le quotazioni</span></span></label>';
+    if (b.skipped) h += '<div class="small muted">' + pl(b.skipped, "riga non assegnata viene saltata", "righe non assegnate vengono saltate") + '.</div>';
     h += '<div class="notice">Potrai annullare l\'importazione da questa pagina: i pezzi nuovi vengono tolti e quelli aggiornati tornano com\'erano.</div>';
     const n = nNew + nUpd;
     h += '<div class="grid2"><button type="button" class="btn" data-act="ixBack">Indietro</button><button type="button" class="btn pri" data-act="ixGo"' + (n ? "" : " disabled") + '>' + ic("download", 18) + 'Importa ' + pl(n, "pezzo", "pezzi") + '</button></div><div class="xs muted" id="ixMsg"></div>';
   } else {
     const r = ix.result || {};
-    h += '<div class="card pad stack" style="margin-top:-6px"><div class="b">' + pl(r.created || 0, "pezzo nuovo", "pezzi nuovi") + (r.updated ? " e " + pl(r.updated, "pezzo aggiornato", "pezzi aggiornati") : "") + ' in ' + esc(r.cat || "") + '.</div><div class="small muted">Se qualcosa non va puoi annullare tutto.</div><div class="grid2"><button type="button" class="btn" data-act="ixUndo">Annulla importazione</button><button type="button" class="btn pri" data-act="openCat" data-id="' + esc(ix.catId) + '">Vai alla categoria</button></div></div>';
+    h += '<div class="card pad stack" style="margin-top:-6px"><div class="b">' + pl(r.created || 0, "pezzo nuovo", "pezzi nuovi") + (r.updated ? " e " + pl(r.updated, "pezzo aggiornato", "pezzi aggiornati") : "") + ' in ' + esc(r.cat || "") + (r.split ? " (" + esc(r.split) + ")" : "") + '.</div><div class="small muted">Se qualcosa non va puoi annullare tutto.</div><div class="grid2"><button type="button" class="btn" data-act="ixUndo">Annulla importazione</button><button type="button" class="btn pri" data-act="openCat" data-id="' + esc(r.openId || ix.catId) + '">Vai alla categoria</button></div></div>';
   }
   return h + '</div>';
 }
 async function ixGo(btn) {
-  const ix = S.ix; const c = cat(ix.catId); const b = ix.built;
+  const ix = S.ix; const c = ixTpl(); const b = ix.built;
   const msg = $("ixMsg"); if (btn) btn.disabled = true;
   const created = [], prev = [], toSave = [];
   b.items.forEach(d => {
@@ -2243,6 +2345,7 @@ async function ixGo(btn) {
     try { await S.db.doc("imports/last").set({ at: nowIso(), cat: c.name, created, prev: prev.slice(0, 500) }); } catch (e) { }
     lsSet("col.lastImport", { at: nowIso(), n: toSave.length, cat: c.name });
     ix.result = { created: created.length, updated: prev.length, cat: c.name };
+    if (ix.catId === IX_AUTO) { const cnt = {}; toSave.forEach(d => { cnt[d.catId] = (cnt[d.catId] || 0) + 1; }); ix.result.openId = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0] || ""; ix.result.split = ixAutoCats().map(x => x.name + " " + (cnt[x.id] || 0)).join(", "); }
     ix.step = 4; render(); window.scrollTo(0, 0);
   } catch (e) { toast(dbErr(e), 5000); if (btn) btn.disabled = false; }
 }
@@ -2937,7 +3040,7 @@ function raiPrompt(batch, web, photoOf) {
   const keys = {};
   batch.forEach(it => { const c = cat(it.catId); keys[c.name] = c.fields.map(f => f.k + (f.options.length ? " (" + f.options.join(" | ") + ")" : "")).join(", "); });
   return "Sei un perito di oggetti da collezione. Controlla se i dati di questi pezzi sono veri e coerenti, tra loro e con le foto quando ci sono (il campo foto indica il numero dell'immagine allegata, nell'ordine). Oggi è il " + today() + ".\n" +
-    "Cerca errori concreti: produttori, denominazioni, distillerie o vitigni che non corrispondono; annate o anni impossibili; nominale, metallo, autorità o zecca incoerenti per le monete; numeri di catalogo che non corrispondono all'emissione per i francobolli; set, numero o rarità sbagliati per le carte; autore, editore o anno sbagliati per libri e manga; dati diversi da quello che si legge in foto. Non segnalare i campi vuoti e non chiedere altre informazioni.\n" +
+    "Cerca errori concreti: produttori, denominazioni, distillerie o vitigni che non corrispondono; annate o anni impossibili; nominale, metallo, autorità o zecca incoerenti per le monete; numeri di catalogo che non corrispondono all'emissione per i francobolli; set, numero o rarità sbagliati per le carte; autore, editore o anno sbagliati per libri e manga; autore, tecnica, datazione o tiratura incoerenti per le opere d'arte; dati diversi da quello che si legge in foto. Non segnalare i campi vuoti e non chiedere altre informazioni.\n" +
     (web ? "Puoi usare la ricerca web, al massimo 2 ricerche per pezzo, solo quando serve a confermare un dubbio.\n" : "Non hai accesso al web: basati sulle tue conoscenze e sulle foto; se non sei sicuro usa esito non_verificabile.\n") +
     "Campi disponibili per categoria (chiave e, tra parentesi, i valori ammessi):\n" + JSON.stringify(keys) + "\nPezzi:\n" + JSON.stringify(data) + "\n" +
     'Rispondi solo con un array JSON, un oggetto per pezzo con lo stesso id: [{"id":"...","esito":"ok|controlla|non_verificabile","nota":"spiegazione breve, max 30 parole, in italiano","correzioni":{"chiave_campo":"valore corretto"}}]. In correzioni metti solo valori di cui sei sicuro, con le chiavi dei campi indicate (usa "nome" per il nome); per i campi a scelta usa uno dei valori ammessi. Se è tutto plausibile, esito ok e correzioni vuote.';
@@ -3450,7 +3553,9 @@ document.addEventListener("click", async ev => {
     case "metalSave": await metalSave(); break;
     case "importx": S.ix = null; go({ name: "importx" }); break;
     case "ixPick": { const inp = $("pick_file"); inp.value = ""; inp.click(); break; }
-    case "ixNext": if (S.ix.step === 1) { ixAutoMap(); S.ix.step = 2; } else { S.ix.built = null; S.ix.step = 3; } render(); window.scrollTo(0, 0); break;
+    case "ixNext": if (S.ix.step === 1) { ixAutoMap(); S.ix.step = 2; } else {
+      if (S.ix.catId === IX_AUTO) { if (S.ix.detecting) break; S.ix.detecting = "Riconosco i set…"; render(); try { await ixDetect(t => { S.ix.detecting = t; render(); }); } finally { S.ix.detecting = ""; } }
+      S.ix.built = null; S.ix.step = 3; } render(); window.scrollTo(0, 0); break;
     case "ixBack": S.ix.step--; render(); window.scrollTo(0, 0); break;
     case "ixSplit": S.ix.map[S.ix.rangeCol] = "range:bere"; render(); break;
     case "ixGo": await ixGo(el); break;
@@ -3602,7 +3707,8 @@ document.addEventListener("change", async ev => {
     case "bkChanges": lsSet("col.bkChanges", el.checked); render(); break;
     case "ixFile": { const f = el.files && el.files[0]; el.value = ""; if (f) { if (!S.ix) S.ix = { step: 1, catId: "", mode: "update", buyAsValue: true, map: {} }; await ixReadFile(f); } break; }
     case "ixSheet": S.ix.sheetIdx = parseInt(el.value, 10); ixAutoMap(); render(); break;
-    case "ixCat": S.ix.catId = el.value; ixAutoMap(); render(); break;
+    case "ixCat": S.ix.catId = el.value; S.ix.detect = null; ixAutoMap(); render(); break;
+    case "ixSetCat": { const det = S.ix.detect; if (!det) break; det.manual[el.dataset.id] = el.value; ixApplyRows(); S.ix.built = null; render(); break; }
     case "ixMode": S.ix.mode = el.value; render(); break;
     case "ixMap": S.ix.map[el.dataset.id] = el.value; render(); break;
     case "ixBuyVal": S.ix.buyAsValue = el.checked; break;
