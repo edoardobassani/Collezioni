@@ -3779,6 +3779,20 @@ async function loadSetCards(src, setId, lang) {
     if (!d) throw new Error("Set non trovato");
     const official = d.cardCount && (d.cardCount.official || d.cardCount.total);
     out = { name: d.name, usedLang, total: official || (d.cards || []).length, cards: (d.cards || []).map(c => ({ id: c.id, num: String(c.localId), numFull: official ? c.localId + "/" + official : String(c.localId), name: c.name, img: c.image ? c.image + "/low.webp" : null, imgBig: c.image ? c.image + "/high.webp" : null })) };
+    /* nelle edizioni non inglesi dei set vecchi TCGdex spesso non ha le immagini: uso quelle inglesi della stessa carta */
+    if (usedLang !== "en" && out.cards.some(c => !c.img)) {
+      try {
+        const en = await getJson("https://api.tcgdex.net/v2/en/sets/" + encodeURIComponent(setId));
+        const byId = {}, byNum = {};
+        ((en && en.cards) || []).forEach(c => { byId[c.id] = c; byNum[String(c.localId)] = c; });
+        out.cards.forEach(c => {
+          const e = byId[c.id] || byNum[c.num];
+          if (!e) return;
+          if (!c.nameEn) c.nameEn = e.name;
+          if (!c.img && e.image) { c.img = e.image + "/low.webp"; c.imgBig = e.image + "/high.webp"; }
+        });
+      } catch (e) { }
+    }
   } else {
     const fetchAll = async (q) => {
       let url = "https://api.scryfall.com/cards/search?unique=prints&order=set&include_extras=true&q=" + encodeURIComponent(q);
@@ -3935,6 +3949,17 @@ async function linkAll(silent) {
   render();
 }
 /* --- viste --- */
+/* completa le immagini mancanti dei pezzi già collegati a questo set */
+function fillCardImages(catId, d) {
+  const byId = {}; d.cards.forEach(c => { byId[c.id] = c; });
+  const upd = [];
+  for (const it of S.items.values()) {
+    if (it.deleted || it.catId !== catId || !it.ref || it.imageUrl) continue;
+    const c = byId[it.ref.card];
+    if (c && c.img) upd.push(Object.assign({}, it, { imageUrl: c.img, imageUrlBig: c.imgBig }));
+  }
+  if (upd.length) saveItems(upd).catch(() => { });
+}
 function ownedMap(catId) {
   const m = {};
   for (const it of S.items.values()) {
@@ -3984,7 +4009,7 @@ function vSetDetail() {
   let h = '<div class="wrap stack">';
   if (!st.data && !st.err && !st.loading) {
     st.loading = true;
-    loadSetCards(src, v.setId, st.lang).then(d => { st.data = d; st.loading = false; const own = ownedMap(v.catId); st.sel = new Set(d.cards.filter(x => !own[x.id] || !own[x.id].qty).map(x => x.id)); render(); }).catch(e => { st.err = e.message; st.loading = false; render(); });
+    loadSetCards(src, v.setId, st.lang).then(d => { st.data = d; st.loading = false; fillCardImages(v.catId, d); const own = ownedMap(v.catId); st.sel = new Set(d.cards.filter(x => !own[x.id] || !own[x.id].qty).map(x => x.id)); render(); }).catch(e => { st.err = e.message; st.loading = false; render(); });
   }
   h += topBar(st.data ? st.data.name : "Set", st.data ? (st.data.usedLang !== st.lang ? "Non disponibile in italiano: elenco in inglese" : (st.lang === "it" ? "Edizione italiana" : "Edizione inglese")) : "");
   if (st.err) return h + '<div class="notice warn">Non riesco a scaricare il set (' + esc(st.err) + ').</div></div>';
