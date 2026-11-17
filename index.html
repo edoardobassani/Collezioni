@@ -246,6 +246,7 @@ async function boot() {
     syncSubs();
     if (first && String(location.hash || "") === "#quote" && S.config && S.config.cats.length) { S.fromApp = true; S.quote = { step: "pick", sel: new Set(), min: null, days: "", wish: false, awaitApp: true }; S.stack = [{ name: "home" }]; S.view = { name: "quote" }; render(); return; }
     if (first && String(location.hash || "") === "#review" && S.config && S.config.cats.length) { S.fromApp = true; S.rai = { mode: "flagged", catId: "", web: false, sel: new Set(), step: "pick", results: [], awaitApp: true }; S.stack = [{ name: "home" }]; S.view = { name: "reviewAi" }; render(); return; }
+    if (first && String(location.hash || "") === "#eur2" && S.config && S.config.cats.length) { S.fromApp = true; S.stack = [{ name: "home" }, { name: "eur2" }]; S.e2u = null; S.view = { name: "eur2Upd" }; render(); return; }
     if (first && String(location.hash || "") === "#scan" && S.config && S.config.cats.length) { S.fromApp = true; S.scan = { step: "pick", files: [], urls: [], catId: "auto", results: [] }; S.stack = [{ name: "home" }]; S.view = { name: "scan" }; render(); return; }
     softRender();
   }, err => { clearTimeout(slowT); S.loadErr = "Non riesco a leggere l'archivio (" + err.code + ")."; render(); });
@@ -498,6 +499,9 @@ function render() {
       case "quote": html = vQuote(); break;
       case "sets": html = vSets(); break;
       case "setDetail": html = vSetDetail(); break;
+      case "eur2": html = vEur2(); break;
+      case "eur2Grid": html = vEur2Grid(); break;
+      case "eur2Upd": html = vEur2Upd(); break;
       case "review": html = vReview(); break;
       case "reviewItem": html = vReviewItem(); break;
       case "reviewList": html = vReviewList(); break;
@@ -514,7 +518,7 @@ function render() {
   } catch (e) { console.error(e); html = '<div class="wrap"><div class="empty">Errore di visualizzazione: ' + esc(e.message) + '</div></div>'; }
   const navTabs = ["home", "stats", "history", "wish", "tools"];
   const activeTab = navTabs.includes(v.name) ? v.name : ["backup", "report"].includes(v.name) ? "tools" : (S.stack[0] && navTabs.includes(S.stack[0].name) ? S.stack[0].name : "home");
-  const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail", "review", "reviewItem", "reviewList", "reviewAi", "prices", "search", "importx"].includes(v.name);
+  const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail", "eur2Grid", "eur2Upd", "review", "reviewItem", "reviewList", "reviewAi", "prices", "search", "importx"].includes(v.name);
   app.innerHTML = html + (showNav ? navHtml(activeTab) : "");
   afterRender();
 }
@@ -601,6 +605,7 @@ function vCat(id) {
   h += topBar(c.name, sumQty(all) + " pezzi · valore " + eur(sumVal(all)), '<button type="button" class="iconbtn" style="background:var(--ink);color:#fff" data-act="newItem" data-id="' + esc(id) + '" aria-label="Aggiungi pezzo">' + ic("plus", 20, 1.8) + '</button>');
   if (Object.keys(S.hist || {}).length > 1) h += histBox(id);
   if (S.env === "pwa" && catalogOf(id)) h += '<div class="grid2"><button type="button" class="btn pri" data-act="openSets" data-id="' + esc(id) + '">' + ic("grid", 18) + 'Set e completamento</button><button type="button" class="btn" data-act="cardPrices" data-id="' + esc(id) + '">' + ic("refresh", 18) + 'Aggiorna prezzi</button></div>';
+  if (eur2Cat() && eur2Cat().id === id) h += '<button type="button" class="btn pri" data-act="openEur2">' + ic("coin", 18) + 'Catalogo 2 € commemorativi</button>';
   if (S.env === "pwa") h += '<button type="button" class="btn" data-act="barcode" data-id="' + esc(id) + '">' + ic("filter", 18) + 'Scansiona codice a barre / ISBN</button>';
   h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="q" type="search" placeholder="Cerca in ' + esc(c.name) + '" aria-label="Cerca" value="' + esc(st.q) + '" data-input="catSearch" data-id="' + esc(id) + '"></label>';
   h += '<div class="between"><div class="chips">' + [["in", "In collezione"], ["wish", "Desideri"], ["out", "Usciti"]].map(([k, l]) => '<button type="button" class="chip ' + (st.f === k ? "on" : "") + '" data-act="catFilter" data-id="' + esc(id) + '" data-v="' + k + '">' + l + (counts[k] ? " " + counts[k] : "") + '</button>').join("") + '</div>';
@@ -3380,6 +3385,26 @@ document.addEventListener("click", async ev => {
     case "setCalc": await setCalc(); break;
     case "setToggle": { const st = S.setState; if (st.sel.has(id)) st.sel.delete(id); else st.sel.add(id); render(); break; }
     case "setOpen": openCopies(S.view.catId, id); break;
+    case "openEur2": { const st = eur2St(); st.q = ""; go({ name: "eur2" }); break; }
+    case "eur2Mode": eur2St().mode = v; render(); break;
+    case "eur2Open": { const st = eur2St(); st.chip = ""; st.show = "all"; go({ name: "eur2Grid", key: v }); break; }
+    case "eur2Show": eur2St().show = v; render(); break;
+    case "eur2Chip": eur2St().chip = v; render(); break;
+    case "eur2Toggle": { const st = eur2St(); if (st.sel.has(id)) st.sel.delete(id); else st.sel.add(id); render(); break; }
+    case "eur2Own": eur2OpenCopies(id); break;
+    case "eur2CopyAdd": closeModal(); eur2St().sel = new Set([id]); render(); toast("Moneta selezionata: tocca Aggiungi"); break;
+    case "eur2SelAll": { const st = eur2St(); eur2Visible().forEach(x => st.sel.add(x.id)); render(); break; }
+    case "eur2SelNone": eur2St().sel = new Set(); render(); break;
+    case "eur2SelMiss": { const st = eur2St(); const own = eur2Owned(); st.sel = new Set(eur2Visible().filter(x => !(own[x.id] && own[x.id].qty)).map(x => x.id)); render(); break; }
+    case "eur2Add": openEur2Add("in"); break;
+    case "eur2AddWish": openEur2Add("wish"); break;
+    case "eur2AddGo": await eur2AddGo(el, v); break;
+    case "eur2Link": await eur2Link(); break;
+    case "eur2Upd": eur2UpdOpen(); break;
+    case "eur2ToArtifact": closeModal(); S.awaitReturn = true; lsSet("col.await", true); openExternal(ARTIFACT_URL + "#eur2"); break;
+    case "e2Run": await e2Run(); break;
+    case "e2Sel": { const u = S.e2u; if (u.sel.has(i)) u.sel.delete(i); else u.sel.add(i); render(); break; }
+    case "e2Save": await e2Save(el); break;
     case "copyOpen": closeModal(); go({ name: "item", id }); break;
     case "copyAdd": closeModal(); S.setState.sel = new Set([id]); render(); toast("Carta selezionata: tocca Aggiungi"); break;
     case "setSelAll": S.setState.sel = new Set(S.setState.data.cards.map(x => x.id)); render(); break;
@@ -3529,6 +3554,7 @@ document.addEventListener("input", ev => {
     const st = S.catState[el.dataset.id]; st.q = el.value; st.limit = 100;
     clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 200);
   }
+  if (a === "eur2Q") { eur2St().q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 250); }
   if (a === "setsSearch") { S.setsState.q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 250); }
   if (a === "gsearch") { S.srch.q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("gq"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 200); }
   if (a === "qFilter") { readQuoteForm(); const el2 = $("qSummary"); if (el2) el2.innerHTML = quoteSummary(); const b = document.querySelector('[data-act="qRun"]'); if (b) b.disabled = !(quoteCandidates().length && S.sample); }
@@ -3544,6 +3570,7 @@ document.addEventListener("change", async ev => {
   const i = el.dataset.i != null ? parseInt(el.dataset.i, 10) : null;
   switch (a) {
     case "catSort": S.catState[el.dataset.id].sort = el.value; render(); break;
+    case "e2From": S.e2u.from = parseInt(el.value, 10); render(); break;
     case "revCat": S.review.cat_f = el.value; render(); break;
     case "bkEvery": lsSet("col.bkEvery", parseInt(el.value, 10)); render(); break;
     case "bkChanges": lsSet("col.bkChanges", el.checked); render(); break;
@@ -3964,23 +3991,23 @@ function fillCardImages(catId, d) {
   if (upd.length) saveItems(upd).catch(() => { });
 }
 /* tocco su una carta posseduta: una copia apre la scheda, più copie aprono l'elenco */
-function openCopies(catId, cardId) {
+function openCopies(catId, cardId, opt) {
   const its = [...S.items.values()].filter(i => !i.deleted && i.catId === catId && i.ref && i.ref.card === cardId && i.status === "in")
     .sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
   if (!its.length) return;
   if (its.length === 1) { go({ name: "item", id: its[0].id }); return; }
-  const card = S.setState && S.setState.data && S.setState.data.cards.find(c => c.id === cardId);
+  const card = !opt && S.setState && S.setState.data && S.setState.data.cards.find(c => c.id === cardId);
   const nCopies = its.reduce((a, i) => a + (Number(i.qty) || 0), 0);
   const tot = its.reduce((a, i) => a + itemTotal(i), 0);
   const c = cat(catId);
   let h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Le tue copie"><div class="grab"></div>';
-  h += '<div class="between"><div><h1 style="font-size:20px">' + esc(its[0].name || (card && card.name) || "") + '</h1><div class="small muted">' + (card ? "#" + esc(card.numFull) + " · " : "") + pl(nCopies, "copia", "copie") + ' · valore totale ' + eur(tot) + '</div></div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
+  h += '<div class="between"><div><h1 style="font-size:20px">' + esc(opt ? opt.title : its[0].name || (card && card.name) || "") + '</h1><div class="small muted">' + (opt && opt.sub ? esc(opt.sub) + " · " : card ? "#" + esc(card.numFull) + " · " : "") + pl(nCopies, "copia", "copie") + ' · valore totale ' + eur(tot) + '</div></div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
   h += '<div class="card list" style="max-height:55vh;overflow:auto">' + its.map(i => {
     const ph = (i.photos || [])[0];
     const det = [i.fields && i.fields.lingua, i.fields && i.fields.edizione, i.fields && i.fields.variante, i.location].filter(v => v && v !== "Normale").join(" · ");
     return '<button type="button" class="li" data-act="copyOpen" data-id="' + esc(i.id) + '"><span style="width:44px;height:60px;border-radius:6px;overflow:hidden;background:#E9ECE9;flex-shrink:0;display:flex;align-items:center;justify-content:center" class="xs muted">' + (ph ? '<img alt="" src="' + esc(photoSrc(ph)) + '" style="width:100%;height:100%;object-fit:cover">' : i.imageUrl ? '<img alt="" src="' + esc(i.imageUrl) + '" style="width:100%;height:100%;object-fit:cover;opacity:.6">' : "—") + '</span><span class="grow" style="min-width:0"><span class="b" style="display:block;font-size:14px">' + esc(i.cond || "Stato non indicato") + (i.qty > 1 ? ' <span class="muted" style="font-weight:400">× ' + i.qty + '</span>' : '') + '</span><span class="xs muted ellip" style="display:block">' + esc(det || (c ? c.name : "")) + '</span></span><span class="b">' + (i.value != null ? eur(i.value) : "—") + '</span><span class="muted">' + ic("right", 16, 2) + '</span></button>';
   }).join("") + '</div>';
-  h += '<div class="grid2"><button type="button" class="btn" data-act="copyAdd" data-id="' + esc(cardId) + '">Aggiungi una copia</button><button type="button" class="btn pri" data-act="copyOpen" data-id="' + esc(its[0].id) + '">Apri la prima</button></div></div></div>';
+  h += '<div class="grid2"><button type="button" class="btn" data-act="' + (opt && opt.addAct || "copyAdd") + '" data-id="' + esc(cardId) + '">Aggiungi una copia</button><button type="button" class="btn pri" data-act="copyOpen" data-id="' + esc(its[0].id) + '">Apri la prima</button></div></div></div>';
   $("modal").innerHTML = h;
 }
 function ownedMap(catId) {
@@ -4145,6 +4172,897 @@ async function cardPriceOne(id) {
     if (v == null) { toast("Nessun prezzo disponibile per questa carta."); return; }
     await saveItem(quoteFromCatalog(it, v, src)); toast("Prezzo aggiornato: " + eur(v)); render();
   } catch (e) { toast("Non riesco a raggiungere il catalogo."); }
+}
+
+/* ================= Catalogo 2 € commemorativi (dati BCE) ================= */
+const EUR2_DATA = `2004|VA|100000|comm_2004_va.jpg|75° anniversario dello Stato della Città del Vaticano|
+2004|IT|16000000|comm_2004_it.jpg|50° anniversario del Programma alimentare mondiale|
+2004|SM|110000|comm_2004_sm.jpg|Bartolomeo Borghesi|
+2004|FI|1000000|comm_2004_fi.jpg|Allargamento dell’Unione europea|
+2004|LU|2490000|comm_2004_lu.jpg|Effigie e monogramma del Granduca Henri|
+2004|GR|50000000|comm_2004_el.jpg|Olimpiadi di Atene 2004|
+2005|VA|100000|comm_2005_va.jpg|XX Giornata mondiale della gioventù|
+2005|SM|130000|comm_2005_sm.jpg|Anno mondiale della fisica 2005|
+2005|IT|18000000|comm_2005_it.jpg|1° anniversario della Costituzione europea|
+2005|FI|2000000|comm_2005_fi.jpg|60 anni dell’ONU e 50 della Finlandia nell’ONU|
+2005|AT|7000000|comm_2005_at.jpg|50° anniversario del Trattato di Stato austriaco|
+2005|ES|8000000|comm_2005_sp.jpg|400 anni del Don Chisciotte|
+2005|BE|6000000|comm_2005_be.jpg|Unione economica belgo-lussemburghese|
+2005|LU|2800000|comm_2005_lu_2.jpg|50° compleanno del Granduca Henri|
+2006|VA|100000|comm_2006_va.jpg|500 anni della Guardia Svizzera Pontificia|
+2006|SM|120000|comm_2006_sm.jpg|500° anniversario della morte di Cristoforo Colombo|
+2006|FI|2500000|comm_2006_fi.jpg|Centenario del suffragio universale|
+2006|BE|5000000|comm_2006_be.jpg|Atomium|
+2006|DE|30000000|comm_2006_de.jpg|Schleswig-Holstein, serie Länder|
+2006|IT|40000000|comm_2006_it.jpg|Olimpiadi invernali di Torino 2006|
+2006|LU|1100000|comm_2006_lu.jpg|25° compleanno del Granduca ereditario Guillaume|
+2007|FI|2000000|comm_2007_Finland.jpg|90° anniversario dell’indipendenza della Finlandia|
+2007|SM|130000|comm_2007_San_marino.jpg|Bicentenario della nascita di Giuseppe Garibaldi|
+2007|VA|100000|comm_2007_va.jpg|80° compleanno di Papa Benedetto XVI|
+2007|MC|20000|comm_2007_Monaco.jpg|25° anniversario della morte della Principessa Grace|
+2007|PT|2000000|comm_2007_Portugal.jpg|Presidenza portoghese dell’Unione europea|
+2007|AT||joint_comm_2007_Austria.jpg|50° anniversario del Trattato di Roma|j
+2007|BE||joint_comm_2007_Belgium.jpg|50° anniversario del Trattato di Roma|j
+2007|FI||joint_comm_2007_Finland.jpg|50° anniversario del Trattato di Roma|j
+2007|FR||joint_comm_2007_France.jpg|50° anniversario del Trattato di Roma|j
+2007|DE||joint_comm_2007_Germany.jpg|50° anniversario del Trattato di Roma|j
+2007|GR||joint_comm_2007_Greece.jpg|50° anniversario del Trattato di Roma|j
+2007|IE||joint_comm_2007_Ireland.jpg|50° anniversario del Trattato di Roma|j
+2007|IT||joint_comm_2007_Italy.jpg|50° anniversario del Trattato di Roma|j
+2007|LU||joint_comm_2007_Luxembourg.jpg|50° anniversario del Trattato di Roma|j
+2007|NL||joint_comm_2007_Netherlands.jpg|50° anniversario del Trattato di Roma|j
+2007|PT||joint_comm_2007_Portugal.jpg|50° anniversario del Trattato di Roma|j
+2007|SI||joint_comm_2007_Slovenia.jpg|50° anniversario del Trattato di Roma|j
+2007|ES||joint_comm_2007_Spain.jpg|50° anniversario del Trattato di Roma|j
+2007|DE|30000000|comm_2007_Germany.jpg|Meclemburgo-Pomerania Anteriore, serie Länder|
+2007|LU|1100000|comm_2007_luxembourg.jpg|Palazzo Granducale|
+2008|VA|100000|comm_2008_Vatican.jpg|Anno Paolino, 2000 anni dalla nascita di San Paolo|
+2008|FI|1500000|comm_2008_Finland.jpg|60° anniversario della Dichiarazione dei diritti umani|
+2008|PT|1000000|comm_2008_Portugal1.jpg|60° anniversario della Dichiarazione dei diritti umani|
+2008|FR|20000000|comm_2008_France1.jpg|Presidenza francese del Consiglio UE|
+2008|SI|1000000|comm_2008_Slovenia.jpg|500° anniversario della nascita di Primož Trubar|
+2008|BE|5000000|comm_2008_Belgium.jpg|60° anniversario della Dichiarazione dei diritti umani|
+2008|SM|130000|comm_2008_San_Marino.jpg|Anno europeo del dialogo interculturale|
+2008|IT|5000000|comm_2008_Italy.jpg|60° anniversario della Dichiarazione dei diritti umani|
+2008|LU|1300000|comm_2008_luxembourg.jpg|Granduca Henri e il Castello di Berg|
+2008|DE|30000000|comm_2008_de.jpg|Amburgo, serie Länder|
+2009|SK|1000000|comm_2009_sk.jpg|20° anniversario del 17 novembre 1989|
+2009|FI|1600000|comm_2009_fi.jpg|200 anni dell’autonomia finlandese|
+2009|VA|106000|comm_2009_va.jpg|Anno internazionale dell’astronomia|
+2009|IT|2000000|comm_2009_it.jpg|Bicentenario della nascita di Louis Braille|
+2009|BE|5000000|comm_2009_be.jpg|Bicentenario della nascita di Louis Braille|
+2009|PT|1250000|comm_2009_pt.jpg|2° Giochi della Lusofonia|
+2009|SM|130000|comm_2009_sm.jpg|Anno europeo della creatività e dell’innovazione|
+2009|DE|30000000|comm_2009_de.jpg|Saarland, serie Länder|
+2009|AT||joint_comm_2009_Austria.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|BE||joint_comm_2009_Belgium.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|CY||joint_comm_2009_Cyprus.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|FI||joint_comm_2009_Finland.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|FR||joint_comm_2009_France.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|DE||joint_comm_2009_Germany.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|GR||joint_comm_2009_Greece.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|IE||joint_comm_2009_Ireland.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|IT||joint_comm_2009_Italy.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|LU||joint_comm_2009_Luxembourg.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|MT||joint_comm_2009_Malta.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|NL||joint_comm_2009_Netherlands.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|PT||joint_comm_2009_Portugal.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|SK||joint_comm_2009_Slovakia.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|SI||joint_comm_2009_Slovenia.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|ES||joint_comm_2009_Spain.jpg|10° anniversario dell’Unione economica e monetaria|j
+2009|LU|1400000|comm_2009_lu.jpg|Granduca Henri e Granduchessa Charlotte|
+2010|GR|2500000|comm_2010_el.jpg|2500° anniversario della battaglia di Maratona|
+2010|VA|115000|comm_2010_va.jpg|Anno sacerdotale|
+2010|FI|1600000|comm_2010_fi.jpg|Decreto valutario del 1860|
+2010|SM|130000|comm_2010_sm.jpg|500° anniversario della morte di Sandro Botticelli|
+2010|PT|2000000|comm_2010_pt.jpg|Centenario della Repubblica portoghese|
+2010|FR|20000000|comm_2010_fr.jpg|70° anniversario dell’Appello del 18 giugno|
+2010|BE|5000000|comm_2010_be.jpg|Presidenza belga del Consiglio UE|
+2010|SI|1000000|comm_2010_sl.jpg|Bicentenario dell’orto botanico di Lubiana|
+2010|ES|8000000|comm_2010_es.jpg|Centro storico di Cordova|
+2010|IT|4000000|comm_2010_it.jpg|Bicentenario della nascita di Cavour|
+2010|LU|1000000|comm_2010_lu.jpg|Stemma del Granduca|
+2010|DE|30000000|comm_2010_de.jpg|Brema, serie Länder|
+2011|MT|430000|comm_2011_mt.jpg|Primi rappresentanti eletti nel 1849|
+2011|VA|115000|comm_2011_va.jpg|XXVI Giornata mondiale della gioventù|
+2011|FI|1500000|comm_2011_fi.jpg|Bicentenario della Banca di Finlandia|
+2011|PT|520000|comm_2011_pt.jpg|500° anniversario della nascita di Fernão Mendes Pinto|
+2011|MC|148000|comm_2011_mc.jpg|Nozze del Principe Alberto e Charlene|
+2011|FR|10000000|comm_2011_fr.jpg|30° anniversario della Festa della musica|
+2011|GR|1000000|comm_2011_el.jpg|Special Olympics Atene 2011|
+2011|SM|130000|comm_2011_sm.jpg|500° anniversario della nascita di Giorgio Vasari|
+2011|IT|10000000|comm_2011_it.jpg|150° anniversario dell’Unità d’Italia|
+2011|ES|8000000|comm_2011_es.jpg|Corte dei leoni di Granada|
+2011|SI|1000000|comm_2011_sl.jpg|Centenario della nascita di Franc Rozman-Stane|
+2011|BE|5000000|comm_2011_be.jpg|Centenario della Giornata internazionale della donna|
+2011|SK|1000000|comm_2011_sk.jpg|20° anniversario del Gruppo di Visegrád|
+2011|LU|1400000|comm_2011_lu.jpg|50 anni della nomina di Jean a Luogotenente|
+2011|NL|4000000|comm_2011_nl.jpg|500 anni dell’Elogio della follia di Erasmo|
+2011|DE|30000000|comm_2011_de.jpg|Renania Settentrionale-Vestfalia, serie Länder|
+2012|LU|1400000|comm_2013_lu.jpg|Nozze del Principe Guillaume e della Contessa Stéphanie|
+2012|VA|115000|comm_2012_va.jpg|VII Incontro mondiale delle famiglie|
+2012|FI|2000000|comm_2012_fi.jpg|150° anniversario della nascita di Helene Schjerfbeck|
+2012|MT|430000|comm_2012_mt.jpg|Rappresentanza a maggioranza del 1887|
+2012|MC|100000|comm_2012_mc.jpg|500 anni della sovranità di Monaco|
+2012|FR|1000000|comm_2012_fr.jpg|Centenario della nascita dell’Abbé Pierre|
+2012|PT|520000|comm_2012_pt.jpg|Guimarães, capitale europea della cultura 2012|
+2012|BE|5000000|comm_2012_be.jpg|75 anni del Concorso Regina Elisabetta|
+2012|IT|15000000|comm_2012_it.jpg|Centenario della morte di Giovanni Pascoli|
+2012|ES|8000000|comm_2012_es.jpg|Cattedrale di Burgos|
+2012|AT||joint_comm_2012_Austria.jpg|10° anniversario delle banconote e monete in euro|j
+2012|BE||joint_comm_2012_Belgium.jpg|10° anniversario delle banconote e monete in euro|j
+2012|CY||joint_comm_2012_Cyprus.jpg|10° anniversario delle banconote e monete in euro|j
+2012|EE||joint_comm_2012_Estonia.jpg|10° anniversario delle banconote e monete in euro|j
+2012|FI||joint_comm_2012_Finland.jpg|10° anniversario delle banconote e monete in euro|j
+2012|FR||joint_comm_2012_France.jpg|10° anniversario delle banconote e monete in euro|j
+2012|DE||joint_comm_2012_Germany.jpg|10° anniversario delle banconote e monete in euro|j
+2012|GR||joint_comm_2012_Greece.jpg|10° anniversario delle banconote e monete in euro|j
+2012|IE||joint_comm_2012_Ireland.jpg|10° anniversario delle banconote e monete in euro|j
+2012|IT||joint_comm_2012_Italy.jpg|10° anniversario delle banconote e monete in euro|j
+2012|LU||joint_comm_2012_Luxembourg.jpg|10° anniversario delle banconote e monete in euro|j
+2012|MT||joint_comm_2012_Malta.jpg|10° anniversario delle banconote e monete in euro|j
+2012|NL||joint_comm_2012_Netherlands.jpg|10° anniversario delle banconote e monete in euro|j
+2012|PT||joint_comm_2012_Portugal.jpg|10° anniversario delle banconote e monete in euro|j
+2012|SM||joint_comm_2012_San_Marino.jpg|10° anniversario delle banconote e monete in euro|j
+2012|SK||joint_comm_2012_Slovakia.jpg|10° anniversario delle banconote e monete in euro|j
+2012|SI||joint_comm_2012_Slovenia.jpg|10° anniversario delle banconote e monete in euro|j
+2012|ES||joint_comm_2012_Spain.jpg|10° anniversario delle banconote e monete in euro|j
+2012|LU|1400000|comm_2012_lu.jpg|Granduca Henri e Granduca Guillaume IV|
+2012|DE|30000000|comm_2012_de.jpg|Baviera, serie Länder|
+2013|NL|3500000|comm_2013_Netherlands.jpg|Bicentenario del Regno dei Paesi Bassi|
+2013|FI|1500000|comm_2013_Finland.jpg|125° anniversario della nascita di F.E. Sillanpää|
+2013|MT|500000|comm_2013_Malta.jpg|Autogoverno maltese del 1921|
+2013|VA|115000|comm_2013_Vatican_Rio.jpg|XXVIII Giornata mondiale della gioventù, Rio 2013|
+2013|GR|750000|comm_2013_Greece.jpg|Centenario dell’unione di Creta|
+2013|GR|750000|comm_2013_Greece_Plato.jpg|2400 anni dell’Accademia di Platone|
+2013|SM|115000|comm_2013_San_Marino.jpg|500° anniversario della morte del Pinturicchio|
+2013|BE|2000000|comm_2013_Belgium.jpg|Centenario dell’Istituto meteorologico reale|
+2013|FI|1000000|comm_2013_Finland_Suomi.jpg|150° anniversario del parlamento finlandese|
+2013|LU|1400000|comm_2013_Luxembourg.jpg|Inno nazionale del Lussemburgo|
+2013|SK|1000000|comm_2013_sk.jpg|1150 anni della missione di Cirillo e Metodio|
+2013|MC|1200000|comm_2013_Monaco.jpg|20 anni di Monaco nelle Nazioni Unite|
+2013|IT|10000000|comm_2013_Italy_Boccaccio.jpg|700° anniversario della nascita di Giovanni Boccaccio|
+2013|PT|525000|comm_2013_Portugal.jpg|250 anni della Torre dei Chierici|
+2013|FR|1000000|comm_2013_fr_2.jpg|150° anniversario della nascita di Pierre de Coubertin|
+2013|VA|125000|comm_2013_Vatican.jpg|Sede vacante 2013|
+2013|IT|10000000|comm_2013_Italy_Verdi.jpg|Bicentenario della nascita di Giuseppe Verdi|
+2013|NL|20000000|comm_2013_Netherlands_Abdication.jpg|Abdicazione della Regina Beatrice|
+2013|DE|30000000|comm_2013_Germany.jpg|Baden-Württemberg, serie Länder|
+2013|SI|1000000|comm_2013_sl.jpg|800 anni delle Grotte di Postumia|
+2013|ES|8000000|comm_2013_es.jpg|Monastero dell’Escorial|
+2013|FR|10000000|comm_2013_fr.jpg|50° anniversario del Trattato dell’Eliseo|
+2013|DE|11000000|comm_2013_de.jpg|50° anniversario del Trattato dell’Eliseo|
+2014|ES|12000000|comm_2014_Spain_Head.jpg|Successione alla carica di capo dello Stato|
+2014|FR|3000000|comm_2014_France_2.jpg|Giornata mondiale contro l’AIDS|
+2014|FI|1000000|comm_2014_Finland_2.jpg|Centenario della nascita di Ilmari Tapiovaara|
+2014|VA|103000|comm_2014_Vatican.jpg|25° anniversario della caduta del Muro di Berlino|
+2014|SI|1000000|comm_2014_Slovenia.jpg|600 anni dell’incoronazione di Barbara di Celje|
+2014|LU|1400000|comm_2014_Luxembourg_2.jpg|50° anniversario dell’ascesa al trono del Granduca Jean|
+2014|PT|500000|comm_2014_Portugal_Farming.jpg|Anno internazionale dell’agricoltura familiare|
+2014|MT|400000|comm_2014_Malta_2.jpg|Indipendenza di Malta 1964|
+2014|SM|100000|comm_2014_San_Marino_Puccini.jpg|90° anniversario della morte di Giacomo Puccini|
+2014|BE|260000|comm_2014_Belgium_Cross.jpg|150° anniversario della Croce Rossa belga|
+2014|GR|750000|comm_2014_Greece.jpg|150° anniversario dell’unione delle Isole Ionie|
+2014|GR|750000|comm_2014_Greece_2.jpg|400° anniversario della morte di El Greco|
+2014|LV|1000000|comm_2014_Latvia.jpg|Riga, capitale europea della cultura 2014|
+2014|MT|300000|comm_2014_Malta.jpg|Bicentenario della Polizia di Malta|
+2014|SM|110000|comm_2014_San_Marino_Lazzari.jpg|500° anniversario della morte di Bramante|
+2014|FI|1500000|comm_2014_Finland.jpg|Centenario della nascita di Tove Jansson|
+2014|IT|6500000|comm_2014_Italy.jpg|Bicentenario dell’Arma dei Carabinieri|
+2014|IT|6500000|comm_2014_Italy_2.jpg|450° anniversario della nascita di Galileo Galilei|
+2014|FR|3000000|comm_2014_France.jpg|70° anniversario dello sbarco in Normandia|
+2014|NL|1000000|comm_2014_Netherlands.jpg|Addio alla Regina Beatrice|
+2014|SK|1000000|comm_2014_Slovakia.jpg|10 anni della Slovacchia nell’UE|
+2014|PT|500000|comm_2014_Portugal.jpg|40° anniversario del 25 aprile|
+2014|BE|1750000|comm_2014_Belgium.jpg|Centenario della Prima guerra mondiale|
+2014|ES|8000000|comm_2014_Spain.jpg|Parco Güell|
+2014|AD|100000|comm_2014_andorra_council.jpg|20 anni nel Consiglio d’Europa|
+2014|LU|1400000|comm_2014_Luxembourg.jpg|175° anniversario dell’indipendenza del Lussemburgo|
+2014|DE|30000000|comm_2014_Germany_Niedersachsen.jpg|Bassa Sassonia, serie Länder|
+2015|LT|1000000|comm_2015_lithuania.jpg|Lingua lituana|
+2015|AD|85000|comm_2015_andorra_30.jpg|30° anniversario della maggiore età a 18 anni|
+2015|AD|85000|comm_2015_andorra_25.jpg|25° anniversario dell’accordo doganale con l’UE|
+2015|MC|10000|comm_2015_Monaco.jpg|800° anniversario del primo castello sulla Rocca|
+2015|VA|122000|comm_2015_Vatican_City.jpg|VIII Incontro mondiale delle famiglie|
+2015|FI|500000|comm_2015_Finland_akseli.jpg|150° anniversario della nascita di Akseli Gallen-Kallela|
+2015|LV|1010000|comm_2015_Latvia_Stork.jpg|Natura in pericolo, cicogna nera|
+2015|SK|1000000|comm_2015_Slovakia.jpg|Bicentenario della nascita di Ľudovít Štúr|
+2015|AT||joint_comm_2015_Austria.jpg|30° anniversario della bandiera dell’UE|j
+2015|BE||joint_comm_2015_Belgium.jpg|30° anniversario della bandiera dell’UE|j
+2015|CY||joint_comm_2015_Cyprus.jpg|30° anniversario della bandiera dell’UE|j
+2015|EE||joint_comm_2015_Estonia.jpg|30° anniversario della bandiera dell’UE|j
+2015|FI||joint_comm_2015_Finland.jpg|30° anniversario della bandiera dell’UE|j
+2015|FR||joint_comm_2015_France.jpg|30° anniversario della bandiera dell’UE|j
+2015|DE||joint_comm_2015_Germany.jpg|30° anniversario della bandiera dell’UE|j
+2015|GR||joint_comm_2015_Greece.jpg|30° anniversario della bandiera dell’UE|j
+2015|IE||joint_comm_2015_Ireland.jpg|30° anniversario della bandiera dell’UE|j
+2015|IT||joint_comm_2015_Italy.jpg|30° anniversario della bandiera dell’UE|j
+2015|LV||joint_comm_2015_Latvia.jpg|30° anniversario della bandiera dell’UE|j
+2015|LT||joint_comm_2015_Lithuania.jpg|30° anniversario della bandiera dell’UE|j
+2015|LU||joint_comm_2015_Luxembourg.jpg|30° anniversario della bandiera dell’UE|j
+2015|MT||joint_comm_2015_Malta.jpg|30° anniversario della bandiera dell’UE|j
+2015|NL||joint_comm_2015_Nederland.jpg|30° anniversario della bandiera dell’UE|j
+2015|PT||joint_comm_2015_Portugal.jpg|30° anniversario della bandiera dell’UE|j
+2015|SK||joint_comm_2015_Slovakia.jpg|30° anniversario della bandiera dell’UE|j
+2015|SI||joint_comm_2015_Slovenia.jpg|30° anniversario della bandiera dell’UE|j
+2015|ES||joint_comm_2015_Spain.jpg|30° anniversario della bandiera dell’UE|j
+2015|GR|750000|comm_2015_Greece.jpg|75 anni in memoria di Spyros Louis|
+2015|MT|400000|comm_2015_Malta_Republic1974.jpg|Repubblica di Malta 1974|
+2015|SM|100000|comm_2015_San_Marino_25thGermanReunification.jpg|25° anniversario della riunificazione tedesca|
+2015|BE|250000|comm_2015_Belgium.jpg|2015 Anno europeo dello sviluppo|
+2015|LU|1400000|comm_2015_Luxembourg.jpg|125° anniversario della dinastia Nassau-Weilbourg|
+2015|FR|4000000|comm_2015_France_Liberte.jpg|225° anniversario della Festa della Federazione|
+2015|IT|3500000|comm_2015_Italy_Alighieri.jpg|750° anniversario della nascita di Dante Alighieri|
+2015|PT|520000|comm_2015_Portugal_ship.jpg|500° anniversario dei primi contatti con Timor|
+2015|PT|520000|comm_2015_Portugal.jpg|150° anniversario della Croce Rossa portoghese|
+2015|SM|104000|comm_2015_San_Marino.jpg|750° anniversario della nascita di Dante Alighieri|
+2015|MT|300000|comm_2015_Malta.jpg|Primo volo da Malta|
+2015|LU|1400000|comm_2015_Luxembourg_15_anniversary.jpg|15° anniversario dell’ascesa al trono del Granduca|
+2015|IT|3500000|comm_2015_Italy_expo.jpg|EXPO Milano 2015|
+2015|ES|8000000|comm_2015_Spain.jpg|Grotta di Altamira|
+2015|DE|30000000|comm_2015_de_Unity.jpg|25° anniversario dell’Unità tedesca|
+2015|DE|30000000|comm_2015_de_Hessen.jpg|Assia, serie Länder|
+2015|SI|1000000|comm_2015_Slovenia.jpg|Emona-Lubiana|
+2015|FR|4000000|comm_2015_France_peace.jpg|L’Europa costruttrice di pace dal 1945|
+2015|FI|1000000|comm_2015_Finland.jpg|150° anniversario della nascita di Jean Sibelius|
+2015|LV|2000000|comm_2015_Latvia.jpg|Presidenza lettone del Consiglio UE|
+2016|GR|750000|comm_2016_greece_monastery.jpg|150° anniversario del monastero di Arkadi|
+2016|GR|750000|comm_2016_greece_dimitri.jpg|120° anniversario della nascita di Dimitri Mitropoulos|
+2016|AD|85000|comm_2016_andorra_radio.jpg|25° anniversario della radiotelevisione di Andorra|
+2016|AD|85000|comm_2016_andorra_150_anniversary.jpg|150° anniversario della Nuova riforma del 1866|
+2016|MT|380000|comm_2016_malta_solidarity.jpg|Malta Community Chest Fund|
+2016|LV|1030000|comm_2016_latvia_vidzeme.jpg|Vidzeme|
+2016|FR|10000000|comm_2016_france_mitterand.jpg|François Mitterrand|
+2016|VA|105000|comm_2016_vatican_mercy.jpg|Giubileo della misericordia|
+2016|FI|1000000|comm_2016_finland_wright.jpg|Centenario della nascita di Georg Henrik von Wright|
+2016|SM|85000|comm_2016_san_marino_sheakspeare.jpg|400° anniversario della morte di Shakespeare|
+2016|MT|350000|comm_2016_malta.jpg|Templi di Ggantija|
+2016|PT|500000|comm_2016_portugal_bridge.jpg|Cinquantenario del ponte sul Tago|
+2016|LT|1000000|comm_2016_Lithuania_baltic_culture.jpg|Cultura baltica|
+2016|VA|105000|comm_2016_vatican_guard.jpg|Bicentenario della Gendarmeria vaticana|
+2016|LV|1010000|comm_2016_latvia_agriculture.jpg|Settore agricolo lettone|
+2016|MC|15000|comm_2016_monaco_charles.jpg|150° anniversario della fondazione di Monte Carlo|
+2016|SI|1000000|comm_2016_slovenia_independence.jpg|25° anniversario dell’indipendenza della Slovenia|
+2016|BE|1020000|comm_2016_belgium_children.jpg|Giornata internazionale dei bambini scomparsi|
+2016|FI|1000000|comm_2016_finland_leino.jpg|Eino Leino|
+2016|SM|85000|comm_2016_san_marino_donatello.jpg|550° anniversario della morte di Donatello|
+2016|PT|650000|comm_2016_portugal_olympics_270.jpg|Squadra portoghese ai Giochi di Rio 2016|
+2016|IT|1500000|comm_2016_italy_donatello_270.jpg|550° anniversario della morte di Donatello|
+2016|IT|1500000|comm_2016_italy_plauto_270.jpg|2200° anniversario della morte di Plauto|
+2016|BE|375000|comm_2016_belgium.jpg|Giochi olimpici|
+2016|SK|1000000|comm_2016_slovakia_presidency.jpg|Prima presidenza slovacca del Consiglio UE|
+2016|LU|1000000|comm_2016_luxembourg_bridge_270.jpg|Cinquantenario del ponte Granduchessa Charlotte|
+2016|DE|30000000|comm_2016_germany.jpg|Sassonia, serie Länder|
+2016|ES|8000000|comm_2016_spain.jpg|Segovia|
+2016|AT|16000000|comm_2016_austria.jpg|Bicentenario della Oesterreichische Nationalbank|
+2016|FR|10000000|comm_2016_france.jpg|Campionati europei UEFA 2016|
+2016|EE|500000|comm_2016_estonia.jpg|Centenario della nascita di Paul Keres|
+2016|IE|4500000|comm_2016_ireland.jpg|Centenario della Rivolta di Pasqua|
+2017|AD|85000|comm_2017_Andorra_pyrenean.jpg|Andorra, il paese dei Pirenei|
+2017|AD|85000|comm_2017_Andorra_100years.jpg|Centenario dell’inno di Andorra|
+2017|MT|380000|comm_2017_Malta_Solidarity.jpg|Solidarietà e pace|
+2017|MC|15000|comm_2017_Monaco_Carabiniers.jpg|Carabiniers du Prince|
+2017|PT|520000|comm_2017_Portugal_Brandao.jpg|150° anniversario della nascita di Raul Brandão|
+2017|LV|530000|comm_2017_Latvia_Latgale.jpg|Letgallia|
+2017|LU|500000|comm_2017_Luxembourg_GrandDuke.jpg|Bicentenario del Granduca Guillaume III|
+2017|VA|105000|comm_2017_Vatican_Fatima.jpg|Centenario delle apparizioni di Fatima|
+2017|FI|500000|comm_2017_Finland_Nature.jpg|Natura finlandese|
+2017|CY|430000|comm_2017_Cyprus_Paphos.jpg|Pafos, capitale europea della cultura 2017|
+2017|FR|10000000|comm_2017_France_pink_ribbon.jpg|25° anniversario del nastro rosa|
+2017|BE|200000|comm_2017_Belgium_Ghent.jpg|Bicentenario dell’Università di Gent|
+2017|SM|70500|comm_2017_SanMarino_Turismo.jpg|Anno internazionale del turismo sostenibile|
+2017|LV|530000|comm_2017_Latvia_Kurzeme.jpg|Curlandia|
+2017|LT|1000000|comm_2017_Lithuania_Vilnius.jpg|Vilnius|
+2017|EE|1500000|comm_2017_Estonia_Independence.jpg|Indipendenza dell’Estonia|
+2017|GR|750000|comm_2017_Greece_Nikos.jpg|60° anniversario della scomparsa di Nikos Kazantzakis|
+2017|GR|750000|comm_2017_Greece_Philippi.jpg|Sito archeologico di Filippi|
+2017|PT|520000|comm_2017_Portugal_public_security.jpg|150° anniversario della Polícia de Segurança Pública|
+2017|VA|105000|comm_2017_Vatican_Saint_Peter_Saint_Paul.jpg|1950° anniversario del martirio dei Santi Pietro e Paolo|
+2017|MT|405000|comm_2017_Malta_Hagar_Qim.jpg|Templi di Ħaġar Qim|
+2017|FI|2500000|comm_2017_finland_independence.jpg|Centenario dell’indipendenza della Finlandia|
+2017|IT|1500000|comm_2017_Italy_Titus.jpg|Bimillenario della morte di Tito Livio|
+2017|BE|200000|comm_2017_belgium_liege.jpg|Bicentenario dell’Università di Liegi|
+2017|SM|80000|comm_2017_san_marino_giotto.jpg|750° anniversario della nascita di Giotto|
+2017|ES|4000000|comm_2017_spain_asturias.jpg|Chiese del Regno delle Asturie|
+2017|DE|30000000|comm_2017_germany_rhineland.jpg|Renania-Palatinato, serie Länder|
+2017|SK|1000000|comm_2017_slovakia_university.jpg|550° anniversario dell’Universitas Istropolitana|
+2017|SI|1000000|comm_2017_slovenia_anniversary.jpg|10° anniversario dell’euro in Slovenia|
+2017|FR|10000000|comm_2017_france_centenary.jpg|Centenario della scomparsa di Auguste Rodin|
+2017|LU|500000|comm_2017_luxembourg_anniversary.jpg|Cinquantenario del servizio militare volontario|
+2017|IT|1500000|comm_2017_italy_venice.jpg|400° anniversario della Basilica di San Marco|
+2018|AD|75000|comm_2018_andorra_70yrs_declhumrights.jpg|70° anniversario della Dichiarazione universale dei diritti dell’uomo|
+2018|MT|320000|comm_2018_malta_culherit.jpg|Patrimonio culturale|
+2018|FI|1000000|comm_2018_finland_finsauna.jpg|Cultura finlandese della sauna|
+2018|BE|260000|comm_2018_belgium_esro2bsat.jpg|50° anniversario del satellite ESRO 2B|
+2018|VA|101000|comm_2018_vatican_padrepio.jpg|50° anniversario della morte di Padre Pio|
+2018|GR|750000|comm_2018_greece_kostispalamas.jpg|75° anniversario della morte di Kostis Palamas|
+2018|GR|750000|comm_2018_greece_dodecanese.jpg|70° anniversario dell’unione del Dodecaneso|
+2018|LV|512000|comm_2018_latvia_zemgale.jpg|Zemgale|
+2018|LU|500000|comm_2018_luxembourg_175thanniv_duke.jpg|175° anniversario della morte del Granduca Guillaume I|
+2018|SM|60500|comm_2018_sanmarino_bernini.jpg|420° anniversario della nascita di Gian Lorenzo Bernini|
+2018|MT|320000|comm_2018_malta.jpg|Templi di Mnajdra|
+2018|PT|520000|comm_2018_portugal_botangarden.jpg|250° anniversario del giardino botanico di Ajuda|
+2018|MC|16000|comm_2018_monaco_bosio.jpg|François Joseph Bosio|
+2018|PT|520000|comm_2018_portugal_offprintworks.jpg|250° anniversario della Imprensa Nacional|
+2018|BE|260000|comm_2018_belgium.jpg|Cinquantenario del maggio 1968 in Belgio|
+2018|FR|15000000|comm_2018_france.jpg|Simone Veil|
+2018|VA|101000|comm_2018_vatican.jpg|Anno europeo del patrimonio culturale, Laocoonte|
+2018|SM|60500|comm_2018_sanmarino_anniversery.jpg|Cinquecentenario della nascita di Tintoretto|
+2018|FI|1000000|comm_2018_finland_landscape.jpg|Parco nazionale di Koli|
+2018|LT|500000|comm_2018_lithuania_song.jpg|Festival della canzone e della danza lituana|
+2018|SI|1000000|comm_2018_slovenia_bee.jpg|Giornata mondiale delle api|
+2018|IT|3000000|comm_2018_italy_health.jpg|60° anniversario del Ministero della Salute|
+2018|ES|400000|comm_2018_spain_felipe.jpg|50 anni del Re Filippo VI|
+2018|ES|300000|comm_2018_spain_santiago.jpg|Santiago de Compostela|
+2018|AD|75000|comm_2018_andorra-25const.jpg|25° anniversario della Costituzione di Andorra|
+2018|LT|1000000|comm_2018_lithuania_joint.jpg|Centenario degli Stati baltici (emissione congiunta)|
+2018|LV|512000|comm_2018_latvia_joint.jpg|Centenario degli Stati baltici (emissione congiunta)|
+2018|EE|500000|comm_2018_estonia_joint.jpg|Centenario degli Stati baltici (emissione congiunta)|
+2018|EE|1000000|comm_2018_estonia_independence.jpg|Centenario dell’indipendenza dell’Estonia|
+2018|DE|30000000|comm_2018_germany_anniversary.jpg|Centenario della nascita di Helmut Schmidt|
+2018|FR|15000000|comm_2018_france_cornflower.jpg|Bleuet de France|
+2018|IT|4000000|comm_2018_italy_anniversary.jpg|70° anniversario della Costituzione italiana|
+2018|SK|1000000|comm_2018_slovakia_anniversary.jpg|25° anniversario della Repubblica slovacca|
+2018|LU|500000|comm_2018_Luxembourg_150years.jpg|150° anniversario della Costituzione del Lussemburgo|
+2018|DE|30000000|comm_2018_Germany_berlin.jpg|Berlino, serie Länder|
+2018|AT|18100100|comm_2017_Austria_100years.jpg|Centenario della Repubblica d’Austria|
+2019|AD|60000|comm_2019_ad_600yrs_councilland.jpg|600 anni dall’istituzione del Consiglio della Terra|
+2019|EE|1000000|comm_2019_et_centUnivTartu.jpg|Centenario dell’Università di Tartu|
+2019|SI|1000000|comm_2019_sv_100anni_university_ljublja.jpg|Centenario dell’Università di Lubiana|
+2019|LT|500000|comm_2019_lt_sutartines.jpg|Sutartinės, canti polifonici lituani|
+2019|LT|500000|comm_2019_lt_samogitia.jpg|Samogizia, regioni etnografiche della Lituania|
+2019|PT|500000|comm_2019_pt_madeira.jpg|600 anni dalla scoperta di Madera|
+2019|PT|750000|comm_2019_pt_Fernao_De_Magalhaes.jpg|500 anni dalla circumnavigazione di Magellano|
+2019|MT|320000|comm_2019_mt_nature_dvpt.jpg|Natura e ambiente|
+2019|VA|91000|comm_2019_vt_sistine.jpg|Cappella Sistina, fine dei restauri|
+2019|FR|10000000|comm_2019_fr_30anniv_fallBerlinwall.jpg|30° anniversario della caduta del Muro di Berlino|
+2019|DE|30000000|comm_2019_de_30anniv_fallBerlinwall.jpg|30° anniversario della caduta del Muro di Berlino|
+2019|FI|500000|comm_2019_fi_constitution_act.jpg|Costituzione finlandese|
+2019|LU|500000|comm_2019_lu_100anni_uni_suffrage.jpg|Centenario del suffragio universale|
+2019|LV|307000|comm_2019_lv_rising_sun.jpg|Sole nascente|
+2019|SM|60500|comm_2019_sm_550anniv_deathLippi.jpg|550° anniversario della morte di Filippo Lippi|
+2019|MT|320000|comm_2019_mt_Ta_Hagrat.jpg|Templi di Ta’ Haġrat|
+2019|EE|1000000|comm_2019_et_150yrSongfestival.jpg|150° anniversario del Festival della canzone|
+2019|GR|750000|comm_2019_el_150memAndrKalv.jpg|150° anniversario della morte di Andreas Kalvos|
+2019|GR|750000|comm_2019_el_centbirthManAndr.jpg|Centenario della nascita di Manolis Andronicos|
+2019|MC|15000|comm_2019_mc_200annivthronePrHonV.jpg|Bicentenario dell’ascesa al trono di Honoré V|
+2019|FR|310000|comm_2019_fr_60annivAsterix.jpg|60° anniversario di Asterix|
+2019|SK|1000000|comm_2019_sk_100annivdeathMRS.jpg|Centenario della morte di Milan Rastislav Štefánik|
+2019|SM|60500|comm_2019_sm_500annivdeathLeoDV.jpg|500° anniversario della morte di Leonardo da Vinci|
+2019|AD|60000|comm_2019_ad_Skiwldcup.jpg|Finali della Coppa del Mondo di sci 2019|
+2019|VA|91000|comm_2019_vc_Vatctyst.jpg|90° anniversario dello Stato della Città del Vaticano|
+2019|ES|1000000|comm_2019_es_Avila.jpg|Città vecchia di Avila|
+2019|IE|1000000|comm_2019_ie_100anniv_Irishparliament.jpg|Centenario del Dáil Éireann|
+2019|DE|30000000|comm_2019_de_70anniv_Bundesrat.jpg|70° anniversario del Bundesrat|
+2019|IT|3000000|comm_2019_500anniv_Leodavinci.jpg|500° anniversario della morte di Leonardo da Vinci|
+2019|LU|500000|comm_2019_100anniv_throneGrDuCharl.jpg|Centenario dell’ascesa al trono della Granduchessa Charlotte|
+2019|BE|155000|comm_2019_450anniv_PieterBreugeltheelder.jpg|450° anniversario della morte di Pieter Bruegel il Vecchio|
+2019|BE|155000|comm_2019_belgium_25anniv_EMI.jpg|25° anniversario dell’Istituto monetario europeo|
+2020|LU|500000|comm_2020_lu_birth_prince_charles.jpg|Nascita del Principe Charles|
+2020|PT|360000|comm_2020_pt_university_coimbra.jpg|730° anniversario dell’Università di Coimbra|
+2020|SK|1000000|comm_2020_sk_anniversary_oecd.jpg|20 anni della Slovacchia nell’OCSE|
+2020|CY|412000|comm_2020_cy_institute_neurology.jpg|30 anni dell’Istituto di neurologia e genetica|
+2020|LT|500000|comm_2020_li_unesco_kalnas.jpg|Collina delle croci|
+2020|FI|800000|comm_2020_fi_100_linna.jpg|Centenario della nascita di Väinö Linna|
+2020|MT|220000|comm_2020_mt_children_games.jpg|Giochi tradizionali per bambini|
+2020|DE|30000000|comm_2020_de_50_kniefall_warschau.jpg|50 anni della genuflessione di Varsavia|
+2020|FR|300000|comm_2020_fr_medical_research.jpg|Ricerca medica|
+2020|VA|101000|comm_2020_vc_500raphael_sanzio.jpg|500° anniversario della morte di Raffaello|
+2020|SM|54000|comm_2020_sm_250giambattista_tiepolo.jpg|250° anniversario della morte di Giambattista Tiepolo|
+2020|FI|800000|comm_2020_fi_100turku_univerity.jpg|Centenario dell’Università di Turku|
+2020|AD|60000|comm_2020_ad_50female_suffrage.jpg|50° anniversario del suffragio femminile|
+2020|SI|1000000|comm_2020_sl_birth_bohoric.jpg|500° anniversario della nascita di Adam Bohorič|
+2020|LV|412000|comm_2020_lv_latgalian_ceramics.jpg|Ceramica della Letgallia|
+2020|FR|18061940|comm_2020_fr_charles_de_gaulle.jpg|Charles de Gaulle|
+2020|AD|73500|comm_2020_ad_27ibamsum.jpg|27° vertice iberoamericano|
+2020|MC|15000|comm_2020_mc_300princehonoreiii.jpg|300° anniversario della nascita di Honoré III|
+2020|IT|3000000|comm_2020_it_150mariamontessori.jpg|150° anniversario della nascita di Maria Montessori|
+2020|GR|750000|comm_2020_gr_union_thrace.jpg|Centenario dell’unione della Tracia|
+2020|BE|155000|comm_2020_be_janvaneyck.jpg|Jan van Eyck|
+2020|PT|510000|comm_2020_pt_75un.jpg|75° anniversario delle Nazioni Unite|
+2020|MT|170000|comm_2020_mt_skorba.jpg|Templi di Skorba|
+2020|VA|101000|comm_2020_sm_popejpii.jpg|Centenario della nascita di Giovanni Paolo II|
+2020|SM|54000|comm_2020_sm_raphael.jpg|500° anniversario della morte di Raffaello|
+2020|LT|500000|comm_2020_lt_aucksta.jpg|Aukštaitija, regioni etnografiche della Lituania|
+2020|EE|750000|comm_2020_et_bicdiscAnt.jpg|Bicentenario della scoperta dell’Antartide|
+2020|ES|4000000|comm_2020_es_unesco_aragon.jpg|Architettura mudéjar dell’Aragona|
+2020|DE|30000000|comm_2020_de_brandenburg.jpg|Brandeburgo, serie Länder|
+2020|BE|755000|comm_2020_be_iyph.jpg|Anno internazionale della salute delle piante|
+2020|EE|1000000|comm_2020_et_centTartuPeaceTreaty.jpg|Centenario del trattato di pace di Tartu|
+2020|IT|3000000|comm_2020_it_80annivFoundNatFiredept.jpg|80° anniversario dei Vigili del fuoco|
+2020|LU|500000|comm_2020_lu_200annivbirthPrHenri.jpg|Bicentenario della nascita del Principe Henri|
+2020|GR|750000|comm_2020_gr_battle_thermopylae.jpg|2500 anni dalla battaglia delle Termopili|
+2021|AD|70000|2021_comm_Andorra1-elderly_540x540.jpg|Prendersi cura degli anziani|
+2021|AD|73500|2021_comm_Andorra1-ladymeritchell_540x540.jpg|Centenario di Nostra Signora di Meritxell|
+2021|SK|1000000|comm_2021_sk_november.jpg|Centenario della nascita di Alexander Dubček|
+2021|FI|800000|comm_2021_fl_autumn.jpg|Cento anni di autonomia delle Isole Åland|
+2021|BE|155000|comm_2021_be_autumn.jpg|500 anni del carolus d’oro di Carlo V|
+2021|EE|1000000|comm_2021_estonia-wolf.jpg|Il lupo, animale nazionale|
+2021|MT|181000|comm_2021_mt_tarxien_temples_1.jpg|Templi di Tarxien|
+2021|VA|86000|2021_comm1_Vatican-dante_540x540.jpg|750° anniversario della morte di Dante Alighieri|
+2021|SI|1000000|SL_Oct21.jpg|Bicentenario del Museo provinciale di Carniola|
+2021|FR|510000|2021_comm_France1-olympics 540x540.jpg|Giochi olimpici di Parigi 2024|
+2021|EE|1000000|comm_2021_ee_september.jpg|Popoli ugrofinnici|
+2021|SM|54000|2021_comm_san-marino1-duerer_540x540.jpg|550° anniversario della nascita di Albrecht Dürer|
+2021|MC|15000|2021_comm_Monaco1-mariageprincier_540x540.jpg|10° anniversario delle nozze di Alberto II e Charlene|
+2021|LT|500000|comm_2021_lt_3q.jpg|Dzūkija, regioni etnografiche della Lituania|
+2021|VA|86000|comm_2021_va_june.jpg|450° anniversario della nascita di Caravaggio|
+2021|MT|72500|comm_2021_mt_june.jpg|Eroi della pandemia|
+2021|BE|155000|2021_comm_BelgiumLuxembourg-union_540x540.jpg|Centenario dell’Unione economica belgo-lussemburghese|
+2021|PT|500000|comm_2021_pt_olympics.jpg|Il Portogallo alle Olimpiadi di Tokyo|
+2021|FI|800000|comm_2021_fi_finnish_democracy.jpg|Giornalismo e democrazia|
+2021|LT|500000|comm_2021_lt_unesco_zuvintas.jpg|Riserva della biosfera di Žuvintas|
+2021|GR|1500000|comm_2021_gr_200_greek_revolution.jpg|Bicentenario della rivoluzione greca|
+2021|LV|412000|comm_2021_lv_100_anniversary_iure.jpg|Centenario del riconoscimento de iure della Lettonia|
+2021|SM|54000|comm_2021_sm_march.jpg|450° anniversario della nascita di Caravaggio|
+2021|FR|7500000|comm_2021_fr_unicef.jpg|75° anniversario dell’UNICEF|
+2021|ES|4000000|comm_2021_es_unesco_toledo.jpg|Toledo|
+2021|LU|500000|comm_2021_lu_mariage_duke_henry.jpg|40° anniversario delle nozze del Granduca Henri|
+2021|DE|30000000|DE 2021 Sachsen-Anhalt.jpg|Sassonia-Anhalt, serie Länder|
+2021|IT|3000000|comm_2021_it_150_rome_capital.jpg|150° anniversario di Roma Capitale|
+2021|IT|3000000|comm_2021_it_grazie.jpg|Grazie agli operatori sanitari|
+2021|LU|500000|comm_2021_lu_grand_duc_anniversary.jpg|Centenario della nascita del Granduca Jean|
+2021|PT|510000|PT 2021 EU presidency.jpg|Presidenza portoghese del Consiglio UE|
+2022|AD|70000|0400-23r.jpg|Leggenda di Carlo Magno e fondazione di Andorra|
+2022|AD|70000|0398-23r.jpg|10 anni dell’accordo monetario Andorra-UE|
+2022|LT|500000|0431-23r.jpg|Suvalkija, regioni etnografiche della Lituania|
+2022|EE|2000000|0424-23r.jpg|Ucraina e libertà|
+2022|FI|400000|0457-23r.jpg|Ricerca sul clima|
+2022|MT|65500|0412-23r.jpg|Risoluzione ONU 1325|
+2022|SM|55000|0451-23r.jpg|530° anniversario della morte di Piero della Francesca|
+2022|SM|55000|0453-23r.jpg|Bicentenario della morte di Antonio Canova|
+2022|SK|1000000|0441-23r.jpg|300 anni della prima macchina a vapore atmosferica|
+2022|MC|15000|IMG_0014.jpg|Centenario della morte del Principe Alberto I|
+2022|FR|260000|0402-23r.jpg|Giochi olimpici di Parigi 2024|
+2022|VA|84000|0407-23r.jpg|25° anniversario della morte di Madre Teresa|
+2022|GR|750000|0445-23r.jpg|Bicentenario della prima Costituzione greca|
+2022|AT||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|BE||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|CY||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|EE||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|FI||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|FR||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|DE||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|GR||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|IE||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|IT||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|LV||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|LT||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|LU||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|MT||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|NL||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|PT||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|SK||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|SI||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|ES||2022_comm_EU1-erasmus 540x540.jpg|35 anni del programma Erasmus|j
+2022|LT|750000|0429-23r.jpg|Centenario della pallacanestro in Lituania|
+2022|FI|400000|0454-23r.jpg|Centenario del Balletto nazionale finlandese|
+2022|BE|2000000|0435-23r.jpg|Personale sanitario nella pandemia|
+2022|MT|192000|0410-23r.jpg|Ipogeo di Ħal Saflieni|
+2022|LV|415000|0427-23r.jpg|Centenario della Latvijas Banka|
+2022|LU|500000|2022_comm1_Luxembourg-stephanieguillaume_540x540.jpg|10° anniversario delle nozze dei Granduchi ereditari|
+2022|EE|1000000|0423-23r.jpg|150 anni della Società dei letterati estoni|
+2022|ES|1000000|0416-23r.jpg|500 anni della prima circumnavigazione del globo|
+2022|ES|1000000|0415-23r.jpg|Parco nazionale di Garajonay|
+2022|PT|1000000|0421-23r.jpg|Centenario della traversata aerea dell’Atlantico meridionale|
+2022|VA|84000|0408-23r.jpg|125° anniversario della nascita di Paolo VI|
+2022|FR|9000000|FR-chirac.jpg|90° anniversario della nascita di Jacques Chirac|
+2022|IT|3000000|IT-borsellino.jpg|30° anniversario della morte di Falcone e Borsellino|
+2022|IT|3000000|2022_1comm_Italy-polizia_540x540.jpg|170° anniversario della Polizia di Stato|
+2022|DE|30000000|DE-thueringen.jpg|Turingia, serie Länder|
+2022|LU|500000|LU-lezteburg.jpg|50 anni della tutela della bandiera lussemburghese|
+2022|SI|1000000|SL-slovenia.jpg|150° anniversario della nascita di Jože Plečnik|
+2023|AD|70000|coins1.jpg|Feste del fuoco del solstizio d’estate|
+2023|AD|70000|coins2.jpg|30 anni di Andorra nelle Nazioni Unite|
+2023|SI|1000000|coins14.jpg|150° anniversario della nascita di Josip Plemelj|
+2023|PT|1015000|coins11.jpg|Pace tra le nazioni|
+2023|CY|412000|IMG_0029_540x5402.jpg|60 anni della Central Bank of Cyprus|
+2023|FI|400000|IMG_0038_540x540.jpg|Servizi sociosanitari|
+2023|SK|1000000|IMG_0049.jpg|Bicentenario del postale espresso Vienna-Bratislava|
+2023|BE|130000|coins3.jpg|75° anniversario del suffragio femminile|
+2023|HR|250000|Croatia_introduction_euro.jpg|Introduzione dell’euro in Croazia|
+2023|SM|56000|IMG_0053_540x540.jpg|500° anniversario della morte di Luca Signorelli|
+2023|PT|1015000|coins12.jpg|Giornata mondiale della gioventù, Lisbona 2023|
+2023|IE|500000|IMG_0033_540x540.jpg|50 anni dell’Irlanda nell’Unione europea|
+2023|GR|750000|IMG_0007.jpg|Centenario della nascita di Maria Callas|
+2023|GR|750000|IMG_0023_540x540.jpg|150° anniversario della nascita di Carathéodory|
+2023|EE|1000000|IMG_0018.jpg|Rondine, uccello nazionale estone|
+2023|FR|15000000|IMG_0021.jpg|Coppa del mondo di rugby 2023|
+2023|MT|82500|IMG_0041_540x540.jpg|225 anni dall’arrivo dei francesi a Malta|
+2023|MT|95500|IMG_0049_540x540.jpg|550° anniversario della nascita di Copernico|
+2023|MC|25000|coins10.jpg|Centenario della nascita del Principe Ranieri III|
+2023|BE|155000|coins6.jpg|Anno dell’Art Nouveau|
+2023|ES|1500000|IMG_0024.jpg|Presidenza spagnola del Consiglio UE|
+2023|VA|82500|Vatican_Alessandro_Manzoni1.jpg|150° anniversario della morte di Alessandro Manzoni|
+2023|VA|82500|IMG_0031.jpg|500° anniversario della morte del Perugino|
+2023|LV|415000|coins7.jpg|Girasole ucraino|
+2023|FI|400000|0458-23r.jpg|Prima legge finlandese sulla conservazione della natura|
+2023|SM|56000|IMG_0029.jpg|500° anniversario della morte del Perugino|
+2023|LT|500000|0433-23r.jpg|Al fianco dell’Ucraina|
+2023|ES|1500000|0418-23r.jpg|Cáceres|
+2023|DE|20000000|IMG_0229.jpg|1275° anniversario della nascita di Carlo Magno|
+2023|SK|1000000|0443-23r.jpg|Centenario della prima trasfusione di sangue|
+2023|LU|500000|0437-23r.jpg|175 anni del parlamento lussemburghese|
+2023|LU|500000|0439-23r.jpg|25 anni del Granduca Henri nel CIO|
+2023|FR|260000|0405-23r.jpg|Olimpiadi di Parigi 2024|
+2023|IT|3000000|0446-23r.jpg|Centenario dell’Aeronautica Militare|
+2023|IT|3000000|0448-23r.jpg|150° anniversario della morte di Alessandro Manzoni|
+2023|DE|30000000|2023_comm_Germany-Hamburg_540x520.jpg|Amburgo, serie Länder|
+2024|LT|500000|Lithuania.jpg|Giardini di paglia lituani|
+2024|CY|7000|Cyprus.jpg|20 anni di Cipro nell’Unione europea|
+2024|AD|60000|Andorra_01.jpg|Centenario dello sci ad Andorra|
+2024|AD|60000|Andorra_02.jpg|Mondiali di mountain bike UCI 2024|
+2024|FI|400000|Finland1.jpg|Architettura finlandese|
+2024|LV|413000|Latvia.jpg|Himmeli, decorazione natalizia lettone|
+2024|SI|1000000|Slovenia.jpg|250 anni della Biblioteca nazionale e universitaria|
+2024|VA|82900|IMG_0056-540x540.jpg|750° anniversario della morte di San Tommaso d’Aquino|
+2024|HR|200000|Croatia.jpg|Marco Marulo, 500 anni dalla morte|
+2024|SK|1000000|Slovakia1.jpg|Centenario della maratona della pace di Košice|
+2024|SM|56000|San Marino1.jpg|530° anniversario della morte del Ghirlandaio|
+2024|PT|520000|IMG_0052-540x540_2.jpg|Il Portogallo ai Giochi olimpici di Parigi|
+2024|GR|750000|Greece_021.jpg|50 anni dal ripristino della democrazia|
+2024|GR|750000|Greece_011.jpg|150 anni dalla nascita di Penelope Delta|
+2024|MT|85500|Malta_011.jpg|Ape mellifera maltese|
+2024|FI|400000|IMG_0036.jpg|Elezioni e democrazia|
+2024|EE|1000000|IMG_0060.jpg|Fiordaliso, fiore nazionale estone|
+2024|MC|15000|IMG_0046-540x540_2.jpg|500 anni del trattato con Carlo V|
+2024|HR|200000|Croatia1.jpg|Città vecchia di Varaždin|
+2024|MT|85500|Malta_021.jpg|Cittadella di Gozo|
+2024|FR|24000000|IMG_0044-540x540_2.jpg|Torre Eiffel, Olimpiadi di Parigi 2024|
+2024|VA|82900||150° anniversario della nascita di Guglielmo Marconi|
+2024|BE|2130000|IMG_0032-540x540_2.jpg|Lotta contro il cancro|
+2024|PT|515000|IMG_0077.jpg|Cinquantenario del 25 aprile 1974|
+2024|SM|56000|IMG_0081_1.jpg|50 anni della dichiarazione dei diritti dei cittadini|
+2024|ES|1500000|IMG_0083.jpg|Bicentenario della Polizia nazionale|
+2024|ES|1500000|IMG_0087_1.jpg|Siviglia|
+2024|BE|2128500|2024_comm_Belgium2.jpg|Presidenza belga del Consiglio UE|
+2024|DE|30000000|IMG_0112.jpg|175 anni della Costituzione di Francoforte|
+2024|LU|200000|2024_comm_Luxembourg_3.JPG|175° anniversario della morte del Granduca Guillaume II|
+2024|LU|200000|2024_comm_Luxembourg1.JPG|Centenario del “Feierstëppler”|
+2024|FR|510000|2024_comm_France1.JPG|Olimpiadi 2024, lotta|
+2024|IT|3000000|IMG_0039.jpg|250° anniversario della Guardia di Finanza|
+2024|IT|3000000|IMG_0072.jpg|Rita Levi-Montalcini|
+2024|DE|30000000|IMG_0080-540x540_1.jpg|Meclemburgo-Pomerania Anteriore, serie Länder|
+2025|LT|500000|Lithuania.jpg|Lituania minore, regioni etnografiche della Lituania|
+2025|SI|1000000|Slovenia.jpg|Centenario della nascita di Miki Muster|
+2025|MC|15000||Marchesato di Baux|
+2025|HR|200000|Croatia.jpg|Pola, l’Arena|
+2025|FI|204000|Finland_540x540.jpg|Centenario dell’incontro di atletica Finlandia-Svezia|
+2025|FR|20000000|France.jpg|Notre-Dame de Paris|
+2025|SM|56000|San Marino.jpg|550° anniversario della nascita di Michelangelo|
+2025|MT|152000|Malta_540x540.jpg|Città di Mdina|
+2025|GR|750000|Greece_01.jpg|Bicentenario della morte di Laskarina Bouboulina|
+2025|GR|750000|Greece_02.jpg|Centenario della nascita di Mikis Theodorakis|
+2025|HR|400000|Croatia_540x540.jpg|Re Tomislao, 1100 anni del Regno di Croazia|
+2025|BE|155000|Belgium_540x540.jpg|Circuito di Spa-Francorchamps|
+2025|AD|64000|Andorra_540x540.jpg|Giochi dei piccoli Stati d’Europa 2025|
+2025|AD|60000|Andorra_01_540x540.jpg|Gipeto|
+2025|EE|850000|Estonia_540x540.jpg|500° anniversario del primo libro in estone|
+2025|VA|80000||550° anniversario della nascita di Michelangelo|
+2025|VA|76000||Sede vacante 2025|
+2025|VA|91000||Giubileo 2025, Porta Santa|
+2025|PT|500000||Movimento scout mondiale|
+2025|MT|145000|Malta.jpg|Bue maltese|
+2025|MC|15000||Contea di Carladès|
+2025|FI|204000|Finland.jpg|Visite di Stato finlandesi|
+2025|PT|500000||Sviluppo sostenibile|
+2025|LT|500000|IMG_0131_540x540.jpg|Difesa|
+2025|ES|2000000|Spain_540x540.jpg|Salamanca|
+2025|SM|56000|IMG_0159_540x540.jpg|Giubileo 2025, Pellegrini di Speranza|
+2025|LU|200000|IMG_0141_540x540.jpg|75° anniversario della Dichiarazione Schuman|
+2025|LU|200000|IMG_0135_540x540.jpg|25° anniversario dell’ascesa al trono del Granduca Henri|
+2025|SK|1000000|Slovakia.jpg|Centenario dell’europeo di hockey su ghiaccio|
+2025|IT|3000000|Italy_540x540.jpg|Giubileo 2025|
+2025|IT|3000000|Italy.jpg|Amerigo Vespucci, Tour Mondiale|
+2025|FR|315000|IMG_0147_540x540.jpg|Il Louvre|
+2025|DE|30000000|Germany540x540.jpg|Saarland, serie Länder|
+2025|BE|1000000|Belgium.jpg|Lotteria nazionale del Belgio|`;
+const EUR2_UPD = "2026-11-17";
+const EUR2_IMG = "https://www.ecb.europa.eu/euro/coins/comm/html/comm_";
+const EUR2_LOW = 200000;
+const EUR2_C = { AD: "Andorra", AT: "Austria", BE: "Belgio", BG: "Bulgaria", CY: "Cipro", HR: "Croazia", EE: "Estonia", FI: "Finlandia", FR: "Francia", DE: "Germania", GR: "Grecia", IE: "Irlanda", IT: "Italia", LV: "Lettonia", LT: "Lituania", LU: "Lussemburgo", MT: "Malta", MC: "Monaco", NL: "Paesi Bassi", PT: "Portogallo", SM: "San Marino", SK: "Slovacchia", SI: "Slovenia", ES: "Spagna", VA: "Vaticano" };
+const EUR2_MICRO = ["AD", "MC", "SM", "VA"];
+const EUR2_ALIAS = { "citta del vaticano": "VA", "stato della citta del vaticano": "VA", "santa sede": "VA", "repubblica di san marino": "SM", "principato di monaco": "MC", "principato di andorra": "AD", "olanda": "NL", "germania federale": "DE", "rep. di san marino": "SM", "rsm": "SM" };
+let EUR2_MEMO = null;
+function eur2Norm(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’'`]/g, " ").replace(/\s+/g, " ").trim(); }
+function eur2CC(paese) {
+  const n = eur2Norm(paese); if (!n) return null;
+  if (EUR2_ALIAS[n]) return EUR2_ALIAS[n];
+  if (/^[a-z]{2}$/.test(n) && EUR2_C[n.toUpperCase()]) return n.toUpperCase();
+  for (const k in EUR2_C) if (eur2Norm(EUR2_C[k]) === n) return k;
+  for (const k in EUR2_C) if (n.includes(eur2Norm(EUR2_C[k]))) return k;
+  return null;
+}
+function eur2List() {
+  const add = (S.config && S.config.eur2 && Array.isArray(S.config.eur2.add)) ? S.config.eur2.add : [];
+  const key = add.length + ":" + (S.config && S.config.eur2 && S.config.eur2.upd || "");
+  if (EUR2_MEMO && EUR2_MEMO.key === key) return EUR2_MEMO.list;
+  const list = []; const k = {};
+  EUR2_DATA.split("\n").forEach(l => {
+    const [y, cc, v, img, t, j] = l.split("|");
+    let id; if (j) id = y + "-" + cc + "-j"; else { const kk = y + cc; k[kk] = (k[kk] || 0) + 1; id = y + "-" + cc + "-" + k[kk]; }
+    list.push({ id, y: Number(y), cc, v: v ? Number(v) : null, img: img ? EUR2_IMG + y + "/" + encodeURIComponent(img) : "", t, j: !!j });
+  });
+  const ids = new Set(list.map(x => x.id));
+  add.forEach(a => { if (a && a.id && !ids.has(a.id) && EUR2_C[a.cc]) { ids.add(a.id); list.push({ id: a.id, y: Number(a.y), cc: a.cc, v: a.v != null ? Number(a.v) : null, img: /^https:\/\/www\.ecb\.europa\.eu\//.test(a.img || "") ? a.img : "", t: String(a.t || ""), j: !!a.j, added: true }); } });
+  list.sort((a, b) => a.y - b.y || a.cc.localeCompare(b.cc) || a.id.localeCompare(b.id));
+  EUR2_MEMO = { key, list, byId: Object.fromEntries(list.map(x => [x.id, x])) };
+  return list;
+}
+function eur2ById(id) { eur2List(); return EUR2_MEMO.byId[id] || null; }
+function eur2Cat() {
+  if (!S.config) return null;
+  const cs = S.config.cats;
+  return cs.find(c => c.id === "monete") || cs.find(c => /monet/i.test(c.name) && !/storic|antic/i.test(c.name + c.id) && c.fields.some(f => f.k === "paese")) || null;
+}
+function eur2Owned() {
+  const c = eur2Cat(); const m = {};
+  if (!c) return m;
+  for (const it of S.items.values()) {
+    if (it.deleted || it.catId !== c.id || !it.ref || it.ref.src !== "ecb2") continue;
+    const o = m[it.ref.card] = m[it.ref.card] || { qty: 0, wish: false };
+    if (it.status === "in") o.qty += Number(it.qty) || 0;
+    if (it.status === "wish") o.wish = true;
+  }
+  return m;
+}
+function eur2Img(x) { return S.env === "pwa" && x.img ? x.img : ""; }
+function eur2Low(x) { return x.v != null && x.v <= EUR2_LOW; }
+function eur2St() { return S.eur2 = S.eur2 || { mode: "cc", q: "", sel: new Set(), show: "all", chip: "" }; }
+/* collega le monete da 2 € inserite a mano o da foto */
+function eur2Linkable() {
+  const c = eur2Cat(); if (!c) return [];
+  const list = eur2List(); const out = [];
+  const used = new Set();
+  for (const it of S.items.values()) {
+    if (it.deleted || it.catId !== c.id || it.ref) continue;
+    const f = it.fields || {};
+    const txt = eur2Norm([it.name, f.valore_nominale, f.catalogo, it.notes].join(" "));
+    if (!/(^|\D)2\s*(€|e\b|eur|euro)/.test(txt) && !/2 euro|due euro/.test(txt)) continue;
+    const y = Number(f.anno); const cc = eur2CC(f.paese) || eur2CC(it.name);
+    if (!y || !cc) continue;
+    const cand = list.filter(x => x.y === y && x.cc === cc);
+    if (!cand.length) continue;
+    const words = new Set(txt.split(/[^a-z0-9]+/).filter(w => w.length >= 4));
+    const sc = cand.map(x => ({ x, s: eur2Norm(x.t).split(/[^a-z0-9]+/).filter(w => w.length >= 4 && words.has(w)).length })).sort((a, b) => b.s - a.s);
+    let pick = null;
+    if (sc[0].s >= 1 && (sc.length === 1 || sc[1].s < sc[0].s)) pick = sc[0].x;
+    else if (cand.length === 1 && /commemorativ/.test(txt)) pick = cand[0];
+    if (pick) out.push({ it, coin: pick });
+    used.add(it.id);
+  }
+  return out;
+}
+async function eur2Link() {
+  const l = eur2Linkable(); if (!l.length) return;
+  const upd = l.map(({ it, coin }) => { const n = Object.assign({}, it, { ref: { src: "ecb2", set: "eur2", card: coin.id } }); if (!n.imageUrl && coin.img) n.imageUrl = coin.img; return n; });
+  try { await saveItems(upd); toast(pl(upd.length, "moneta collegata", "monete collegate") + " al catalogo"); render(); } catch (e) { toast(dbErr(e), 5000); }
+}
+function eur2Disc(x, has, big) {
+  const img = eur2Img(x);
+  const fade = has ? "" : "opacity:.38;filter:grayscale(.7);";
+  if (img) return '<span style="display:block;width:100%;aspect-ratio:1;border-radius:50%;overflow:hidden;background:#EEE;' + fade + '"><img alt="" loading="lazy" src="' + esc(img) + '" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'"></span>';
+  return '<span style="display:block;width:100%;aspect-ratio:1;border-radius:50%;position:relative;background:radial-gradient(circle at 50% 50%,#D8C690 0 56%,#B8BBC0 57% 100%);box-shadow:inset 0 0 0 2px rgba(0,0,0,.08);' + fade + '"><span style="position:absolute;inset:22%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#5A4A1E;line-height:1.1"><span style="font-weight:700;font-size:' + (big ? 18 : 13) + 'px">' + esc(x.cc) + '</span><span style="font-size:' + (big ? 12 : 10) + 'px">' + x.y + '</span></span></span>';
+}
+function eur2Badge(cc) { return '<span class="ico" style="background:#F2EEDF;color:#5A4A1E;font-weight:700;font-size:13px;letter-spacing:.02em">' + esc(cc) + '</span>'; }
+function eur2Prog(n, tot) { const p = tot ? Math.round(n / tot * 100) : 0; return '<span class="progress" style="display:block;margin-top:6px"><span style="display:block;height:100%;width:' + p + '%;background:var(--acc)"></span></span>'; }
+function vEur2() {
+  const st = eur2St(); const c = eur2Cat();
+  const list = eur2List(); const own = eur2Owned();
+  const have = list.filter(x => own[x.id] && own[x.id].qty).length;
+  const pct = Math.round(have / Math.max(1, list.length) * 100);
+  const upd = (S.config && S.config.eur2 && S.config.eur2.upd) || EUR2_UPD;
+  let h = '<div class="wrap stack">' + topBar("2 € commemorativi", "Catalogo BCE · " + list.length + " monete");
+  if (!c) return h + '<div class="notice warn">Per usare il catalogo serve una categoria di monete moderne con il campo Paese.</div></div>';
+  h += '<div class="card pad stack" style="gap:8px"><div class="between"><span class="b">' + have + ' di ' + list.length + ' monete</span><span class="small muted">' + pct + '% completo</span></div><div class="progress"><div style="width:' + pct + '%"></div></div></div>';
+  const lk = eur2Linkable().length;
+  if (lk) h += '<div class="notice between"><span>' + pl(lk, "moneta da 2 € inserita a mano corrisponde", "monete da 2 € inserite a mano corrispondono") + ' al catalogo.</span><button type="button" class="btn sm" data-act="eur2Link">Collega</button></div>';
+  h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="q" type="search" placeholder="Cerca un tema (es. Dante, Olimpiadi)" aria-label="Cerca moneta" value="' + esc(st.q) + '" data-input="eur2Q"></label>';
+  if (st.q) {
+    const q = eur2Norm(st.q);
+    const res = list.filter(x => eur2Norm(x.t + " " + EUR2_C[x.cc] + " " + x.y).includes(q));
+    h += '<div class="sect">' + pl(res.length, "risultato", "risultati") + '</div>';
+    h += res.length ? eur2Grid(res.slice(0, 90), own, "both") : '<div class="card empty">Nessuna moneta trovata.</div>';
+    if (st.sel.size) h += eur2Foot();
+    return h + '</div>';
+  }
+  h += '<div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Raggruppa">' + [["cc", "Paesi"], ["y", "Anni"], ["j", "Emissioni comuni"]].map(([k, l]) => '<button type="button" class="' + (st.mode === k ? "on" : "") + '" data-act="eur2Mode" data-v="' + k + '">' + l + '</button>').join("") + '</div>';
+  const grp = {};
+  const keyOf = x => st.mode === "cc" ? x.cc : st.mode === "y" ? String(x.y) : (x.j ? String(x.y) : null);
+  list.forEach(x => { const k = keyOf(x); if (k == null) return; const g = grp[k] = grp[k] || { tot: 0, have: 0, ys: [], low: 0, t: x.t }; g.tot++; if (own[x.id] && own[x.id].qty) g.have++; g.ys.push(x.y); if (eur2Low(x)) g.low++; });
+  let keys = Object.keys(grp);
+  if (st.mode === "cc") keys.sort((a, b) => EUR2_C[a].localeCompare(EUR2_C[b], "it")); else keys.sort((a, b) => b - a);
+  const row = k => {
+    const g = grp[k];
+    const name = st.mode === "cc" ? EUR2_C[k] : st.mode === "y" ? k : g.t;
+    const sub = st.mode === "cc" ? pl(g.tot, "moneta", "monete") + " · " + Math.min(...g.ys) + (Math.max(...g.ys) !== Math.min(...g.ys) ? "–" + Math.max(...g.ys) : "") : st.mode === "y" ? pl(g.tot, "moneta", "monete") + (g.low ? " · " + g.low + " a tiratura bassa" : "") : k + " · " + g.tot + " paesi, una moneta per paese";
+    const ico = st.mode === "cc" ? eur2Badge(k) : '<span class="ico">' + ic(st.mode === "y" ? "clock" : "globe", 18) + '</span>';
+    return '<button type="button" class="li" data-act="eur2Open" data-v="' + esc(st.mode + ":" + k) + '">' + ico + '<span class="grow" style="min-width:0"><span class="b ellip" style="display:block">' + esc(name) + (st.mode === "cc" && EUR2_MICRO.includes(k) ? ' <span class="badge amber" style="margin-left:4px">tirature basse</span>' : '') + '</span><span class="xs muted">' + esc(sub) + '</span>' + (g.have ? eur2Prog(g.have, g.tot) : '') + '</span><span class="b small">' + g.have + '/' + g.tot + '</span></button>';
+  };
+  h += '<div class="card list" style="overflow:hidden">' + keys.map(row).join("") + '</div>';
+  h += '<div class="card pad stack" style="gap:8px"><div class="between"><span><span class="b" style="display:block">Nuove emissioni</span><span class="xs muted">Catalogo aggiornato al ' + esc(fmtDateIt(upd)) + '</span></span><button type="button" class="btn sm" data-act="eur2Upd">' + ic("refresh", 16) + 'Aggiorna</button></div><div class="xs muted">Le nuove monete le cerca Claude sul sito della Banca centrale europea; tu confermi quali aggiungere.</div></div>';
+  return h + '</div>';
+}
+function fmtDateIt(d) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ""); return m ? Number(m[3]) + " " + ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"][Number(m[2]) - 1] + " " + m[1] : (d || "—"); }
+function eur2Grid(list, own, sub) {
+  const st = eur2St();
+  let h = '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">';
+  list.forEach(x => {
+    const o = own[x.id]; const has = !!(o && o.qty); const sel = st.sel.has(x.id);
+    const circle = has || sel ? '<button type="button" data-act="eur2Toggle" data-id="' + esc(x.id) + '" aria-pressed="' + sel + '" aria-label="' + (sel ? "Deseleziona" : "Seleziona") + '" style="position:absolute;top:0;right:0;width:40px;height:40px;border:none;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer"><span style="width:24px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;' + (sel ? "background:var(--acc);color:#fff" : "background:rgba(255,255,255,.92);border:1.5px solid #9A9C93") + '">' + (sel ? ic("check", 14, 2.5) : "") + '</span></button>' : "";
+    const meta = (sub === "cc" ? EUR2_C[x.cc] : sub === "both" ? EUR2_C[x.cc] + " " + x.y : String(x.y)) + (eur2Low(x) ? ' · <b style="color:#7A5A00">tir. bassa</b>' : '');
+    h += '<div style="position:relative;border-radius:12px;border:' + (sel ? "2px solid var(--acc)" : "1px solid var(--line)") + ';background:#fff"><button type="button" data-act="' + (has ? "eur2Own" : "eur2Toggle") + '" data-id="' + esc(x.id) + '"' + (has ? ' aria-label="Le tue copie di ' + esc(x.t) + '"' : ' aria-pressed="' + sel + '"') + ' style="width:100%;padding:8px;border:none;border-radius:11px;background:none;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:6px;font:inherit;color:inherit">' + eur2Disc(x, has) + '<span style="font-weight:600;font-size:12px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(x.t) + '</span><span class="xs muted">' + meta + '</span>' + (has ? '<span class="badge" style="position:absolute;top:8px;left:8px">×' + o.qty + '</span>' : o && o.wish ? '<span class="badge grey" style="position:absolute;top:8px;left:8px">desiderio</span>' : '') + '</button>' + circle + '</div>';
+  });
+  return h + '</div>';
+}
+function eur2Foot() {
+  const n = eur2St().sel.size;
+  return '<div style="height:70px"></div><div style="position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom))"><div class="grid2" style="max-width:560px;margin:0 auto"><button type="button" class="btn" data-act="eur2AddWish"' + (n ? "" : " disabled") + '>Desideri (' + n + ')</button><button type="button" class="btn pri" data-act="eur2Add"' + (n ? "" : " disabled") + '>Aggiungi (' + n + ')</button></div></div>';
+}
+function eur2Filtered() {
+  const v = S.view; const [mode, key] = String(v.key || "").split(":");
+  const all = eur2List();
+  const base = all.filter(x => mode === "cc" ? x.cc === key : mode === "y" ? x.y === Number(key) : x.j && x.y === Number(key));
+  return { mode, key, base };
+}
+function vEur2Grid() {
+  const st = eur2St(); const own = eur2Owned();
+  const { mode, key, base } = eur2Filtered();
+  const title = mode === "cc" ? EUR2_C[key] : mode === "y" ? "Anno " + key : (base[0] ? base[0].t : "Emissione comune");
+  let h = '<div class="wrap stack">' + topBar(title, mode === "j" ? "Emissione comune " + key : "2 € commemorativi");
+  const have = base.filter(x => own[x.id] && own[x.id].qty).length;
+  const pct = Math.round(have / Math.max(1, base.length) * 100);
+  h += '<div class="card pad stack" style="gap:8px"><div class="between"><span class="b">' + have + ' di ' + base.length + ' monete</span><span class="small muted">' + pct + '% completo</span></div><div class="progress"><div style="width:' + pct + '%"></div></div></div>';
+  h += '<div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Mostra">' + [["all", "Tutte"], ["miss", "Mancanti"], ["have", "Possedute"]].map(([k, l]) => '<button type="button" class="' + (st.show === k ? "on" : "") + '" data-act="eur2Show" data-v="' + k + '">' + l + '</button>').join("") + '</div>';
+  // chip: anni (per paese), paesi (per anno), tiratura bassa
+  let chips = [["", mode === "y" || mode === "j" ? "Tutti i paesi" : "Tutti gli anni"]];
+  if (mode === "cc") [...new Set(base.map(x => x.y))].sort((a, b) => b - a).forEach(y => chips.push(["y" + y, String(y)]));
+  else [...new Set(base.map(x => x.cc))].sort((a, b) => EUR2_C[a].localeCompare(EUR2_C[b], "it")).forEach(cc => chips.push(["c" + cc, EUR2_C[cc]]));
+  if (base.some(eur2Low) && mode !== "j") chips.splice(1, 0, ["low", "Tiratura bassa"]);
+  if (chips.length > 2) h += '<div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px">' + chips.map(([k, l]) => '<button type="button" class="chip ' + (st.chip === k ? "on" : "") + '" style="white-space:nowrap" data-act="eur2Chip" data-v="' + esc(k) + '">' + esc(l) + '</button>').join("") + '</div>';
+  const shown = base.filter(x => {
+    const has = own[x.id] && own[x.id].qty;
+    if (st.show === "miss" && has) return false;
+    if (st.show === "have" && !has) return false;
+    if (st.chip === "low") return eur2Low(x);
+    if (st.chip[0] === "y") return x.y === Number(st.chip.slice(1));
+    if (st.chip[0] === "c") return x.cc === st.chip.slice(1);
+    return true;
+  }).sort((a, b) => mode === "cc" ? b.y - a.y || a.id.localeCompare(b.id) : EUR2_C[a.cc].localeCompare(EUR2_C[b.cc], "it"));
+  h += '<div class="between"><span class="small muted">' + st.sel.size + ' selezionate</span><span class="row" style="gap:6px"><button type="button" class="btn sm" data-act="eur2SelMiss">Mancanti</button><button type="button" class="btn sm" data-act="eur2SelAll">Tutte</button><button type="button" class="btn sm" data-act="eur2SelNone">Nessuna</button></span></div>';
+  h += shown.length ? eur2Grid(shown, own, mode === "cc" ? "y" : "cc") : '<div class="card empty">Nessuna moneta con questi filtri.</div>';
+  if (S.env !== "pwa") h += '<div class="xs muted">Le immagini delle monete si vedono nell\'app.</div>';
+  h += eur2Foot();
+  return h + '</div>';
+}
+function eur2Visible() {
+  const st = eur2St();
+  if (S.view.name === "eur2Grid") { const own = eur2Owned(); return eur2Filtered().base.filter(x => st.show !== "have" || (own[x.id] && own[x.id].qty)); }
+  return eur2List();
+}
+function eur2OpenCopies(id) {
+  const x = eur2ById(id); const c = eur2Cat(); if (!x || !c) return;
+  openCopies(c.id, id, { title: x.t, sub: EUR2_C[x.cc] + " " + x.y, addAct: "eur2CopyAdd" });
+}
+function openEur2Add(status) {
+  const c = eur2Cat(); const st = eur2St(); if (!c) return;
+  let h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Aggiungi monete"><div class="grab"></div>';
+  h += '<div class="between"><div><h1 style="font-size:20px">' + (status === "wish" ? "Metti nei desideri" : "Aggiungi alla collezione") + '</h1><div class="small muted">' + pl(st.sel.size, "moneta", "monete") + ' da 2 € · ' + esc(c.name) + '</div></div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
+  if (status !== "wish") h += '<label class="f"><span>Stato di conservazione (per tutte)</span><select class="in" id="ea_cond"><option value="">—</option>' + c.cond.map(o => '<option>' + esc(o) + '</option>').join("") + '</select></label><label class="f"><span>Dove le tieni</span><input class="in" id="ea_loc" placeholder="Es. Album 2 euro"></label>';
+  h += '<div class="small muted">Paese, anno, tiratura e tema vengono compilati dal catalogo. Il valore puoi farlo stimare dopo con Aggiorna prezzi.</div>';
+  h += '<button type="button" class="btn pri full" data-act="eur2AddGo" data-v="' + status + '">' + (status === "wish" ? "Aggiungi ai desideri" : "Aggiungi " + pl(st.sel.size, "moneta", "monete")) + '</button></div></div>';
+  $("modal").innerHTML = h;
+}
+async function eur2AddGo(btn, status) {
+  const c = eur2Cat(); const st = eur2St(); if (!c) return;
+  const cond = $("ea_cond") ? val("ea_cond") : ""; const loc = $("ea_loc") ? val("ea_loc").trim() : "";
+  btn.disabled = true;
+  const keys = new Set(c.fields.map(f => f.k));
+  const items = [...st.sel].map(eur2ById).filter(Boolean).map(x => {
+    const it = newDraft(c.id, status);
+    it.name = "2 € " + EUR2_C[x.cc] + " " + x.y + " · " + x.t;
+    it.qty = 1; it.cond = cond; it.location = loc;
+    const f = { paese: EUR2_C[x.cc], anno: x.y, valore_nominale: "2 €", metallo: "Bimetallica", tiratura: x.v, catalogo: "BCE, 2 € commemorativi " + x.y + (x.j ? " (emissione comune)" : "") };
+    Object.keys(f).forEach(k => { if (keys.has(k) && f[k] != null && f[k] !== "") it.fields[k] = f[k]; });
+    if (!keys.has("paese") || !keys.has("anno")) it.notes = EUR2_C[x.cc] + ", " + x.y;
+    it.ref = { src: "ecb2", set: "eur2", card: x.id };
+    if (x.img) it.imageUrl = x.img;
+    it.createdAt = nowIso();
+    if (status === "in") it.movements = [{ type: "carico", qty: 1, date: today(), price: null }];
+    ["_new", "_origBuy", "_cats"].forEach(k => delete it[k]);
+    return it;
+  });
+  try { await saveItems(items); closeModal(); st.sel = new Set(); toast(pl(items.length, "moneta aggiunta", "monete aggiunte") + (status === "wish" ? " ai desideri" : "")); render(); }
+  catch (e) { btn.disabled = false; toast(dbErr(e), 5000); }
+}
+/* --- aggiornamento del catalogo con Claude (artifact) --- */
+function eur2UpdOpen() {
+  if (S.env === "artifact") { S.e2u = { step: "pick", from: Math.max(...eur2List().map(x => x.y)), web: true, cands: [], sel: new Set() }; go({ name: "eur2Upd" }); return; }
+  const h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Aggiorna catalogo"><div class="grab"></div><div class="between"><h1 style="font-size:20px">Aggiorna il catalogo</h1><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>' +
+    '<div class="small">Le nuove emissioni le cerca Claude nell\'artifact. Lì tocca <b>Cerca nuove monete</b>, conferma quelle da aggiungere e poi <b>Copia per l\'app</b>; tornato qui, tocca <b>Ricevi da Claude</b>.</div>' +
+    '<button type="button" class="btn pri full" data-act="eur2ToArtifact">' + 'Apri Claude</button></div></div>';
+  $("modal").innerHTML = h;
+}
+function vEur2Upd() {
+  const u = S.e2u || (S.e2u = { step: "pick", from: Math.max(...eur2List().map(x => x.y)), web: true, cands: [], sel: new Set() });
+  let h = '<div class="wrap stack">' + topBar("Aggiorna catalogo 2 €", "Nuove emissioni dalla BCE");
+  if (!S.sample) return h + '<div class="notice warn">Claude non è disponibile in questa vista.</div></div>';
+  const yNow = new Date().getFullYear();
+  if (u.step === "sent") {
+    h += '<div class="card pad stack"><h2 style="font-size:16px">Riporta nell\'app</h2><div class="small muted">Catalogo aggiornato. Copialo e nell\'app tocca "Ricevi da Claude".</div><div class="grid2"><button type="button" class="btn pri" data-act="sendCopy">' + ic("copy", 18) + 'Copia per l\'app</button><a class="btn" href="' + APP_URL + '" target="_blank" rel="noopener">Apri l\'app</a></div><div id="sendMsg" class="xs muted"></div></div>';
+    return h + '</div>';
+  }
+  if (u.step === "pick" || u.step === "run") {
+    const known = eur2List().filter(x => x.y >= u.from);
+    h += '<div class="card pad stack" style="gap:10px"><div class="small">Il catalogo contiene ' + eur2List().length + ' monete; dal ' + u.from + ' in poi ne conosce ' + known.length + '. Claude controlla le pagine della BCE dal ' + u.from + ' al ' + yNow + ' e propone quelle mancanti.</div>';
+    h += '<label class="f"><span>Cerca dall\'anno</span><select class="in" id="e2_from" data-change="e2From">' + [yNow, yNow - 1, yNow - 2, yNow - 3].filter((y, i, a) => a.indexOf(y) === i).map(y => '<option' + (y === u.from ? " selected" : "") + '>' + y + '</option>').join("") + '</select></label>';
+    h += '<button type="button" class="btn pri full" data-act="e2Run"' + (u.step === "run" ? " disabled" : "") + '>' + ic("search", 18) + (u.step === "run" ? esc(u.msg || "Cerco…") : "Cerca nuove monete") + '</button></div>';
+    if (u.err) h += '<div class="notice warn">' + esc(u.err) + '</div>';
+    return h + '</div>';
+  }
+  // revisione delle proposte
+  if (u.err) h += '<div class="notice warn">' + esc(u.err) + '</div>';
+  if (!u.cands.length) { h += '<div class="card empty">Nessuna nuova moneta trovata: il catalogo è aggiornato.</div><button type="button" class="btn full" data-act="back">Torna al catalogo</button>'; return h + '</div>'; }
+  h += '<div class="small muted">' + pl(u.cands.length, "nuova moneta trovata", "nuove monete trovate") + '. Togli la spunta a quelle che non vuoi aggiungere.</div>';
+  h += '<div class="card list" style="overflow:hidden">' + u.cands.map((x, i) => { const on = u.sel.has(i); return '<button type="button" class="li" data-act="e2Sel" data-i="' + i + '" aria-pressed="' + on + '"><span style="width:24px;height:24px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;' + (on ? "background:var(--acc);color:#fff" : "border:1.5px solid #9A9C93") + '">' + (on ? ic("check", 14, 2.5) : "") + '</span>' + eur2Badge(x.cc) + '<span class="grow" style="min-width:0"><span class="b" style="display:block;font-size:14px">' + esc(x.t) + '</span><span class="xs muted">' + esc(EUR2_C[x.cc]) + ' · ' + x.y + (x.v ? ' · tiratura ' + x.v.toLocaleString("it-IT") : '') + (x.src ? ' · ' + esc(x.src) : '') + '</span></span></button>'; }).join("") + '</div>';
+  h += '<button type="button" class="btn pri full" data-act="e2Save"' + (u.sel.size ? "" : " disabled") + '>Aggiungi ' + pl(u.sel.size, "moneta", "monete") + ' al catalogo</button>';
+  return h + '</div>';
+}
+function eur2Same(a, b) {
+  const wa = new Set(eur2Norm(a).split(/[^a-z0-9]+/).filter(w => w.length >= 4)), wb = eur2Norm(b).split(/[^a-z0-9]+/).filter(w => w.length >= 4);
+  if (!wa.size || !wb.length) return false;
+  const inter = wb.filter(w => wa.has(w)).length;
+  return inter / Math.min(wa.size, wb.length) >= .5;
+}
+async function e2Run() {
+  const u = S.e2u; u.step = "run"; u.err = null; u.msg = "Preparo la ricerca…"; render();
+  const say = t => { u.msg = t; const b = document.querySelector('[data-act="e2Run"]'); if (b) b.textContent = t; };
+  try {
+    const st = await getSearchTools(() => { });
+    const opts = { cache: false }; if (st.status === "ok") opts.tools = st.tools;
+    if (!opts.tools) { u.step = "pick"; u.err = "La ricerca web non è disponibile: senza non posso trovare le nuove emissioni. " + (webStatusMsg(st.status) || ""); render(); return; }
+    const yNow = new Date().getFullYear(); const found = [];
+    for (let y = u.from; y <= yNow; y++) {
+      say("Cerco le monete del " + y + "…");
+      const known = eur2List().filter(x => x.y === y && !x.j);
+      const prompt = "Elenca tutte le monete commemorative da 2 euro dell'anno " + y + ", come risultano dalla pagina della Banca centrale europea https://www.ecb.europa.eu/euro/coins/comm/html/comm_" + y + ".it.html (se non esiste o è incompleta, usa fonti ufficiali delle zecche o banche centrali nazionali). Usa la ricerca web.\n" +
+        "Queste le conosco già, NON ripeterle:\n" + (known.length ? known.map(x => x.cc + " | " + x.t).join("\n") : "(nessuna)") + "\n" +
+        "Escludi le monete comuni di circolazione ordinaria e le monete da collezione con valore diverso da 2 euro. Per le emissioni congiunte di tutta l'area dell'euro scrivi \"congiunta\": true e paese \"EU\".\n" +
+        'Rispondi solo con JSON: [{"paese":"codice ISO a 2 lettere (IT, DE, SM, VA, MC, AD, HR, BG…)","titolo":"tema in italiano, breve","tiratura":numero o null,"immagine":"URL dell\'immagine sul sito della BCE o null","congiunta":false,"fonte":"nome del sito"}]. Se non ci sono altre monete rispondi [].';
+      let out;
+      try { out = await S.sample.json(prompt, opts); } catch (e) { u.err = sampleErr(e); continue; }
+      (Array.isArray(out) ? out : []).forEach(r => {
+        const cc = String(r && r.paese || "").toUpperCase().trim(); const t = String(r && r.titolo || "").trim().slice(0, 90);
+        if (!t) return;
+        const v = Number(r.tiratura); const img = /^https:\/\/www\.ecb\.europa\.eu\/\S+\.(jpe?g|png)$/i.test(r.immagine || "") ? r.immagine : "";
+        const ccs = cc === "EU" || r.congiunta ? [] : [cc];
+        if (!ccs.length) { u.err = "Trovata un'emissione congiunta del " + y + " (" + t + "): aggiungila a mano per ogni paese se ti serve."; return; }
+        ccs.forEach(c => {
+          if (!EUR2_C[c]) return;
+          if (eur2List().some(x => x.y === y && x.cc === c && eur2Same(x.t, t))) return;
+          if (found.some(x => x.y === y && x.cc === c && eur2Same(x.t, t))) return;
+          found.push({ y, cc: c, t, v: v > 0 && v < 1e9 ? Math.round(v) : null, img, src: String(r.fonte || "").slice(0, 40) });
+        });
+      });
+    }
+    u.cands = found.sort((a, b) => a.y - b.y || EUR2_C[a.cc].localeCompare(EUR2_C[b.cc], "it"));
+    u.sel = new Set(u.cands.map((x, i) => i)); u.step = "review";
+  } catch (e) { u.step = "pick"; u.err = sampleErr(e); }
+  render();
+}
+async function e2Save(btn) {
+  const u = S.e2u; btn.disabled = true;
+  const cfg = JSON.parse(JSON.stringify(S.config));
+  const prev = cfg.eur2 && Array.isArray(cfg.eur2.add) ? cfg.eur2.add : [];
+  const list = eur2List(); const cnt = {};
+  list.concat(prev).forEach(x => { if (!x.j && x.id) { const k = x.y + x.cc; const n = Number(String(x.id).split("-")[2]) || 0; cnt[k] = Math.max(cnt[k] || 0, n); } });
+  const add = u.cands.filter((x, i) => u.sel.has(i)).map(x => { const k = x.y + x.cc; cnt[k] = (cnt[k] || 0) + 1; return { id: x.y + "-" + x.cc + "-" + cnt[k], y: x.y, cc: x.cc, t: x.t, v: x.v, img: x.img, j: false }; });
+  cfg.eur2 = { add: prev.concat(add), upd: today() };
+  try {
+    await saveConfig(cfg);
+    toast(pl(add.length, "moneta aggiunta", "monete aggiunte") + " al catalogo");
+    if (S.fromApp) { u.step = "sent"; render(); } else back();
+  } catch (e) { btn.disabled = false; toast(dbErr(e), 5000); }
 }
 
 /* ================= Modalità app (PWA): archivio locale ================= */
