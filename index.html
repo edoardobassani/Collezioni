@@ -486,6 +486,82 @@ function go(view) { S.stack.push(S.view); S.view = view; S.dirty = false; render
 function back() { S.view = S.stack.pop() || { name: "home" }; render(); }
 function tab(name) { S.stack = []; S.view = { name }; render(); window.scrollTo(0, 0); }
 
+/* ================= Ripresa della sessione =================
+   se l'app viene chiusa per sbaglio, alla riapertura torna alla schermata dove eri,
+   con moduli, importazioni e lavori a metà (le foto non si possono conservare) */
+const SESS_KEY = "col.session", SESS_MAX_AGE = 7 * 864e5;
+const SESS_OBJS = ["draft", "catDraft", "groupDraft", "ix", "quote", "review", "rai", "pm", "e2u", "cxf", "srch", "setAdd", "imp"];
+const SESS_SKIP = new Set(["built", "ctl", "work", "workUrls", "files", "urls", "_t"]);
+let _sessT = null;
+function sessReplacer(k, v) {
+  if (SESS_SKIP.has(k)) return undefined;
+  if (v instanceof Set) return { __set: [...v] };
+  if (v instanceof Map) return { __map: [...v] };
+  if (typeof v === "function") return undefined;
+  if (v && typeof v === "object" && (v.nodeType || (typeof Blob !== "undefined" && v instanceof Blob) || (typeof AbortController !== "undefined" && v instanceof AbortController))) return undefined;
+  return v;
+}
+function sessReviver(k, v) {
+  if (v && typeof v === "object" && !Array.isArray(v)) { if (Array.isArray(v.__set)) return new Set(v.__set); if (Array.isArray(v.__map)) return new Map(v.__map); }
+  return v;
+}
+function sessFields() {
+  const out = {}; const app = $("app"); if (!app || !app.querySelectorAll) return out;
+  app.querySelectorAll("input[id], select[id], textarea[id]").forEach(el => {
+    if (el.type === "file" || el.type === "password") return;
+    out[el.id] = el.type === "checkbox" || el.type === "radio" ? { c: !!el.checked } : { v: el.value };
+  });
+  return out;
+}
+function saveSessionNow() {
+  clearTimeout(_sessT); _sessT = null;
+  if (!S.configLoaded || !S._restored) return;
+  const objs = {}; SESS_OBJS.forEach(k => { if (S[k] != null) objs[k] = S[k]; });
+  if (S.scan) objs.scanLite = { catId: S.scan.catId, hint: S.scan.hint || "" };
+  const data = { t: Date.now(), view: S.view, stack: S.stack, objs, fields: { view: S.view.name, vals: sessFields() }, y: window.scrollY || 0 };
+  let txt;
+  try { txt = JSON.stringify(data, sessReplacer); } catch (e) { return; }
+  try { localStorage.setItem(SESS_KEY, txt); }
+  catch (e) { /* troppo grande (es. un Excel enorme): salvo senza l'importazione */
+    try { delete data.objs.ix; if (data.view && data.view.name === "importx") { data.view = data.stack.pop() || { name: "home" }; } localStorage.setItem(SESS_KEY, JSON.stringify(data, sessReplacer)); } catch (e2) { }
+  }
+}
+function saveSessionSoon() { if (!_sessT) _sessT = setTimeout(saveSessionNow, 400); }
+function restoreSession() {
+  let d = null;
+  try { const t = localStorage.getItem(SESS_KEY); d = t ? JSON.parse(t, sessReviver) : null; } catch (e) { d = null; }
+  if (!d || !d.view || Date.now() - (d.t || 0) > SESS_MAX_AGE) return;
+  if (String(location.hash || "").length > 1) return; /* aperta da un collegamento: vince quello */
+  try {
+    SESS_OBJS.forEach(k => { if (d.objs && d.objs[k] != null) S[k] = d.objs[k]; });
+    ["quote", "review", "rai", "pm", "e2u", "cxf", "ix", "imp"].forEach(k => { const o = S[k]; if (o && typeof o === "object" && (o.step === "run" || o.step === "saving")) o.step = "pick"; });
+    if (S.ix && S.ix.detecting) S.ix.detecting = "";
+    S.stack = Array.isArray(d.stack) ? d.stack.filter(v => v && v.name) : [];
+    S.view = d.view;
+    if (S.view.name === "scan") { const l = (d.objs && d.objs.scanLite) || {}; S.scan = { step: "pick", files: [], urls: [], catId: l.catId || "auto", hint: l.hint || "", results: [] }; }
+    const needs = { itemForm: "draft", catForm: "catDraft", groupForm: "groupDraft", importx: "ix", quote: "quote", review: "review", reviewAi: "rai", eur2Upd: "e2u", cxFill: "cxf" };
+    if (needs[S.view.name] && !S[needs[S.view.name]]) { S.view = S.stack.pop() || { name: "home" }; }
+    S.view.focus = null;
+    S._sessFields = d.fields && d.fields.view === S.view.name ? { view: S.view.name, vals: d.fields.vals || {}, until: Date.now() + 15000 } : null;
+    S._sessY = d.y || 0;
+  } catch (e) { S.view = { name: "home" }; S.stack = []; }
+}
+function applySessionFields() {
+  const f = S._sessFields; if (!f) return;
+  if (S.view.name !== f.view || Date.now() > f.until) { S._sessFields = null; return; }
+  Object.keys(f.vals).forEach(id => {
+    const el = $(id); if (!el || el.type === "file") return;
+    const v = f.vals[id];
+    if ("c" in v) el.checked = v.c; else if (el.value !== v.v) el.value = v.v;
+    delete f.vals[id];
+  });
+  if (S._sessY) { const y = S._sessY; S._sessY = 0; setTimeout(() => window.scrollTo(0, y), 0); }
+}
+document.addEventListener("input", () => saveSessionSoon(), true);
+document.addEventListener("change", () => saveSessionSoon(), true);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveSessionNow(); });
+window.addEventListener("pagehide", () => saveSessionNow());
+
 /* un aggiornamento in sottofondo non deve chiudere un menu a tendina aperto:
    se l'utente ha un select aperto (a fuoco e non ancora scelto) il disegno aspetta */
 let _rDefer = null, _rSince = 0;
@@ -508,6 +584,7 @@ function render() {
     app.innerHTML = '<div class="wrap"><div class="empty">' + (S.slow ? "L'archivio non risponde ancora. Controlla la connessione: i dati arriveranno appena possibile." : "Caricamento della collezione…") + '</div></div>';
     return;
   }
+  if (!S._restored) { S._restored = true; restoreSession(); }
   const v = S.view;
   let html = "";
   try {
@@ -551,6 +628,8 @@ function render() {
   const showNav = !["itemForm", "catForm", "groupForm", "scan", "quote", "setDetail", "eur2Grid", "eur2Upd", "cxGrid", "cxFill", "review", "reviewItem", "reviewList", "reviewAi", "prices", "search", "importx"].includes(v.name);
   app.innerHTML = html + (showNav ? navHtml(activeTab) : "");
   afterRender();
+  applySessionFields();
+  saveSessionSoon();
 }
 function navHtml(active) {
   const b = (n, k, l) => '<button type="button" data-act="tab" data-v="' + n + '" class="' + (active === n ? "on" : "") + '">' + ic(k, 22) + l + '</button>';
