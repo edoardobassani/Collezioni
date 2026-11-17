@@ -2685,15 +2685,33 @@ function openHandoff(n) {
 }
 async function receive() {
   let text = "";
-  try { text = await navigator.clipboard.readText(); } catch (e) { toast("Non riesco a leggere gli appunti: consenti l'accesso quando il browser lo chiede, oppure incolla dal Backup.", 6000); tab("backup"); return; }
-  if (!text || text.indexOf('"app":"collezioni"') < 0) { toast("Negli appunti non ci sono dati di Collezioni. Nell'artifact premi prima \"Copia per l'app\".", 6000); return; }
+  try { text = await navigator.clipboard.readText(); } catch (e) { text = null; }
+  if (text == null) { openPasteBox(); return; } /* il browser non lascia leggere gli appunti: si incolla a mano, restando qui */
+  receiveText(text);
+}
+async function receiveText(text) {
+  if (!text || !/"app"\s*:\s*"collezioni"/.test(text)) { toast("Negli appunti non ci sono dati di Collezioni. Nell'artifact premi prima \"Copia per l'app\".", 6000); return; }
+  const ret = S.view;
+  analyzeImport(text, "dall'artifact");
+  if (!S.imp) return;
+  if (S.imp.data && S.imp.data.kind === "delta") {
+    S.awaitReturn = false; lsSet("col.await", false);
+    if (!(S.imp.add + S.imp.upd + S.imp.newCats) && !S.imp.cfgNewer) { toast("Questi pezzi sono già nell'app."); S.imp = null; render(); return; }
+    toast("Ricevo i dati…", 1500);
+    await importApply();
+    if (S.view !== ret) { S.view = ret; render(); }
+    return;
+  }
+  /* backup completo: serve un'occhiata prima di importare */
   S.awaitReturn = false; lsSet("col.await", false);
   tab("backup");
-  analyzeImport(text, "dall'artifact");
-  if (S.imp && S.imp.data && S.imp.data.kind === "delta") {
-    if (!(S.imp.add + S.imp.upd + S.imp.newCats) && !S.imp.cfgNewer) { toast("Questi pezzi sono già nell'app."); S.imp = null; render(); return; }
-    await importApply();
-  }
+}
+function openPasteBox() {
+  let h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Incolla i dati"><div class="grab"></div>';
+  h += '<div class="between"><div><h1 style="font-size:20px">Incolla i dati</h1><div class="small muted">Il browser non mi lascia leggere gli appunti. Tieni premuto nel riquadro e scegli Incolla.</div></div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20) + '</button></div>';
+  h += '<textarea class="in" id="rcv_text" style="min-height:120px" placeholder="Incolla qui"></textarea>';
+  h += '<button type="button" class="btn pri full" data-act="receivePasted">' + ic("download", 18) + 'Ricevi</button></div></div>';
+  $("modal").innerHTML = h;
 }
 /* "noopener" fa restituire sempre null a window.open: senza, si capisce se la nuova scheda si è aperta */
 function openExternal(url) {
@@ -3868,6 +3886,7 @@ document.addEventListener("click", async ev => {
     case "export": await doExport(); break;
     case "exportCopy": await copyExport(); break;
     case "importText": analyzeImport(val("imp_text"), "dati incollati"); break;
+    case "receivePasted": { const t = val("rcv_text"); closeModal(); await receiveText(t); break; }
     case "importCancel": S.imp = null; render(); break;
     case "importApply": await importApply(); break;
   }
