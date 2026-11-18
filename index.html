@@ -632,6 +632,7 @@ function render() {
       case "quote": html = vQuote(); break;
       case "sets": html = vSets(); break;
       case "setDetail": html = vSetDetail(); break;
+      case "cardSearch": html = vCardSearch(); break;
       case "eur2": html = vEur2(); break;
       case "eur2Grid": html = vEur2Grid(); break;
       case "eur2Upd": html = vEur2Upd(); break;
@@ -745,6 +746,7 @@ function vCat(id) {
   let h = '<div class="wrap stack">';
   h += topBar(c.name, sumQty(all) + " pezzi · valore " + eur(sumVal(all)), '<button type="button" class="iconbtn" style="background:var(--ink);color:#fff" data-act="newItem" data-id="' + esc(id) + '" aria-label="Aggiungi pezzo">' + ic("plus", 20, 1.8) + '</button>');
   if (Object.keys(S.hist || {}).length > 1) h += histBox(id);
+  if (S.env === "pwa" && cardSearchSrc(id)) h += '<button type="button" class="btn' + (catalogOf(id) ? "" : " pri") + '" data-act="openCardSearch" data-id="' + esc(id) + '">' + ic("search", 18) + 'Cerca una carta per nome</button>';
   if (S.env === "pwa" && catalogOf(id)) h += '<div class="grid2"><button type="button" class="btn pri" data-act="openSets" data-id="' + esc(id) + '">' + ic("grid", 18) + 'Set e completamento</button><button type="button" class="btn" data-act="cardPrices" data-id="' + esc(id) + '">' + ic("refresh", 18) + 'Aggiorna prezzi</button></div>';
   { const ents = cxEntries(id); if (ents.length) h += '<div class="stack" style="gap:8px"><span class="small muted" style="font-weight:500">Cataloghi</span><div class="card list" style="overflow:hidden">' + ents.map(([d, l]) => '<button type="button" class="li" data-act="' + (d === "eur2" ? "openEur2" : "openCx") + '" data-v="' + d + '"><span class="ico">' + ic(d === "fb" ? "stamp" : "coin", 18) + '</span><span class="grow b">' + esc(l) + '</span><span class="muted">' + ic("right", 16, 2) + '</span></button>').join("") + '</div></div>'; }
   if (S.env === "pwa") h += '<button type="button" class="btn" data-act="barcode" data-id="' + esc(id) + '">' + ic("filter", 18) + 'Scansiona codice a barre / ISBN</button>';
@@ -1971,15 +1973,16 @@ function openAdd(step) {
     h += '<div class="between"><h1 style="font-size:20px">Altri modi per aggiungere</h1><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div><div class="card">';
     h += toolRow("addPick", "barcode", "Codice a barre o ISBN", "Libri, manga e videogiochi", "", true, ' data-v="barcode"');
     h += toolRow("addPick", "edit", "Inserisci a mano", "Scegli la categoria e compila", "", false, ' data-v="manual"');
+    if (S.env === "pwa" && cardSearchCats().length) h += toolRow("addPick", "search", "Cerca una carta per nome", cardSearchCats().map(c => c.name).join(", "), "", false, ' data-v="card"');
     if (S.env === "pwa" && catalogCats().length) h += toolRow("addPick", "grid", "Set completo", catalogCats().map(c => c.name).join(" e "), "", false, ' data-v="set"');
     h += '</div>';
   } else {
-    const title = { barcode: "Codice a barre: in quale categoria?", manual: "In quale categoria?", set: "Set completo: quale gioco?" }[step];
+    const title = { barcode: "Codice a barre: in quale categoria?", manual: "In quale categoria?", set: "Set completo: quale gioco?", card: "Cerca una carta: dove la metti?" }[step];
     h += '<div class="between"><button type="button" class="iconbtn" style="margin-left:-12px" data-act="addMore" aria-label="Indietro">' + ic("back", 20, 1.8) + '</button><h1 class="grow" style="font-size:18px">' + title + '</h1><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20, 1.8) + '</button></div>';
-    let cats = step === "set" ? catalogCats() : [...cfg.cats];
+    let cats = step === "set" ? catalogCats() : step === "card" ? cardSearchCats() : [...cfg.cats];
     if (step === "barcode") { const pri = c => /isbn/.test(c.fields.map(f => f.k).join(" ")) ? 0 : /libr|manga|fumett|gioc|video|film|disc|vinil/i.test(c.name) ? 1 : 2; cats.sort((a, b) => pri(a) - pri(b)); }
     else if (step === "manual") cats.sort((a, b) => { const ga = group(a.group), gb = group(b.group); return ((ga ? ga.order : a.order) || 0) - ((gb ? gb.order : b.order) || 0) || (a.order || 0) - (b.order || 0); });
-    h += '<div class="card list" style="max-height:60vh;overflow:auto">' + cats.map(c => '<button type="button" class="li" data-act="' + (step === "set" ? "addSet" : "addCat") + '" data-v="' + step + '" data-id="' + esc(c.id) + '"><span class="ico sm">' + iconHtml(c.icon, 18) + '</span><span class="grow b" style="font-weight:500">' + esc(c.name) + '</span><span class="muted">' + ic("right", 16, 2) + '</span></button>').join("") + '</div>';
+    h += '<div class="card list" style="max-height:60vh;overflow:auto">' + cats.map(c => '<button type="button" class="li" data-act="' + (step === "set" ? "addSet" : step === "card" ? "openCardSearch" : "addCat") + '" data-v="' + step + '" data-id="' + esc(c.id) + '"><span class="ico sm">' + iconHtml(c.icon, 18) + '</span><span class="grow b" style="font-weight:500">' + esc(c.name) + '</span><span class="muted">' + ic("right", 16, 2) + '</span></button>').join("") + '</div>';
   }
   $("modal").innerHTML = h + '</div></div>';
 }
@@ -3786,6 +3789,12 @@ document.addEventListener("click", async ev => {
     case "addPick": openAdd(v); break;
     case "addCat": closeModal(); if (v === "barcode") openBarcode(id); else { S.draft = newDraft(id, "in"); go({ name: "itemForm", focus: "f_name" }); } break;
     case "addSet": closeModal(); go({ name: "sets", catId: id }); break;
+    case "openCardSearch": closeModal(); go({ name: "cardSearch", catId: id, focus: "csq" }); break;
+    case "csLang": S.cs.lang = v; S.cs.res = null; S.cs.set = ""; csRun(); break;
+    case "csSetF": S.cs.set = v; render(); break;
+    case "csPick": csPick(id); break;
+    case "csStatus": S.csAdd.status = v; csAddRead(); openCsAdd(); break;
+    case "csAddGo": await csAddGo(el); break;
     case "awaitOff": S.awaitReturn = false; lsSet("col.await", false); render(); break;
     case "pricesMenu": if (!S.pm) S.pm = { sel: new Set(S.config.cats.map(c => c.id)), days: "7", wish: false }; go({ name: "prices" }); break;
     case "pmAll": { const ai = S.config.cats.filter(c => !catalogOf(c.id)); const all = ai.every(c => S.pm.sel.has(c.id)); ai.forEach(c => { if (all) S.pm.sel.delete(c.id); else S.pm.sel.add(c.id); }); render(); break; }
@@ -3909,6 +3918,7 @@ document.addEventListener("input", ev => {
   }
   if (a === "cxQ") { cxSt(el.dataset.v).q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 250); }
   if (a === "eur2Q") { eur2St().q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 250); }
+  if (a === "csSearch") { S.cs.q = el.value; clearTimeout(S._csT); S._csT = setTimeout(() => csRun(), 450); return; }
   if (a === "setsSearch") { S.setsState.q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("q"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 250); }
   if (a === "gsearch") { S.srch.q = el.value; clearTimeout(S._qt); S._qt = setTimeout(() => { const pos = el.selectionStart; render(); const q = $("gq"); if (q) { q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) { } } }, 200); }
   if (a === "qFilter") { readQuoteForm(); const el2 = $("qSummary"); if (el2) el2.innerHTML = quoteSummary(); const b = document.querySelector('[data-act="qRun"]'); if (b) b.disabled = !(quoteCandidates().length && S.sample); }
@@ -3931,6 +3941,7 @@ document.addEventListener("change", async ev => {
     case "bkChanges": lsSet("col.bkChanges", el.checked); render(); break;
     case "ixFile": { const f = el.files && el.files[0]; el.value = ""; if (f) { if (!S.ix) S.ix = { step: 1, catId: "", mode: "update", buyAsValue: true, map: {} }; await ixReadFile(f); } break; }
     case "ixSheet": S.ix.sheetIdx = parseInt(el.value, 10); ixAutoMap(); render(); break;
+    case "csSet": if (S.cs) { S.cs.set = el.value; render(); } break;
     case "ixCat": S.ix.catId = el.value; S.ix.detect = null; ixAutoMap(); render(); break;
     case "ixSetCat": { const det = S.ix.detect; if (!det) break; det.manual[el.dataset.id] = el.value; ixApplyRows(); S.ix.built = null; render(); break; }
     case "ixMode": S.ix.mode = el.value; render(); break;
@@ -4444,6 +4455,162 @@ function vSetDetail() {
   h += '<div style="height:70px"></div><div style="position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom))"><div class="grid2" style="max-width:560px;margin:0 auto"><button type="button" class="btn" data-act="setAddWish"' + (st.sel.size ? "" : " disabled") + '>Desideri (' + st.sel.size + ')</button><button type="button" class="btn pri" data-act="setAdd"' + (st.sel.size ? "" : " disabled") + '>Aggiungi (' + st.sel.size + ')</button></div></div>';
   h += '</div>';
   return h;
+}
+/* ================= Cerca una carta per nome =================
+   per Pokémon (TCGdex) e Magic (Scryfall), senza passare dal set; anche per le carte gradate (compila la scheda) */
+const CS_GRADED = { pokemon_gr: "tcgdex", magic_gr: "scryfall" };
+function cardSearchSrc(catId) { return S.env === "pwa" ? (CATALOGS[catId] || (cat(catId) && CS_GRADED[catId]) || null) : null; }
+function cardSearchCats() { return S.config ? S.config.cats.filter(c => cardSearchSrc(c.id)) : []; }
+function csState() {
+  const v = S.view;
+  if (!S.cs || S.cs.catId !== v.catId) S.cs = { catId: v.catId, q: "", lang: "it", set: "", res: null, loading: false, err: null, seq: 0, usedLang: "" };
+  return S.cs;
+}
+function csMapScry(c) {
+  const img = (c.image_uris || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris) || {});
+  return { id: c.id, name: c.printed_name || c.name, nameEn: c.name, set: c.set, setName: c.set_name, num: c.collector_number, numFull: c.collector_number, year: (c.released_at || "").slice(0, 4), rarity: c.rarity, img: img.small || null, imgBig: img.normal || null, eur: numOrNull(c.prices && c.prices.eur), eurFoil: numOrNull(c.prices && c.prices.eur_foil), lang: c.lang };
+}
+async function csSearchScry(q, lang) {
+  const url = "https://api.scryfall.com/cards/search?unique=prints&order=released&dir=desc&q=" + encodeURIComponent(q + " lang:" + lang);
+  const d = await getJson(url);
+  return ((d && d.data) || []).slice(0, 120).map(csMapScry);
+}
+async function csSearchTcg(q, lang) {
+  const d = await getJson("https://api.tcgdex.net/v2/" + lang + "/cards?name=" + encodeURIComponent(q) + "&pagination:itemsPerPage=120");
+  const list = Array.isArray(d) ? d : [];
+  if (!list.length) return [];
+  let sets = []; try { sets = await loadSets("tcgdex", lang); } catch (e) { }
+  const byId = {}; sets.forEach((x, i) => { byId[x.id] = Object.assign({ _i: i }, x); }); /* l'elenco dei set è già dal più recente */
+  const out = list.map(c => {
+    const setId = String(c.id).slice(0, String(c.id).lastIndexOf("-"));
+    const st = byId[setId] || {};
+    return { id: c.id, name: c.name, set: setId, setName: st.name || setId, num: String(c.localId), numFull: st.total ? c.localId + "/" + st.total : String(c.localId), year: "", img: c.image ? c.image + "/low.webp" : null, imgBig: c.image ? c.image + "/high.webp" : null, eur: null, eurFoil: null, rarity: "", lang, _i: st._i != null ? st._i : 1e6 };
+  });
+  out.sort((a, b) => a._i - b._i);
+  return out;
+}
+async function csRun() {
+  const st = S.cs; if (!st) return;
+  const q = st.q.trim();
+  if (q.length < 2) { st.res = null; st.err = null; st.loading = false; render(); return; }
+  const seq = ++st.seq; const src = cardSearchSrc(st.catId);
+  st.loading = true; st.err = null; render();
+  try {
+    let res = src === "scryfall" ? await csSearchScry(q, st.lang) : await csSearchTcg(q, st.lang);
+    let used = st.lang;
+    if (!res.length && st.lang !== "en") { res = src === "scryfall" ? await csSearchScry(q, "en") : await csSearchTcg(q, "en"); used = "en"; }
+    if (seq !== st.seq) return;
+    st.res = res; st.usedLang = used; st.loading = false; st.set = "";
+    render();
+    if (src === "tcgdex" && res.length) { /* prezzi e rarità delle prime carte, in sottofondo */
+      const first = res.slice(0, 30);
+      try {
+        const p = await fetchPrices("tcgdex", first.map(x => ({ src, set: x.set, card: x.id, num: x.num, lang: used })));
+        if (seq !== st.seq) return;
+        first.forEach(x => { const pp = p[x.id]; if (pp) { x.eur = pp.eur; x.eurFoil = pp.eurFoil; x.rarity = pp.rarity; } });
+        render();
+      } catch (e) { }
+    }
+  } catch (e) { if (seq !== st.seq) return; st.loading = false; st.err = e.message || "errore"; render(); }
+}
+function vCardSearch() {
+  const v = S.view; const c = cat(v.catId); const st = csState(); const src = cardSearchSrc(v.catId);
+  const graded = !!CS_GRADED[v.catId];
+  let h = '<div class="wrap stack">' + topBar("Cerca una carta", (c ? c.name : "") + " · " + (src === "tcgdex" ? "catalogo TCGdex" : "catalogo Scryfall"));
+  h += '<div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-label="Lingua"><button type="button" class="' + (st.lang === "it" ? "on" : "") + '" data-act="csLang" data-v="it" aria-pressed="' + (st.lang === "it") + '">Italiano</button><button type="button" class="' + (st.lang === "en" ? "on" : "") + '" data-act="csLang" data-v="en" aria-pressed="' + (st.lang === "en") + '">Inglese</button></div>';
+  h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="csq" type="search" placeholder="Nome della carta (es. ' + (src === "tcgdex" ? "Charizard" : "Ragavan") + ')" aria-label="Nome della carta" value="' + esc(st.q) + '" data-input="csSearch" autocomplete="off"></label>';
+  if (graded) h += '<div class="xs muted">Scegli la carta: compilo set, numero e anno, poi aggiungi tu ente e voto.</div>';
+  if (st.err) h += '<div class="notice warn">Non riesco a cercare nel catalogo (' + esc(st.err) + '). Controlla la connessione.</div>';
+  else if (st.loading && !st.res) h += '<div class="card empty">Cerco…</div>';
+  else if (!st.res) h += '<div class="card empty">Scrivi almeno due lettere del nome, in italiano o in inglese.</div>';
+  else if (!st.res.length) h += '<div class="card empty">Nessuna carta trovata. Prova con il nome inglese.</div>';
+  else {
+    if (st.usedLang !== st.lang) h += '<div class="notice">Nessun risultato in italiano: ti mostro le carte inglesi.</div>';
+    const sets = []; st.res.forEach(x => { if (!sets.some(y => y[0] === x.set)) sets.push([x.set, x.setName]); });
+    if (sets.length > 1) h += '<label class="f"><span>Set (' + sets.length + ')</span><select class="in" data-change="csSet"><option value="">Tutti i set</option>' + sets.map(([id, n]) => '<option value="' + esc(id) + '"' + (st.set === id ? " selected" : "") + '>' + esc(n) + '</option>').join("") + '</select></label>';
+    const list = st.res.filter(x => !st.set || x.set === st.set);
+    const own = graded ? {} : ownedMap(v.catId);
+    h += '<div class="xs muted">' + pl(list.length, "carta", "carte") + (st.loading ? " · aggiorno…" : "") + '</div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">';
+    list.forEach(x => {
+      const o = own[x.id]; const p = x.eur != null ? x.eur : x.eurFoil;
+      h += '<button type="button" class="card" data-act="csPick" data-id="' + esc(x.id) + '" style="padding:6px;text-align:left;display:flex;flex-direction:column;gap:4px;position:relative">';
+      h += x.img ? '<img src="' + esc(x.img) + '" alt="" loading="lazy" style="width:100%;aspect-ratio:63/88;object-fit:cover;border-radius:6px;background:#EEE">' : '<span style="width:100%;aspect-ratio:63/88;border-radius:6px;background:#EEE;display:block"></span>';
+      h += '<span class="xs b" style="line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(x.name) + '</span>';
+      h += '<span class="xs muted" style="line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + esc(x.setName) + ' · ' + esc(x.numFull) + '</span>';
+      h += '<span class="xs" style="font-weight:600">' + (p != null ? eur(p) : "&nbsp;") + '</span>';
+      if (o && o.qty) h += '<span class="badge" style="position:absolute;top:10px;left:10px">hai ' + o.qty + '</span>';
+      else if (o && o.wish) h += '<span class="badge grey" style="position:absolute;top:10px;left:10px">desiderio</span>';
+      h += '</button>';
+    });
+    h += '</div>';
+  }
+  return h + '</div>';
+}
+function csCardFields(x, catId) {
+  const src = cardSearchSrc(catId); const f = { set: x.setName, numero: x.numFull, lingua: x.lang === "it" ? "Italiano" : x.lang === "ja" ? "Giapponese" : "Inglese" };
+  const rar = rarityLabel(src, x.rarity); if (rar) f.rarita = rar;
+  if (x.year) f.anno = x.year;
+  const c = cat(catId); if (c) Object.keys(f).forEach(k => { if (!c.fields.some(ff => ff.k === k)) delete f[k]; });
+  return f;
+}
+function csPick(id) {
+  const st = S.cs; if (!st || !st.res) return;
+  const x = st.res.find(y => y.id === id); if (!x) return;
+  if (CS_GRADED[st.catId]) { /* carta gradata: scheda precompilata, il resto lo aggiunge Edo */
+    const d = newDraft(st.catId, "in");
+    d.name = x.name; d.fields = Object.assign({}, d.fields, csCardFields(x, st.catId)); d.imageUrl = x.img; d.imageUrlBig = x.imgBig;
+    S.draft = d; go({ name: "itemForm" }); return;
+  }
+  const c = cat(st.catId);
+  S.csAdd = { x, status: "in", qty: 1, cond: c && c.cond.includes("Near Mint") ? "Near Mint" : "", foil: false, edizione: "", buy: "" };
+  openCsAdd();
+}
+function csAddRead() { const a = S.csAdd; if (!a) return; if ($("ca_qty")) a.qty = Math.max(1, parseInt(val("ca_qty"), 10) || 1); if ($("ca_cond")) a.cond = val("ca_cond"); if ($("ca_ed")) a.edizione = val("ca_ed"); if ($("ca_foil")) a.foil = $("ca_foil").checked; if ($("ca_buy")) a.buy = val("ca_buy"); }
+function openCsAdd() {
+  const a = S.csAdd; const x = a.x; const c = cat(S.cs.catId);
+  const own = ownedMap(S.cs.catId)[x.id];
+  let h = '<div class="overlay" data-act="closeModalBg"><div class="sheet stack" role="dialog" aria-modal="true" aria-label="Aggiungi la carta"><div class="grab"></div>';
+  h += '<div class="between" style="align-items:flex-start;gap:12px">' + (x.img ? '<img src="' + esc(x.img) + '" alt="" style="width:64px;border-radius:6px">' : "") + '<div class="grow"><h1 style="font-size:19px">' + esc(x.name) + '</h1><div class="small muted">' + esc(x.setName) + ' · ' + esc(x.numFull) + (x.year ? " · " + esc(x.year) : "") + '</div>' + ((x.eur != null || x.eurFoil != null) ? '<div class="small">Cardmarket: <b>' + eur(x.eur != null ? x.eur : x.eurFoil) + '</b>' + (x.eurFoil != null && x.eur != null ? ' · foil ' + eur(x.eurFoil) : "") + '</div>' : "") + '</div><button type="button" class="iconbtn" data-act="closeModal" aria-label="Chiudi">' + ic("close", 20) + '</button></div>';
+  if (own && (own.qty || own.wish)) h += '<div class="notice">' + (own.qty ? "Ne hai già " + pl(own.qty, "copia", "copie") + " di questa stampa." : "È già nella tua lista desideri.") + ' Se salvi, ne aggiungi un\'altra.</div>';
+  h += '<div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-label="Dove va"><button type="button" class="' + (a.status === "in" ? "on" : "") + '" data-act="csStatus" data-v="in">Ce l\'ho</button><button type="button" class="' + (a.status === "wish" ? "on" : "") + '" data-act="csStatus" data-v="wish">Lista desideri</button></div>';
+  if (a.status === "in") {
+    h += '<div class="grid2"><label class="f"><span>Quantità</span><input class="in" id="ca_qty" inputmode="numeric" value="' + esc(String(a.qty)) + '"></label>';
+    h += '<label class="f"><span>Condizione</span><select class="in" id="ca_cond"><option value="">—</option>' + (c ? c.cond : []).map(o => '<option' + (o === a.cond ? " selected" : "") + '>' + esc(o) + '</option>').join("") + '</select></label></div>';
+    h += '<label class="f"><span>Prezzo pagato (€, facoltativo)</span><input class="in" id="ca_buy" inputmode="decimal" value="' + esc(a.buy) + '" placeholder="se vuoto uso la quotazione"></label>';
+  }
+  const edF = c && c.fields.find(f => f.k === "edizione");
+  if (edF) h += '<label class="f"><span>Edizione</span><select class="in" id="ca_ed"><option value="">—</option>' + edF.options.map(o => '<option' + (o === a.edizione ? " selected" : "") + '>' + esc(o) + '</option>').join("") + '</select></label>';
+  h += '<label class="row" style="min-height:44px;cursor:pointer"><input type="checkbox" id="ca_foil"' + (a.foil ? " checked" : "") + ' style="width:22px;height:22px;accent-color:#2F5D50"><span>Versione foil / holo</span></label>';
+  h += '<div class="small muted" id="ca_msg"></div>';
+  h += '<button type="button" class="btn pri full" data-act="csAddGo">' + (a.status === "wish" ? "Aggiungi ai desideri" : "Aggiungi alla collezione") + '</button></div></div>';
+  $("modal").innerHTML = h;
+}
+async function csAddGo(btn) {
+  csAddRead();
+  const a = S.csAdd; const x = a.x; const st = S.cs; const catId = st.catId; const src = cardSearchSrc(catId);
+  btn.disabled = true; const msg = $("ca_msg");
+  const ref = { src, set: x.set, card: x.id, num: x.num, lang: st.usedLang || st.lang };
+  let p = x.eur != null || x.eurFoil != null ? { eur: x.eur, eurFoil: x.eurFoil, rarity: x.rarity } : null;
+  if (!p) { if (msg) msg.textContent = "Recupero il prezzo…"; try { const pr = await fetchPrices(src, [ref]); p = pr[x.id] || null; } catch (e) { } }
+  const it = newDraft(catId, a.status);
+  it.name = x.name; it.qty = a.status === "in" ? a.qty : 1; it.cond = a.status === "in" ? a.cond : "";
+  it.fields = Object.assign({}, it.fields, csCardFields(Object.assign({}, x, { rarity: (p && p.rarity) || x.rarity, lang: ref.lang }), catId));
+  if (a.edizione) it.fields.edizione = a.edizione;
+  if (a.foil) it.fields.foil = true;
+  it.ref = ref; it.imageUrl = x.img; it.imageUrlBig = x.imgBig;
+  const v = priceFor(it, p);
+  if (v != null) { it.value = v; it.valueDate = today(); it.valueConf = "alta"; it.valueSource = src === "tcgdex" ? "Cardmarket, prezzo di tendenza (via TCGdex)" : "Cardmarket, prezzo medio (via Scryfall)"; it.valueHistory = [{ d: today(), v }]; }
+  if (a.status === "in") {
+    const bp = parseNum(a.buy);
+    if (bp != null) { it.buyPrice = bp; it.buyKind = "reale"; } else if (v != null) { it.buyPrice = v; it.buyKind = "stimato"; }
+    it.buyDate = today();
+    it.movements = [{ type: "carico", qty: it.qty, date: today(), price: it.buyPrice }];
+  }
+  it.createdAt = nowIso();
+  ["_new", "_origBuy", "_cats"].forEach(k => delete it[k]);
+  try { await saveItems([it]); closeModal(); S.csAdd = null; toast(x.name + (a.status === "wish" ? " aggiunta ai desideri" : " aggiunta alla collezione")); render(); }
+  catch (e) { btn.disabled = false; toast(dbErr(e), 5000); }
 }
 /* ================= Valore del set =================
    i tuoi pezzi del set (con l'andamento ricostruito dalla storia dei valori dei pezzi)
