@@ -4427,6 +4427,7 @@ function vSetDetail() {
   const have = cards.filter(x => own[x.id] && own[x.id].qty).length;
   const pct = Math.round(have / Math.max(1, cards.length) * 100);
   h += '<div class="card pad stack" style="gap:8px"><div class="between"><span class="b">' + have + ' di ' + cards.length + ' carte</span><span class="small muted">' + pct + '% completo</span></div><div class="progress"><div style="width:' + pct + '%"></div></div></div>';
+  h += setValueBox(v, st, src);
   h += setExtraBox(v, st, own, src);
   h += '<div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Mostra">' + [["all", "Tutte"], ["miss", "Mancanti"], ["have", "Possedute"]].map(([k, l]) => '<button type="button" class="' + (st.show === k ? "on" : "") + '" data-act="setShow" data-v="' + k + '">' + l + '</button>').join("") + '</div>';
   const ex = setExtra(st, src);
@@ -4443,6 +4444,71 @@ function vSetDetail() {
   h += '<div style="height:70px"></div><div style="position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom))"><div class="grid2" style="max-width:560px;margin:0 auto"><button type="button" class="btn" data-act="setAddWish"' + (st.sel.size ? "" : " disabled") + '>Desideri (' + st.sel.size + ')</button><button type="button" class="btn pri" data-act="setAdd"' + (st.sel.size ? "" : " disabled") + '>Aggiungi (' + st.sel.size + ')</button></div></div>';
   h += '</div>';
   return h;
+}
+/* ================= Valore del set =================
+   i tuoi pezzi del set (con l'andamento ricostruito dalla storia dei valori dei pezzi)
+   e il set completo, una carta per tipo (andamento registrato ogni giorno in cui apri il set) */
+function setOwnedItems(catId, setId) { return [...S.items.values()].filter(i => !i.deleted && i.catId === catId && i.status === "in" && i.ref && i.ref.set === setId); }
+function setOwnSeries(items) {
+  const dates = new Set(); items.forEach(i => (i.valueHistory || []).forEach(p => { if (p && p.d && p.v != null) dates.add(String(p.d).slice(0, 10)); }));
+  const ds = [...dates].sort(); if (!ds.length) return [];
+  return ds.map(d => {
+    let tot = 0;
+    items.forEach(i => { const q = Number(i.qty) || 1; let last = null; (i.valueHistory || []).forEach(p => { if (p && p.v != null && String(p.d).slice(0, 10) <= d) last = Number(p.v); }); if (last != null) tot += last * q; });
+    return { d, v: Math.round(tot * 100) / 100 };
+  });
+}
+function setFullValue(st, src) {
+  const ex = setExtra(st, src); if (!ex) return null;
+  let tot = 0, priced = 0;
+  st.data.cards.forEach(x => { const p = ex[x.id]; const val = p ? (p.eur != null ? p.eur : p.eurFoil) : null; if (val != null) { tot += Number(val); priced++; } });
+  return priced ? { tot: Math.round(tot * 100) / 100, priced } : null;
+}
+function setFullSeries(key, full) {
+  const all = lsGet("col.setHist", {}); const h = all[key] || {};
+  if (full) { const d = today(); if (h[d] !== full.tot) { h[d] = full.tot; const ks = Object.keys(h).sort(); while (ks.length > 120) delete h[ks.shift()]; all[key] = h; lsSet("col.setHist", all); } }
+  return Object.keys(h).sort().map(d => ({ d, v: h[d] }));
+}
+function setChart(series) {
+  const all = series.flatMap(s => s.pts);
+  if (all.length < 2) return "";
+  const ds = [...new Set(all.map(p => p.d))].sort(); const d0 = new Date(ds[0] + "T12:00:00").getTime(), d1 = new Date(ds[ds.length - 1] + "T12:00:00").getTime(), span = Math.max(1, d1 - d0);
+  const vs = all.map(p => p.v); const mn = Math.min(0, ...vs), mx = Math.max(...vs) || 1;
+  const W = 320, H = 120, top = 8, bot = 18;
+  const x = d => ds.length === 1 ? W / 2 : ((new Date(d + "T12:00:00").getTime() - d0) / span) * (W - 8) + 4;
+  const y = v => top + (1 - (v - mn) / ((mx - mn) || 1)) * (H - top - bot);
+  let h = '<svg role="img" aria-label="Andamento del valore del set" viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block">';
+  h += '<line x1="4" x2="' + (W - 4) + '" y1="' + (H - bot) + '" y2="' + (H - bot) + '" stroke="#E4E1D8"/>';
+  series.forEach(s => {
+    if (!s.pts.length) return;
+    if (s.pts.length === 1) { h += '<circle cx="' + x(s.pts[0].d).toFixed(1) + '" cy="' + y(s.pts[0].v).toFixed(1) + '" r="3" fill="' + s.color + '"/>'; return; }
+    const d = s.pts.map((p, i) => (i ? "L" : "M") + x(p.d).toFixed(1) + " " + y(p.v).toFixed(1)).join(" ");
+    h += '<path d="' + d + '" fill="none" stroke="' + s.color + '" stroke-width="2"' + (s.dash ? ' stroke-dasharray="5 4"' : "") + ' stroke-linejoin="round" stroke-linecap="round"/>';
+  });
+  h += '<text x="4" y="' + (H - 4) + '" font-size="10" fill="#8A877E">' + esc(fmtDateIt(ds[0])) + '</text><text x="' + (W - 4) + '" y="' + (H - 4) + '" font-size="10" fill="#8A877E" text-anchor="end">' + esc(fmtDateIt(ds[ds.length - 1])) + '</text>';
+  return h + '</svg>';
+}
+function setValueBox(v, st, src) {
+  const items = setOwnedItems(v.catId, v.setId);
+  const mine = items.reduce((a, i) => a + (i.value != null ? Number(i.value) * (Number(i.qty) || 1) : 0), 0);
+  const noVal = items.filter(i => i.value == null).length;
+  const own = setOwnSeries(items);
+  const full = setFullValue(st, src);
+  const fullS = setFullSeries(v.catId + ":" + v.setId + ":" + st.lang, full);
+  let h = '<div class="card pad stack" style="gap:10px"><div class="sect" style="margin:0">Valore del set</div>';
+  h += '<div class="grid2" style="gap:10px"><div><span class="xs muted" style="display:block">I tuoi pezzi</span><span class="b" style="font-size:20px">' + eur(Math.round(mine * 100) / 100) + '</span>';
+  if (own.length >= 2) { const first = own[0].v, last = own[own.length - 1].v, dlt = last - first; if (first > 0 || dlt) h += '<span class="xs ' + (dlt >= 0 ? "up" : "down") + '" style="display:block">' + (dlt >= 0 ? "+" : "−") + eur(Math.abs(Math.round(dlt * 100) / 100)) + ' dal ' + esc(fmtDateIt(own[0].d)) + '</span>'; }
+  h += '</div><div><span class="xs muted" style="display:block">Set completo</span>';
+  if (full) h += '<span class="b" style="font-size:20px">' + eur(full.tot) + '</span><span class="xs muted" style="display:block">una carta per tipo' + (full.priced < st.data.cards.length ? ", " + full.priced + " di " + st.data.cards.length + " con prezzo" : "") + '</span>';
+  else h += '<span class="small muted" style="display:block">' + (src === "tcgdex" ? "tocca Calcola qui sotto" : "prezzi non disponibili") + '</span>';
+  h += '</div></div>';
+  const chart = setChart([{ pts: own, color: "#2F5D50" }, { pts: fullS, color: "#B8862E", dash: true }]);
+  if (chart) {
+    h += chart + '<div class="row xs muted" style="gap:14px"><span class="row" style="gap:5px"><span style="width:14px;height:2px;background:#2F5D50;display:inline-block"></span>I tuoi pezzi</span>' + (fullS.length ? '<span class="row" style="gap:5px"><span style="width:14px;height:0;border-top:2px dashed #B8862E;display:inline-block"></span>Set completo</span>' : "") + '</div>';
+  } else h += '<div class="xs muted">' + (items.length ? "Il grafico compare quando ci sono almeno due valutazioni in giorni diversi." : "Non hai ancora carte di questo set.") + '</div>';
+  if (noVal) h += '<div class="xs muted">' + pl(noVal, "carta senza valore non conta", "carte senza valore non contano") + ' nel totale.</div>';
+  if (full && fullS.length < 3) h += '<div class="xs muted">L\'andamento del set completo si registra da oggi, ogni volta che apri il set.</div>';
+  return h + '</div>';
 }
 function setExtra(st, src) {
   if (src === "scryfall") { const m = {}; st.data.cards.forEach(x => { m[x.id] = { eur: x.eur, eurFoil: x.eurFoil, rarity: x.rarity }; }); return m; }
