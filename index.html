@@ -2563,7 +2563,7 @@ function vBackup() {
   let h = '<div class="wrap stack">' + topBar("Backup", "Scambia i dati con l\'app: ognuna fa da copia all\'altra.") + h0;
   const bki = bkInfo();
   h += '<div class="small ' + (bki.due ? "b" : "muted") + '" style="' + (bki.due ? "color:#6B4E00" : "") + '">' + (bki.last ? "Ultimo backup: " + fmtDate(bki.last.slice(0, 10)) + (bki.days ? " (" + pl(bki.days, "giorno", "giorni") + " fa)" : " (oggi)") : "Non hai ancora fatto un backup da qui.") + '</div>';
-  h += '<div class="card pad stack"><div class="between"><h2 style="font-size:16px">Esporta</h2><span class="small muted">' + all.filter(i => !i.deleted).length + ' pezzi</span></div><div class="small muted">Il file contiene categorie, pezzi, movimenti e quotazioni.</div><label class="row" style="cursor:pointer;min-height:44px"><input type="checkbox" id="exp_photos"' + (S.expPhotos !== false ? " checked" : "") + ' data-change="expPhotos" style="width:22px;height:22px;accent-color:#2F5D50"><span class="grow"><span style="display:block">Includi le foto</span><span class="xs muted">' + (photoCount() ? photoCount() + ' foto, circa ' + Math.max(1, Math.round(photoCount() * 0.25)) + ' MB in più' : 'Nessuna foto da includere') + '</span></span></label><div id="expMsg" class="small muted"></div><button type="button" class="btn pri" data-act="export">' + ic("download", 18) + 'Scarica file di backup</button><button type="button" class="btn sm" data-act="exportCopy">Copia i dati negli appunti</button></div>';
+  h += '<div class="card pad stack"><div class="between"><h2 style="font-size:16px">Esporta</h2><span class="small muted">' + all.filter(i => !i.deleted).length + ' pezzi</span></div><div class="small muted">Il file contiene categorie, pezzi, movimenti e quotazioni.</div><label class="row" style="cursor:pointer;min-height:44px"><input type="checkbox" id="exp_photos"' + (S.expPhotos !== false ? " checked" : "") + ' data-change="expPhotos" style="width:22px;height:22px;accent-color:#2F5D50"><span class="grow"><span style="display:block">Includi le foto</span><span class="xs muted">' + (photoCount() ? photoCount() + ' foto, circa ' + Math.max(1, Math.round(photoCount() * 0.25)) + ' MB in più' : 'Nessuna foto da includere') + '</span></span></label><div id="expMsg" class="small muted"></div>' + bkfLine() + '<button type="button" class="btn pri" data-act="export">' + ic("download", 18) + (S.env === "pwa" && bkfOk() ? (BKF.name ? "Aggiorna il file di backup" : "Salva file di backup") : "Scarica file di backup") + '</button><button type="button" class="btn sm" data-act="exportCopy">Copia i dati negli appunti</button></div>';
   h += '<div class="card pad stack"><h2 style="font-size:16px">Importa</h2>';
   const imp = S.imp;
   if (!imp) {
@@ -2742,6 +2742,12 @@ function exportData() {
   return { app: "collezioni", schema: 1, source: S.env || "artifact", exportedAt: nowIso(), config: S.config, items, history: S.hist || {} };
 }
 async function doExport() {
+  const name = S.env === "pwa" ? "collezioni-backup.json" : "collezioni-artifact-" + today() + ".json";
+  let target = null;
+  if (S.downloads && S.downloads.prepare) {
+    try { target = await S.downloads.prepare(name); }
+    catch (e) { if (e && e.name === "AbortError") { toast("Backup annullato"); return; } target = null; }
+  }
   const data = exportData();
   const withPh = $("exp_photos") ? $("exp_photos").checked : S.expPhotos !== false;
   const msg = $("expMsg");
@@ -2751,10 +2757,15 @@ async function doExport() {
     if (msg) msg.textContent = r.miss ? r.miss + " foto non sono state incluse." : "";
   }
   const json = JSON.stringify(data);
-  const name = "collezioni-artifact-" + today() + ".json";
   if (!S.downloads) { toast("Il download non è disponibile qui: uso la copia negli appunti."); return copyExport(); }
-  try { await S.downloads.save({ filename: name, data: json }); bkDone(); toast("Backup pronto"); }
+  try { const r = await S.downloads.save({ filename: name, data: json, target }); bkDone(); toast(r && r.overwrote ? "Backup salvato: ho aggiornato " + r.overwrote : "Backup pronto"); if (S.view.name === "backup") render(); }
   catch (e) { toast("Download annullato o non riuscito: puoi usare la copia negli appunti.", 4500); }
+}
+function bkfLine() {
+  if (S.env !== "pwa" || !bkfOk()) return "";
+  if (BKF.name === undefined) { BKF.name = ""; bkfGet().then(h => { BKF.name = h ? h.name : ""; if (h && S.view.name === "backup") render(); }); }
+  if (!BKF.name) return '<div class="xs muted">La prima volta scegli dove salvarlo: i backup successivi sovrascrivono quel file.</div>';
+  return '<div class="row" style="gap:8px"><span class="grow xs muted">Ogni backup sovrascrive <b>' + esc(BKF.name) + '</b>.</span><button type="button" class="btn sm" data-act="bkfChange">Cambia file</button></div>';
 }
 async function copyExport() {
   try { await navigator.clipboard.writeText(JSON.stringify(exportData())); bkDone(); toast("Dati copiati negli appunti"); }
@@ -3902,6 +3913,7 @@ document.addEventListener("click", async ev => {
     case "qApply": await quoteApply(); break;
     // backup
     case "export": await doExport(); break;
+    case "bkfChange": await bkfSet(null); toast("Al prossimo backup scegli dove salvarlo."); render(); break;
     case "exportCopy": await copyExport(); break;
     case "importText": analyzeImport(val("imp_text"), "dati incollati"); break;
     case "receivePasted": { const t = val("rcv_text"); closeModal(); await receiveText(t); break; }
@@ -9154,10 +9166,34 @@ function makeLocalAssets() {
     delete: async id => idbTx("blobs", "readwrite", st => st.delete(id))
   };
 }
+/* backup sul telefono: se il browser lo permette (File System Access), scelgo il file una volta
+   e i backup successivi lo sovrascrivono; altrimenti scarico un file nuovo come prima */
+const BKF = { db: null };
+function bkfOk() { try { return "showSaveFilePicker" in window && window.self === window.top; } catch (e) { return false; } }
+function bkfOpen() { if (!BKF.db) { BKF.db = new Promise((res, rej) => { try { const r = indexedDB.open("col-backup-file", 1); r.onupgradeneeded = () => r.result.createObjectStore("h"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); BKF.db.catch(() => { }); } return BKF.db; }
+async function bkfGet() { try { const db = await bkfOpen(); return await new Promise(res => { const q = db.transaction("h", "readonly").objectStore("h").get("main"); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch (e) { return null; } }
+async function bkfSet(h) { try { const db = await bkfOpen(); await new Promise(res => { const t = db.transaction("h", "readwrite"); if (h) t.objectStore("h").put(h, "main"); else t.objectStore("h").delete("main"); t.oncomplete = res; t.onerror = res; }); } catch (e) { } BKF.name = h ? h.name : ""; }
 function makeLocalDownloads() {
   return {
-    save: async ({ filename, data }) => {
+    /* va chiamata subito al tocco del pulsante: chiede il permesso o fa scegliere il file */
+    prepare: async suggestedName => {
+      if (!bkfOk()) return null;
+      let h = await bkfGet();
+      if (h) {
+        let perm = "prompt";
+        try { perm = await h.queryPermission({ mode: "readwrite" }); if (perm !== "granted") perm = await h.requestPermission({ mode: "readwrite" }); } catch (e) { perm = "denied"; }
+        if (perm === "granted") return h;
+      }
+      h = await window.showSaveFilePicker({ suggestedName, types: [{ description: "Backup di Collezioni", accept: { "application/json": [".json"] } }] });
+      await bkfSet(h);
+      return h;
+    },
+    save: async ({ filename, data, target }) => {
       const blob = data instanceof Blob ? data : new Blob([data], { type: "application/json" });
+      if (target) {
+        try { const w = await target.createWritable(); await w.write(blob); await w.close(); return { overwrote: target.name }; }
+        catch (e) { await bkfSet(null); toast("Non riesco più a scrivere nel file scelto: scarico un file nuovo. Al prossimo backup ne scegli un altro.", 5000); }
+      }
       const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
       document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
     }
