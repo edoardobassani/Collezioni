@@ -4174,12 +4174,12 @@ async function loadSetCards(src, setId, lang) {
     let d = null;
     try { d = await getJson("https://api.tcgdex.net/v2/" + lang + "/sets/" + encodeURIComponent(setId)); } catch (e) { if (lang === "en") throw e; }
     let usedLang = lang;
-    if (!d && lang !== "en") { d = await getJson("https://api.tcgdex.net/v2/en/sets/" + encodeURIComponent(setId)); usedLang = "en"; }
+    if (!d && lang !== "en" && lang !== "ja") { d = await getJson("https://api.tcgdex.net/v2/en/sets/" + encodeURIComponent(setId)); usedLang = "en"; }
     if (!d) throw new Error("Set non trovato");
     const official = d.cardCount && (d.cardCount.official || d.cardCount.total);
     out = { name: d.name, usedLang, total: official || (d.cards || []).length, cards: (d.cards || []).map(c => ({ id: c.id, num: String(c.localId), numFull: official ? c.localId + "/" + official : String(c.localId), name: c.name, img: c.image ? c.image + "/low.webp" : null, imgBig: c.image ? c.image + "/high.webp" : null })) };
     /* nelle edizioni non inglesi dei set vecchi TCGdex spesso non ha le immagini: uso quelle inglesi della stessa carta */
-    if (usedLang !== "en" && out.cards.some(c => !c.img)) {
+    if (usedLang !== "en" && usedLang !== "ja" && out.cards.some(c => !c.img)) {
       try {
         const en = await getJson("https://api.tcgdex.net/v2/en/sets/" + encodeURIComponent(setId));
         const byId = {}, byNum = {};
@@ -4242,7 +4242,7 @@ async function fetchPrices(src, refs, onProg) {
   const out = {};
   if (src === "tcgdex") {
     await pool(refs, 6, async r => {
-      const d = await getJson("https://api.tcgdex.net/v2/en/cards/" + encodeURIComponent(r.card));
+      const d = await getJson("https://api.tcgdex.net/v2/" + (r.lang === "ja" ? "ja" : "en") + "/cards/" + encodeURIComponent(r.card));
       if (!d) return;
       const cm = d.pricing && d.pricing.cardmarket;
       out[r.card] = { eur: cm ? numOrNull(cm.trend != null ? cm.trend : cm.avg30) : null, eurFoil: cm ? numOrNull(cm["trend-holo"] != null ? cm["trend-holo"] : cm["avg30-holo"]) : null, rarity: d.rarity || "" };
@@ -4402,7 +4402,8 @@ function vSets() {
   const v = S.view; const c = cat(v.catId); const src = catalogOf(v.catId);
   const st = S.setsState = S.setsState && S.setsState.catId === v.catId ? S.setsState : { catId: v.catId, lang: "it", q: "", sets: null, err: null, loading: false };
   let h = '<div class="wrap stack">' + topBar("Set " + (c ? c.name : ""), src === "tcgdex" ? "Catalogo TCGdex" : "Catalogo Scryfall");
-  h += '<div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-label="Lingua del catalogo"><button type="button" class="' + (st.lang === "it" ? "on" : "") + '" data-act="setsLang" data-v="it">Italiano</button><button type="button" class="' + (st.lang === "en" ? "on" : "") + '" data-act="setsLang" data-v="en">Inglese</button></div>';
+  h += langSeg(src, st.lang, "setsLang", "Lingua del catalogo");
+  if (st.lang === "ja") h += '<div class="xs muted">Catalogo giapponese: i set e le carte sono a parte da quelli inglesi e italiani, con i nomi in giapponese.</div>';
   h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="q" type="search" placeholder="Cerca un set (es. Set Base)" aria-label="Cerca set" value="' + esc(st.q) + '" data-input="setsSearch"></label>';
   const nUnl = unlinked(v.catId).length;
   if (nUnl) h += '<div class="notice between"><span>' + nUnl + ' carte inserite da foto o a mano non sono ancora collegate al catalogo, quindi non contano nel completamento.</span><button type="button" class="btn sm" data-act="linkNow" data-id="' + esc(v.catId) + '">Collega</button></div>';
@@ -4430,7 +4431,7 @@ function vSetDetail() {
     st.loading = true;
     loadSetCards(src, v.setId, st.lang).then(d => { st.data = d; st.loading = false; fillCardImages(v.catId, d); const own = ownedMap(v.catId); st.sel = new Set(d.cards.filter(x => !own[x.id] || !own[x.id].qty).map(x => x.id)); render(); }).catch(e => { st.err = e.message; st.loading = false; render(); });
   }
-  h += topBar(st.data ? st.data.name : "Set", st.data ? (st.data.usedLang !== st.lang ? "Non disponibile in italiano: elenco in inglese" : (st.lang === "it" ? "Edizione italiana" : "Edizione inglese")) : "");
+  h += topBar(st.data ? st.data.name : "Set", st.data ? (st.data.usedLang !== st.lang ? "Non disponibile in italiano: elenco in inglese" : (LANG_ED[st.lang] || "Edizione inglese")) : "");
   if (st.err) return h + '<div class="notice warn">Non riesco a scaricare il set (' + esc(st.err) + ').</div></div>';
   if (!st.data) return h + '<div class="card empty">Scarico le carte del set…</div></div>';
   const own = ownedMap(v.catId);
@@ -4455,6 +4456,13 @@ function vSetDetail() {
   h += '<div style="height:70px"></div><div style="position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:6;padding:10px 16px calc(12px + env(safe-area-inset-bottom))"><div class="grid2" style="max-width:560px;margin:0 auto"><button type="button" class="btn" data-act="setAddWish"' + (st.sel.size ? "" : " disabled") + '>Desideri (' + st.sel.size + ')</button><button type="button" class="btn pri" data-act="setAdd"' + (st.sel.size ? "" : " disabled") + '>Aggiungi (' + st.sel.size + ')</button></div></div>';
   h += '</div>';
   return h;
+}
+/* lingue dei cataloghi delle carte: il giapponese c'è solo per Pokémon (TCGdex) */
+const LANG_NAME = { it: "Italiano", en: "Inglese", ja: "Giapponese" };
+const LANG_ED = { it: "Edizione italiana", en: "Edizione inglese", ja: "Edizione giapponese" };
+function langSeg(src, cur, act, label) {
+  const ls = src === "tcgdex" ? ["it", "en", "ja"] : ["it", "en"];
+  return '<div class="seg" style="grid-template-columns:repeat(' + ls.length + ',minmax(0,1fr))" role="group" aria-label="' + esc(label) + '">' + ls.map(l => '<button type="button" class="' + (cur === l ? "on" : "") + '" data-act="' + act + '" data-v="' + l + '" aria-pressed="' + (cur === l) + '">' + LANG_NAME[l] + '</button>').join("") + '</div>';
 }
 /* ================= Cerca una carta per nome =================
    per Pokémon (TCGdex) e Magic (Scryfall), senza passare dal set; anche per le carte gradate (compila la scheda) */
@@ -4498,7 +4506,7 @@ async function csRun() {
   try {
     let res = src === "scryfall" ? await csSearchScry(q, st.lang) : await csSearchTcg(q, st.lang);
     let used = st.lang;
-    if (!res.length && st.lang !== "en") { res = src === "scryfall" ? await csSearchScry(q, "en") : await csSearchTcg(q, "en"); used = "en"; }
+    if (!res.length && st.lang === "it") { res = src === "scryfall" ? await csSearchScry(q, "en") : await csSearchTcg(q, "en"); used = "en"; }
     if (seq !== st.seq) return;
     st.res = res; st.usedLang = used; st.loading = false; st.set = "";
     render();
@@ -4517,13 +4525,13 @@ function vCardSearch() {
   const v = S.view; const c = cat(v.catId); const st = csState(); const src = cardSearchSrc(v.catId);
   const graded = !!CS_GRADED[v.catId];
   let h = '<div class="wrap stack">' + topBar("Cerca una carta", (c ? c.name : "") + " · " + (src === "tcgdex" ? "catalogo TCGdex" : "catalogo Scryfall"));
-  h += '<div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-label="Lingua"><button type="button" class="' + (st.lang === "it" ? "on" : "") + '" data-act="csLang" data-v="it" aria-pressed="' + (st.lang === "it") + '">Italiano</button><button type="button" class="' + (st.lang === "en" ? "on" : "") + '" data-act="csLang" data-v="en" aria-pressed="' + (st.lang === "en") + '">Inglese</button></div>';
-  h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="csq" type="search" placeholder="Nome della carta (es. ' + (src === "tcgdex" ? "Charizard" : "Ragavan") + ')" aria-label="Nome della carta" value="' + esc(st.q) + '" data-input="csSearch" autocomplete="off"></label>';
+  h += langSeg(src, st.lang, "csLang", "Lingua");
+  h += '<label class="search">' + ic("search", 18, 1.8) + '<input id="csq" type="search" placeholder="Nome della carta (es. ' + (st.lang === "ja" ? "リザードン" : src === "tcgdex" ? "Charizard" : "Ragavan") + ')" aria-label="Nome della carta" value="' + esc(st.q) + '" data-input="csSearch" autocomplete="off"></label>';
   if (graded) h += '<div class="xs muted">Scegli la carta: compilo set, numero e anno, poi aggiungi tu ente e voto.</div>';
   if (st.err) h += '<div class="notice warn">Non riesco a cercare nel catalogo (' + esc(st.err) + '). Controlla la connessione.</div>';
   else if (st.loading && !st.res) h += '<div class="card empty">Cerco…</div>';
   else if (!st.res) h += '<div class="card empty">Scrivi almeno due lettere del nome, in italiano o in inglese.</div>';
-  else if (!st.res.length) h += '<div class="card empty">Nessuna carta trovata. Prova con il nome inglese.</div>';
+  else if (!st.res.length) h += '<div class="card empty">' + (st.lang === "ja" ? "Nessuna carta trovata. Nel catalogo giapponese i nomi sono in giapponese (es. リザードン per Charizard, ピカチュウ per Pikachu): se non lo sai scrivere, apri i set giapponesi e cerca la carta lì." : "Nessuna carta trovata. Prova con il nome inglese.") + '</div>';
   else {
     if (st.usedLang !== st.lang) h += '<div class="notice">Nessun risultato in italiano: ti mostro le carte inglesi.</div>';
     const sets = []; st.res.forEach(x => { if (!sets.some(y => y[0] === x.set)) sets.push([x.set, x.setName]); });
@@ -4548,7 +4556,7 @@ function vCardSearch() {
   return h + '</div>';
 }
 function csCardFields(x, catId) {
-  const src = cardSearchSrc(catId); const f = { set: x.setName, numero: x.numFull, lingua: x.lang === "it" ? "Italiano" : x.lang === "ja" ? "Giapponese" : "Inglese" };
+  const src = cardSearchSrc(catId); const f = { set: x.setName, numero: x.numFull, lingua: LANG_NAME[x.lang] || "Inglese" };
   const rar = rarityLabel(src, x.rarity); if (rar) f.rarita = rar;
   if (x.year) f.anno = x.year;
   const c = cat(catId); if (c) Object.keys(f).forEach(k => { if (!c.fields.some(ff => ff.k === k)) delete f[k]; });
@@ -4737,7 +4745,7 @@ async function setAddGo(btn) {
     const it = newDraft(v.catId, a.status);
     const p = prices[x.id] || (x.eur != null || x.eurFoil != null ? { eur: x.eur, eurFoil: x.eurFoil, rarity: x.rarity } : null);
     it.name = x.name; it.qty = 1; it.cond = a.cond;
-    it.fields = { set: st.data.name, numero: x.numFull, lingua: lang === "it" ? "Italiano" : "Inglese" };
+    it.fields = { set: st.data.name, numero: x.numFull, lingua: LANG_NAME[lang] || "Inglese" };
     const rar = rarityLabel(src, (p && p.rarity) || x.rarity); if (rar) it.fields.rarita = rar;
     if (a.edizione) it.fields.edizione = a.edizione;
     if (a.foil) it.fields.foil = true;
